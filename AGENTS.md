@@ -140,9 +140,29 @@ podman run --rm repo.k8s.mreow.de/githubshit/cinny:latest cat /app/index.html \
 
 A successful deploy: the live hash changed from the previous deploy, and live == pushed image. The build runs inside the container (no local `dist/` is produced), and a local `npm run build` yields a different hash than the container build (different Node version), so do not use a local build to verify the deployed bundle. Compare against the pushed image's `index.html`.
 
+## Nix flake
+
+`flake.nix` and `package.nix` are fork-only. They build the Electron app from source in the nixpkgs idiom: `buildNpmPackage` builds the Vite bundle, then a wrapper launches nixpkgs' `electron` against it. No electron-builder, fpm, or asar is involved (the main process uses only node built-ins + electron, so no node_modules are shipped). `dist/` and `electron/` are installed as siblings under `$out/lib/cinny` because `electron/main.cjs` resolves `../dist`.
+
+```bash
+nix build .#cinny           # build, symlinked at ./result
+nix run .#cinny             # build and launch
+nix profile install .#cinny # install into the user profile
+```
+
+Caveats:
+
+- Flakes only see git-tracked files. Freshly created `flake.nix`/`package.nix` must be committed (or `git add -N`'d) before `nix build` works in the repo.
+- The package version is read from `package.json` at eval time, so it tracks upstream automatically on rebase.
+- When `package-lock.json` changes (upstream dependency updates), refresh `npmDepsHash` in `package.nix`:
+  ```bash
+  nix-shell -p prefetch-npm-deps --run 'prefetch-npm-deps package-lock.json'
+  ```
+
 ## Fork-only files
 
 - `AGENTS.md` itself is fork-only. It does not exist upstream and must survive every rebase.
+- `flake.nix` and `package.nix` are fork-only (see the Nix flake section). Upstream has neither file.
 - Any other fork-only files (scripts, configs) should be clearly named and kept in fork-specific paths so they do not collide with upstream files during rebase.
 
 ## Frontend form sizing
