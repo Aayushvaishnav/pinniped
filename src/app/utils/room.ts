@@ -20,6 +20,7 @@ import {
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { MATRIX_GIF_PROPERTY_NAME } from '../../types/matrix/common';
+import { getPollQuestion, isPollStartType } from './poll';
 import {
   IRoomCreateContent,
   Membership,
@@ -197,7 +198,7 @@ const NOTIFICATION_EVENT_TYPES = [
 ];
 export const isNotificationEvent = (mEvent: MatrixEvent) => {
   const eType = mEvent.getType();
-  if (!NOTIFICATION_EVENT_TYPES.includes(eType)) {
+  if (!NOTIFICATION_EVENT_TYPES.includes(eType) && !isPollStartType(eType)) {
     return false;
   }
   if (eType === 'm.room.member') return false;
@@ -365,6 +366,10 @@ export const getEventBodyForNotification = (mEvent: MatrixEvent): string => {
   if (mEvent.isRedacted()) return 'Message deleted';
 
   const eventType = mEvent.getType();
+  if (isPollStartType(eventType)) {
+    const question = getPollQuestion(mEvent.getContent());
+    return question ? `Poll: ${question}` : 'Started a poll';
+  }
   if (eventType === MessageEvent.Sticker) return 'Sent a sticker';
   if (eventType === MessageEvent.RoomMessageEncrypted) return 'Encrypted message';
   if (eventType !== MessageEvent.RoomMessage) return '';

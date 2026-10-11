@@ -63,19 +63,28 @@ ipcMain.handle('rich-presence:stop', async () => {
   }
 });
 
-// Unread mention count shown on the app icon: dock badge (macOS), Unity
+// Unread mentions and DMs shown on the app icon: dock badge (macOS), Unity
 // launcher count (Linux, where the desktop supports it) and a taskbar overlay
 // on Windows, where the renderer draws the bubble and sends it as a PNG data URL.
 ipcMain.on('badge:set', (_event, payload) => {
   const count = Number.isInteger(payload?.count) && payload.count > 0 ? payload.count : 0;
+  const hasUnread = count > 0 || payload?.hasUnread === true;
   app.setBadgeCount(count);
+  if (process.platform === 'darwin' && hasUnread && count === 0) app.dock.setBadge('•');
 
   if (process.platform === 'win32' && mainWindow && !mainWindow.isDestroyed()) {
     const overlay =
-      count > 0 && typeof payload?.overlay === 'string'
+      hasUnread && typeof payload?.overlay === 'string'
         ? nativeImage.createFromDataURL(payload.overlay)
         : null;
-    mainWindow.setOverlayIcon(overlay, count > 0 ? `${count} unread mentions` : '');
+    mainWindow.setOverlayIcon(
+      overlay,
+      count > 0
+        ? `${count} unread mentions and direct messages`
+        : hasUnread
+        ? 'Unread messages'
+        : ''
+    );
   }
 });
 

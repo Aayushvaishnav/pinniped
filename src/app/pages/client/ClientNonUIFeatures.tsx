@@ -1,8 +1,8 @@
 import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
-import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
+import { MatrixEvent, MatrixEventEvent, Room, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { roomToUnreadAtom } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/pinniped.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/pinniped-unread.svg';
 import LogoHighlightSVG from '../../../../public/res/svg/pinniped-highlight.svg';
@@ -20,10 +20,9 @@ import {
   getMemberAvatarMxc,
   getMemberDisplayName,
   getNotificationType,
-  getUnreadInfo,
   isNotificationEvent,
 } from '../../utils/room';
-import { NotificationType, UnreadInfo } from '../../../types/matrix/room';
+import { NotificationType } from '../../../types/matrix/room';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
@@ -99,20 +98,27 @@ function FaviconUpdater() {
 
 function DesktopBadgeFeature() {
   const roomToUnread = useAtomValue(roomToUnreadAtom);
+  const directs = useAtomValue(mDirectAtom);
 
   useEffect(() => {
     const bridge = window.cinnyDesktop;
     if (!bridge?.setBadgeCount) return;
 
-    let mentions = 0;
-    roomToUnread.forEach((unread) => {
-      mentions += unread.highlight;
+    let count = 0;
+    let hasUnread = false;
+    roomToUnread.forEach((unread, roomId) => {
+      // Space entries aggregate their children; count each actual room once.
+      if (unread.from !== null) return;
+      hasUnread = true;
+      count += directs.has(roomId) ? Math.max(unread.total, unread.highlight) : unread.highlight;
     });
 
     const overlay =
-      bridge.platform === 'win32' && mentions > 0 ? renderBadgeOverlay(mentions) : undefined;
-    bridge.setBadgeCount(mentions, overlay);
-  }, [roomToUnread]);
+      bridge.platform === 'win32' && hasUnread ? renderBadgeOverlay(count) : undefined;
+    bridge.setBadgeCount(count, overlay, hasUnread);
+  }, [roomToUnread, directs]);
+
+  useEffect(() => () => window.cinnyDesktop?.setBadgeCount?.(0, undefined, false), []);
 
   return null;
 }
@@ -139,6 +145,7 @@ function InviteNotifications() {
       noti.onclick = (event) => {
         event.preventDefault();
         if (!window.closed) {
+          window.cinnyDesktop?.showWindow?.();
           window.focus();
           navigate(getInboxInvitesPath());
         }
@@ -175,7 +182,8 @@ function InviteNotifications() {
 
 function MessageNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const unreadCacheRef = useRef<Map<string, UnreadInfo>>(new Map());
+  const seenEventsRef = useRef<Set<string>>(new Set());
+  const pendingEventsRef = useRef<Map<MatrixEvent, Room>>(new Map());
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const roomToParents = useAtomValue(roomToParentsAtom);
@@ -230,18 +238,10 @@ function MessageNotifications() {
   }, []);
 
   useEffect(() => {
-    const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (
-      mEvent,
-      room,
-      toStartOfTimeline,
-      removed,
-      data
-    ) => {
+    const processEvent = (mEvent: MatrixEvent, room: Room) => {
       if (mx.getSyncState() !== 'SYNCING') return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
       if (
-        !room ||
-        !data.liveEvent ||
         room.isSpaceRoom() ||
         !isNotificationEvent(mEvent) ||
         getNotificationType(mx, room.roomId) === NotificationType.Mute
@@ -251,17 +251,27 @@ function MessageNotifications() {
 
       const sender = mEvent.getSender();
       const eventId = mEvent.getId();
-      if (!sender || !eventId || mEvent.getSender() === mx.getUserId()) return;
-      const unreadInfo = getUnreadInfo(room);
-      const cachedUnreadInfo = unreadCacheRef.current.get(room.roomId);
-      unreadCacheRef.current.set(room.roomId, unreadInfo);
-
-      if (unreadInfo.total === 0) return;
-      if (
-        cachedUnreadInfo &&
-        unreadEqual(unreadInfoToUnread(cachedUnreadInfo), unreadInfoToUnread(unreadInfo))
-      ) {
+      const userId = mx.getUserId();
+      if (!sender || !eventId || !userId || sender === userId) return;
+      if (seenEventsRef.current.has(eventId)) return;
+      if (room.hasUserReadEvent(userId, eventId)) return;
+      if (mEvent.getType() === 'm.room.encrypted' || mEvent.isDecryptionFailure()) {
+        pendingEventsRef.current.set(mEvent, room);
+        // Bound delayed-key events while retaining retries for recent messages.
+        if (pendingEventsRef.current.size > 500) {
+          const oldest = pendingEventsRef.current.keys().next().value;
+          if (oldest) pendingEventsRef.current.delete(oldest);
+        }
         return;
+      }
+      // Room counts can lag timeline events or stay unchanged within a sync batch.
+      // Evaluate this message's push rules, including mention-only and silent rules.
+      const actions = mx.getPushActionsForEvent(mEvent, true);
+      if (!actions?.notify) return;
+      seenEventsRef.current.add(eventId);
+      if (seenEventsRef.current.size > 1000) {
+        const oldest = seenEventsRef.current.values().next().value;
+        if (oldest) seenEventsRef.current.delete(oldest);
       }
 
       if (showNotifications && notificationPermission('granted')) {
@@ -293,13 +303,34 @@ function MessageNotifications() {
         });
       }
 
-      if (notificationSound) {
+      if (notificationSound && actions.tweaks?.sound) {
         playSound();
       }
     };
+    const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (
+      mEvent,
+      room,
+      toStartOfTimeline,
+      removed,
+      data
+    ) => {
+      if (!room || !data.liveEvent || toStartOfTimeline || removed) return;
+      processEvent(mEvent, room);
+      if (pendingEventsRef.current.has(mEvent)) {
+        mx.decryptEventIfNeeded(mEvent).catch(() => undefined);
+      }
+    };
+    const handleDecrypted = (mEvent: MatrixEvent, error?: Error) => {
+      const room = pendingEventsRef.current.get(mEvent);
+      if (!room || error || mEvent.isDecryptionFailure()) return;
+      pendingEventsRef.current.delete(mEvent);
+      processEvent(mEvent, room);
+    };
     mx.on(RoomEvent.Timeline, handleTimelineEvent);
+    mx.on(MatrixEventEvent.Decrypted, handleDecrypted);
     return () => {
       mx.removeListener(RoomEvent.Timeline, handleTimelineEvent);
+      mx.removeListener(MatrixEventEvent.Decrypted, handleDecrypted);
     };
   }, [
     mx,
