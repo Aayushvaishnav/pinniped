@@ -76,6 +76,25 @@ export const useUserRichPresence = (userId: string): RichPresence | undefined =>
     };
   }, [mx, userId, setRichPresence]);
 
+  // Expire cached activity even if the publisher crashed and no profile update arrives.
+  useEffect(() => {
+    const expiresAt = richPresence?.expiresAt;
+    if (expiresAt === undefined) return undefined;
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      const delay = expiresAt - Date.now();
+      if (delay > 0) {
+        timer = setTimeout(expire, Math.min(delay, 2_147_483_647));
+        return;
+      }
+      setRichPresence((current) =>
+        current?.expiresAt !== undefined && current.expiresAt <= Date.now() ? undefined : current
+      );
+    };
+    expire();
+    return () => clearTimeout(timer);
+  }, [richPresence, setRichPresence]);
+
   // Re-fetch when the current media track reaches its end time, so we pick up
   // the next song promptly instead of waiting for the next heartbeat.
   useEffect(() => {
@@ -101,5 +120,7 @@ export const useUserRichPresence = (userId: string): RichPresence | undefined =>
     };
   }, [mx, userId, richPresence, setRichPresence]);
 
-  return richPresence;
+  return richPresence?.expiresAt !== undefined && richPresence.expiresAt <= Date.now()
+    ? undefined
+    : richPresence;
 };

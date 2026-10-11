@@ -4,7 +4,11 @@ import { useMatrixClient } from './useMatrixClient';
 import { useSetting } from '../state/hooks/settings';
 import { settingsAtom } from '../state/settings';
 import { richPresenceBridgeStatusAtom } from '../state/richPresenceBridge';
-import { MSC4320_RPC } from '../../types/matrix/richPresence';
+import {
+  MSC4320_RPC,
+  RICH_PRESENCE_EXPIRES_AT,
+  RICH_PRESENCE_TTL,
+} from '../../types/matrix/richPresence';
 import {
   isMediaPayload,
   mapDiscordActivity,
@@ -17,6 +21,7 @@ import type { DiscordRichPresenceActivity } from '../utils/device';
 // Minimum interval between profile writes. Discord-RPC clients can fire
 // SET_ACTIVITY on every progress tick; coalesce to avoid hammering the HS.
 const MIN_WRITE_INTERVAL = 5000;
+const REFRESH_INTERVAL = 60 * 1000;
 
 /**
  * Publishes the local Discord-RPC activity (captured by the desktop
@@ -67,15 +72,26 @@ export const useRichPresencePublisher = () => {
 
     const tick = async () => {
       if (stopped || inFlight) return;
-      if (sameActivityPayload(pending, lastWritten)) return;
+      if (
+        sameActivityPayload(pending, lastWritten) &&
+        (!pending || Date.now() - lastWriteAt < REFRESH_INTERVAL)
+      )
+        return;
+      // Capture the write so an activity update during the request isn't lost.
+      const writing = pending;
       inFlight = true;
       try {
-        if (pending) {
-          await mx.setExtendedProfileProperty(MSC4320_RPC, pending);
+        if (writing) {
+          await mx.setExtendedProfileProperty(MSC4320_RPC, {
+            ...writing,
+            [RICH_PRESENCE_EXPIRES_AT]: Date.now() + RICH_PRESENCE_TTL,
+          });
         } else {
           await mx.deleteExtendedProfileProperty(MSC4320_RPC);
         }
-        lastWritten = pending;
+        // Cleanup may have raced a write already in flight.
+        if (stopped && writing) await mx.deleteExtendedProfileProperty(MSC4320_RPC);
+        lastWritten = writing;
         lastWriteAt = Date.now();
       } catch {
         // Server may not support MSC4133 extended profiles; stay silent.
