@@ -5,6 +5,7 @@ export const UserAvatar = style({
   backgroundColor: color.Secondary.Container,
   color: color.Secondary.OnContainer,
   textTransform: 'capitalize',
+  imageRendering: ['auto', 'smooth'],
 
   selectors: {
     '&[data-image-loaded="true"]': {
