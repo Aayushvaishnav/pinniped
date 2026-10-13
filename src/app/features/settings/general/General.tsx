@@ -59,19 +59,32 @@ type ThemeSelectorProps = {
 };
 const ThemeSelector = as<'div', ThemeSelectorProps>(
   ({ themeNames, themes, selected, onSelect, ...props }, ref) => (
-    <Menu {...props} ref={ref}>
-      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-        {themes.map((theme) => (
-          <MenuItem
-            key={theme.id}
-            size="300"
-            variant={theme.id === selected.id ? 'Primary' : 'Surface'}
-            radii="300"
-            onClick={() => onSelect(theme)}
-          >
-            <Text size="T300">{themeNames[theme.id] ?? theme.id}</Text>
-          </MenuItem>
-        ))}
+    <Menu
+      {...props}
+      ref={ref}
+      style={{
+        maxHeight: '75vh',
+        display: 'flex',
+      }}
+    >
+      <Box grow="Yes">
+        <Scroll size="0" hideTrack visibility="Hover">
+          <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+            {themes.map((theme) => (
+              <MenuItem
+                key={theme.id}
+                size="300"
+                variant={theme.id === selected.id ? 'Primary' : 'Surface'}
+                radii="300"
+                onClick={() => onSelect(theme)}
+              >
+                <Text size="T300" truncate>
+                  {themeNames[theme.id] ?? theme.id}
+                </Text>
+              </MenuItem>
+            ))}
+          </Box>
+        </Scroll>
       </Box>
     </Menu>
   )
