@@ -17,6 +17,7 @@ import {
 import { mxcUrlToHttp } from '../../utils/matrix';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { ImageViewer } from '../image-viewer';
+import { UrlPreviewPost, isPostPreview } from './UrlPreviewPost';
 import { onEnterOrSpace } from '../../utils/keyboard';
 
 const LARGE_IMG_MAX_WIDTH = 400;
@@ -71,6 +72,8 @@ export const UrlPreviewCard = as<'article', { url: string; ts: number }>(
     if (previewStatus.status !== AsyncStatus.Success) return null;
 
     const prev = previewStatus.data;
+    if (isPostPreview(prev)) return <UrlPreviewPost url={url} prev={prev} {...props} ref={ref} />;
+
     const title = getString(prev, 'og:title');
     const description = getString(prev, 'og:description');
     const [provider, author] = splitSiteName(getString(prev, 'og:site_name'));
