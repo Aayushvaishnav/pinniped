@@ -44,6 +44,9 @@ export interface Settings {
   mediaAutoLoad: boolean;
   urlPreview: boolean;
   encUrlPreview: boolean;
+  // Optional third-party preview server (stablecat preview tokens). Empty = own homeserver.
+  urlPreviewServer: string;
+  urlPreviewServerToken: string;
   showHiddenEvents: boolean;
   legacyUsernameColor: boolean;
 
@@ -88,6 +91,8 @@ const defaultSettings: Settings = {
   mediaAutoLoad: true,
   urlPreview: true,
   encUrlPreview: false,
+  urlPreviewServer: '',
+  urlPreviewServerToken: '',
   showHiddenEvents: false,
   legacyUsernameColor: false,
 

@@ -566,6 +566,7 @@ export function Notifications() {
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [mediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview] = useSetting(settingsAtom, 'urlPreview');
+  const [encUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
@@ -727,7 +728,9 @@ export function Notifications() {
                           room={groupRoom}
                           notifications={group.notifications}
                           mediaAutoLoad={mediaAutoLoad}
-                          urlPreview={urlPreview}
+                          urlPreview={
+                            groupRoom.hasEncryptionStateEvent() ? encUrlPreview : urlPreview
+                          }
                           hideActivity={hideActivity}
                           onOpen={navigateRoom}
                           legacyUsernameColor={

@@ -18,6 +18,9 @@ import { mxcUrlToHttp } from '../../utils/matrix';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { ImageViewer } from '../image-viewer';
 import { UrlPreviewPost, isPostPreview } from './UrlPreviewPost';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
+import { getUrlPreview } from '../../utils/urlPreviewServer';
 import { onEnterOrSpace } from '../../utils/keyboard';
 
 const LARGE_IMG_MAX_WIDTH = 400;
@@ -58,8 +61,13 @@ export const UrlPreviewCard = as<'article', { url: string; ts: number }>(
     const [viewer, setViewer] = useState(false);
     // 0: thumbnail, 1: full image fallback, 2: give up and hide the image
     const [imgAttempt, setImgAttempt] = useState(0);
+    const [previewServer] = useSetting(settingsAtom, 'urlPreviewServer');
+    const [previewToken] = useSetting(settingsAtom, 'urlPreviewServerToken');
     const [previewStatus, loadPreview] = useAsyncCallback(
-      useCallback(() => mx.getUrlPreview(url, ts), [url, ts, mx])
+      useCallback(
+        () => getUrlPreview(mx, url, ts, previewServer, previewToken),
+        [url, ts, mx, previewServer, previewToken]
+      )
     );
 
     useEffect(() => {

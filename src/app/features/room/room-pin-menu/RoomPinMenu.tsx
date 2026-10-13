@@ -273,6 +273,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
     const useAuthentication = useMediaAuthentication();
     const [mediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
     const [urlPreview] = useSetting(settingsAtom, 'urlPreview');
+    const [encUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
 
     const direct = useIsDirectRoom();
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
@@ -330,7 +331,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
               getContent={getContent}
               edited={!!event.replacingEvent()}
               mediaAutoLoad={mediaAutoLoad}
-              urlPreview={urlPreview}
+              urlPreview={room.hasEncryptionStateEvent() ? encUrlPreview : urlPreview}
               htmlReactParserOptions={htmlReactParserOptions}
               linkifyOpts={linkifyOpts}
               outlineAttachment
@@ -386,7 +387,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                       edited={!!editedEvent || !!mEvent.replacingEvent()}
                       getContent={getContent}
                       mediaAutoLoad={mediaAutoLoad}
-                      urlPreview={urlPreview}
+                      urlPreview={room.hasEncryptionStateEvent() ? encUrlPreview : urlPreview}
                       htmlReactParserOptions={htmlReactParserOptions}
                       linkifyOpts={linkifyOpts}
                     />

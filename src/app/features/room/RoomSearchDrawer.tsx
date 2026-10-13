@@ -56,6 +56,7 @@ function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
   const scrollTopAnchorRef = useRef<HTMLDivElement>(null);
   const [mediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview] = useSetting(settingsAtom, 'urlPreview');
+  const [encUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
@@ -178,7 +179,7 @@ function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
                       highlights={highlights}
                       items={group.items}
                       mediaAutoLoad={mediaAutoLoad}
-                      urlPreview={urlPreview}
+                      urlPreview={groupRoom.hasEncryptionStateEvent() ? encUrlPreview : urlPreview}
                       onOpen={onOpen}
                       legacyUsernameColor={legacyUsernameColor || mDirects.has(groupRoom.roomId)}
                       hour24Clock={hour24Clock}
