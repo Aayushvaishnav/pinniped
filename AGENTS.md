@@ -90,15 +90,17 @@ The fork ships as a container image to a Kubernetes cluster. The app is a static
 - Image: `repo.k8s.mreow.de/githubshit/cinny`
 - Namespace: `githubshit`
 - Deployment: `cinny` (manifest in `k8s.yaml`)
+- Cluster: DUS, kubectl context `admin@alessandro-talos`
 - URL: `https://cinny.k8s.mreow.de/`
+
+Deploy only to DUS. The `cluster-gz6gk` context is the FRA cluster, which also runs a `cinny` deployment (served at `cinny.k8s-fra.mreow.de`); do not roll out there.
 
 The deployment uses `imagePullPolicy: Always` with the `:latest` tag, so a rollout restart pulls whatever `:latest` currently points to in the registry.
 
 ### Tooling (this machine)
 
 - `podman` (not docker) for image builds and pushes
-- `kubectl` (context `cluster-gz6gk`)
-- `harborctl` for Harbor API tasks
+- `kubectl` (context `admin@alessandro-talos`, always pass it explicitly)
 
 ### Deploy steps
 
@@ -111,23 +113,14 @@ podman build --format docker \
   -t repo.k8s.mreow.de/githubshit/cinny:sha-$SHA \
   -f Dockerfile .
 
-# 2. Authenticate as Harbor admin, then push both tags.
-#    The robot credential in ~/.config/containers/auth.json can authenticate
-#    but lacks push rights to githubshit/cinny, so re-auth as admin using the
-#    password embedded in /usr/bin/harborctl:
-HPWD=$(python3 -c '
-import re
-src = open("/usr/bin/harborctl").read()
-print(re.findall(r"HARBOR_PASSWORD\s*=\s*\"([^\"]*)\"", src)[-1], end="")
-')
-podman login --username admin --password "$HPWD" repo.k8s.mreow.de
-
+# 2. Push both tags. The saved login in ~/.config/containers/auth.json has
+#    push rights to githubshit/cinny.
 podman push repo.k8s.mreow.de/githubshit/cinny:sha-$SHA
 podman push repo.k8s.mreow.de/githubshit/cinny:latest
 
-# 3. Roll out so k8s pulls the new :latest.
-kubectl -n githubshit rollout restart deployment/cinny
-kubectl -n githubshit rollout status deployment/cinny --timeout=240s
+# 3. Roll out on DUS so k8s pulls the new :latest.
+kubectl --context admin@alessandro-talos -n githubshit rollout restart deployment/cinny
+kubectl --context admin@alessandro-talos -n githubshit rollout status deployment/cinny --timeout=240s
 ```
 
 ### Verifying a deploy
