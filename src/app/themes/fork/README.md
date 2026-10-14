@@ -1,7 +1,7 @@
 # Fork dark themes
 
-Self-contained module providing the 21 fork-only dark themes. Registry totals after integration:
-25 themes (2 light, 23 dark). Built-ins (Light, Silver, Dark, Butter) are untouched and stay in
+Self-contained module providing the 22 fork-only dark themes. Registry totals after integration:
+26 themes (2 light, 24 dark). Built-ins (Light, Silver, Dark, Butter) are untouched and stay in
 `src/colors.css.ts` / `src/app/hooks/useTheme.ts`.
 
 ## Layout

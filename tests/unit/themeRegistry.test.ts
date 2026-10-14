@@ -60,6 +60,7 @@ const REQUESTED_IDS = [
   'tokyo-night-night',
   'tokyo-night-storm',
   'oled-midnight',
+  'catthode',
 ];
 
 const REQUESTED_NAMES: Record<string, string> = {
@@ -79,6 +80,7 @@ const REQUESTED_NAMES: Record<string, string> = {
   'kanagawa-wave': 'Kanagawa Wave',
   nord: 'Nord',
   'oled-midnight': 'OLED Midnight',
+  catthode: 'Catthode',
   'rose-pine': 'Rosé Pine',
   'rose-pine-moon': 'Rosé Pine Moon',
   'tokyo-night-moon': 'Tokyo Night Moon',
@@ -93,15 +95,15 @@ describe('theme registry', () => {
     expect(themes.slice(0, 4).map((theme) => theme.id)).toEqual(BUILTIN_IDS);
   });
 
-  it('contains exactly the requested 21 fork themes after the built-ins, in order', () => {
+  it('contains exactly the requested 22 fork themes after the built-ins, in order', () => {
     expect(themes.map((theme) => theme.id)).toEqual([...BUILTIN_IDS, ...REQUESTED_IDS]);
   });
 
-  it('has 25 unique themes: 2 light and 23 dark', () => {
-    expect(themes).toHaveLength(25);
-    expect(new Set(themes.map((theme) => theme.id)).size).toBe(25);
+  it('has 26 unique themes: 2 light and 24 dark', () => {
+    expect(themes).toHaveLength(26);
+    expect(new Set(themes.map((theme) => theme.id)).size).toBe(26);
     expect(themes.filter((theme) => theme.kind === 'light')).toHaveLength(2);
-    expect(themes.filter((theme) => theme.kind === 'dark')).toHaveLength(23);
+    expect(themes.filter((theme) => theme.kind === 'dark')).toHaveLength(24);
   });
 
   it('names every theme from one metadata source', () => {

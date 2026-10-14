@@ -1,6 +1,7 @@
 import type { ForkPalette } from './derive';
 import { ayuPalettes } from './palettes/ayu';
 import { catppuccinPalettes } from './palettes/catppuccin';
+import { catthodePalettes } from './palettes/catthode';
 import { draculaPalettes } from './palettes/dracula';
 import { everforestPalettes } from './palettes/everforest';
 import { gruvboxPalettes } from './palettes/gruvbox';
@@ -90,4 +91,5 @@ export const forkThemeRegistry: ForkThemeMeta[] = [
     palette: tokyoNightPalettes['tokyo-night-storm'],
   },
   { id: 'oled-midnight', name: 'OLED Midnight', palette: oledPalettes['oled-midnight'] },
+  { id: 'catthode', name: 'Catthode', palette: catthodePalettes.catthode },
 ];
