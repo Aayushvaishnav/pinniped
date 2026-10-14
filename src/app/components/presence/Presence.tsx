@@ -52,6 +52,8 @@ export function PresenceBadge({ presence, status, size }: PresenceBadgeProps) {
           size={size}
           variant={PresenceToColor[presence]}
           fill={presence === Presence.Offline ? 'Soft' : 'Solid'}
+          // Online stays green independently of the theme's success palette.
+          style={presence === Presence.Online ? { backgroundColor: '#50FA7B' } : undefined}
           radii="Pill"
         />
       )}
