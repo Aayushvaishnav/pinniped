@@ -6,6 +6,7 @@ import { everforestPalettes } from './palettes/everforest';
 import { gruvboxPalettes } from './palettes/gruvbox';
 import { kanagawaPalettes } from './palettes/kanagawa';
 import { nordPalettes } from './palettes/nord';
+import { oledPalettes } from './palettes/oled';
 import { rosePinePalettes } from './palettes/rosePine';
 import { tokyoNightPalettes } from './palettes/tokyoNight';
 
@@ -88,4 +89,5 @@ export const forkThemeRegistry: ForkThemeMeta[] = [
     name: 'Tokyo Night Storm',
     palette: tokyoNightPalettes['tokyo-night-storm'],
   },
+  { id: 'oled-midnight', name: 'OLED Midnight', palette: oledPalettes['oled-midnight'] },
 ];
