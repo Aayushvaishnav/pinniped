@@ -54,6 +54,10 @@ test.describe('Appearance themes', () => {
   });
 
   test('light menu excludes the fork dark themes', async ({ page }) => {
+    await writeSettings(page, { ...previous, useSystemTheme: true });
+    await page.reload();
+    await openAppearance(page);
+
     await tileButton(page, 'Light Theme:').click();
     await expect(page.getByRole('button', { name: 'Silver', exact: true })).toBeVisible();
     await Promise.all(
@@ -65,6 +69,10 @@ test.describe('Appearance themes', () => {
   });
 
   test('dark preference and manual selection are stored independently', async ({ page }) => {
+    await writeSettings(page, { ...previous, useSystemTheme: true });
+    await page.reload();
+    await openAppearance(page);
+
     await tileButton(page, 'Dark Theme:').click();
     await page.getByRole('button', { name: 'Tokyo Night Storm', exact: true }).click();
     await expect
@@ -72,7 +80,7 @@ test.describe('Appearance themes', () => {
       .toBe('tokyo-night-storm');
     expect(await storedSettings(page).then((settings) => settings.themeId)).toBe(previous.themeId);
 
-    await writeSettings(page, { ...previous, useSystemTheme: false });
+    await writeSettings(page, { ...(await storedSettings(page)), useSystemTheme: false });
     await page.reload();
     await openAppearance(page);
     await tileButton(page, 'Theme').click();

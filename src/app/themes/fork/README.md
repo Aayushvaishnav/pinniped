@@ -46,37 +46,31 @@ non-commercial terms. Palettes are embedded locally; nothing is downloaded at ru
 
 `deriveColorData()` maps each `ForkPalette` to the complete Folds contract:
 
-- **Background / Surface / SurfaceVariant** use `bg0`/`bg1`/`bg2` directly (`bg2` is derived as
-  `lighten(bg1, 5%)` when a palette defines no third level). Hover/active/line states are
-  `lighten(+5%/+10%/+15%)` toward white, mirroring the built-in dark theme's stepped surfaces.
-- **Accent groups** (Primary/Success/Warning/Critical) use `accent`/`green`/`orange ?? yellow`/
-  `red` as `Main`. Interactions shift CIE L* by -5/-10/-15 (accents with L* >= 50 darken like the
-  built-ins; darker accents lighten instead). `Container` is the accent mixed 72% into `bg0`,
-  with hover/active/line at 66/60/54%.
-- **OnMain** is chosen by measured contrast: hue-conserved dark tones (L*-48/-56), then a
-  near-neutral dark mix, guaranteeing >= 4.5:1 (light branch for future very dark accents).
-- **OnContainer** takes the lightest of the accent tinted with white (55/70/85%) that reaches
-  4.5:1 on its container.
-- **Secondary** is a neutral ramp derived from the palette's own `fg`/`bg0` (Main = fg, OnMain =
-  bg0, containers mix 16-28%).
+- **Background / Surface / SurfaceVariant** retain `bg0`/`bg1`/`bg2` (`bg2` defaults to
+  `bg1` mixed 5% toward white). Hover/active/line backgrounds mix 5/10/15% toward white.
+- **Accent groups** retain `accent`/`green`/`orange ?? yellow`/`red` as `Main`. `OnMain`
+  prefers a dark or light tint of the accent, with measured black/white fallbacks.
+  Hover/active/line backgrounds mix 5/10/15% toward white for dark text, or toward black
+  for light text. This increases contrast instead of moving the background toward the text.
+- **Accent containers** mix the accent 72/66/60/54% toward `bg0` for normal/hover/active/line.
+  Text prefers accent tints mixed 55/70/85% toward white.
+- **Secondary** retains the neutral foreground/background ramp; containers mix 16/20/24/28%
+  toward the foreground.
+- **Container text** prefers the palette foreground (or accent tint), then lighter candidates.
+  Every text selection checks normal, hover, and active backgrounds together at >= 4.5:1.
+  Black and white are final candidates; a palette without a shared readable foreground fails
+  at build time instead of silently emitting low-contrast text.
 - **Other**: FocusRing/Shadow/Overlay match the built-in dark theme.
 
-## Measured contrast (WCAG 2.1, worst case across all 20 themes)
+## Contrast checks
 
-| Pair | Minimum | Where |
-| --- | --- | --- |
-| fg on Background (normal text, AA needs 4.5) | 6.65:1 | everforest-dark-soft |
-| fg on Surface/SurfaceVariant | 5.75:1 / 4.68:1 | everforest-dark-soft / catppuccin-frappe |
-| fg on hovered / pressed surfaces | 4.13:1 / 3.63:1 | catppuccin-frappe SurfaceVariant |
-| OnMain on Main (buttons, badges) | 4.69:1 | nord Critical |
-| OnMain on hovered/pressed Main | 3.93:1 / 3.27:1 | nord Critical |
-| Accent Main vs background (non-text, 3:1) | 3.05:1 | nord Critical |
-| OnContainer on Container (+ hover) | 4.69:1 / 4.28:1 | everforest-dark-soft Secondary |
+`tests/unit/themePalettes.test.ts` enforces >= 4.5:1 for `OnMain` and `OnContainer` against
+normal, hovered, and pressed backgrounds across all 20 themes. It also covers grayscale
+boundary accents, saturated accents, and rejection of incompatible container ramps. Source
+background/accent colors and distinct interaction states are checked separately.
 
-These minimums are enforced by `tests/unit/themePalettes.test.ts`. Known accepted deviation: the
-pressed-state accent pairs sit between 3:1 and 4.5:1 for a few palettes (worse: nord Critical at
-3.27:1). This matches the built-in dark theme's own pressed-state contrast (~3.8:1); fixing it
-would require departing from the upstream palettes.
+These token checks cover full-opacity text; they are not a whole-application accessibility
+audit. Check rendered components, reduced-opacity text, links, and focus indicators visually too.
 
 `--tc-link` and the `--mx-uc-*` user colors keep the shared dark values (75-80% lightness), which
 read on every fork background (all base backgrounds are at or below L* 25). Per-theme overrides

@@ -36,101 +36,70 @@ const mix = (from: string, to: string, amount: number): string =>
 
 const lighten = (hex: string, amount: number): string => mix(hex, WHITE, amount);
 
-/** Shift CIE L* while keeping hue and chroma, clamped to a usable dark-theme range. */
-const shiftLightness = (hex: string, delta: number): string => {
-  const [l, a, b] = chroma(hex).lab();
-  return chroma.lab(Math.min(96, Math.max(12, l + delta)), a, b).hex();
+// Choose one foreground for every state; unsupported palettes fail during the build.
+const readableText = (backgrounds: string[], candidates: string[]): string => {
+  const readable = [...candidates, BLACK, WHITE].find((candidate) =>
+    backgrounds.every((background) => contrastRatio(candidate, background) >= 4.5)
+  );
+  if (!readable) throw new Error(`No AA text color for backgrounds: ${backgrounds.join(', ')}`);
+  return readable;
 };
 
-const surfaceData = (container: string, fg: string) => ({
+const containerData = (
+  container: string,
+  hover: string,
+  active: string,
+  line: string,
+  candidates: string[]
+) => ({
   Container: container,
-  ContainerHover: lighten(container, 0.05),
-  ContainerActive: lighten(container, 0.1),
-  ContainerLine: lighten(container, 0.15),
-  OnContainer: fg,
+  ContainerHover: hover,
+  ContainerActive: active,
+  ContainerLine: line,
+  OnContainer: readableText([container, hover, active], candidates),
 });
 
-/**
- * Light accents (L* >= 50) darken toward black on interaction, matching the
- * built-in dark theme; darker accents lighten away from the background so
- * hover states stay visible. Every accent in the current fork palettes
- * darkens; the branch exists for future muted dark palettes.
- */
-const darkenOnInteract = (accent: string): boolean => chroma(accent).lab()[0] >= 50;
-
-const mostReadable = (accent: string, candidates: string[]): string =>
-  candidates.reduce((best, candidate) =>
-    contrastRatio(candidate, accent) > contrastRatio(best, accent) ? candidate : best
+const surfaceData = (container: string, fg: string) =>
+  containerData(
+    container,
+    lighten(container, 0.05),
+    lighten(container, 0.1),
+    lighten(container, 0.15),
+    [fg, lighten(fg, 0.25), lighten(fg, 0.5)]
   );
 
-/** Darkest readable tone of the accent's own hue, falling back to a neutral tone. */
-const darkOnCandidates = (accent: string): string[] => [
-  shiftLightness(accent, -48),
-  shiftLightness(accent, -56),
-  mix(accent, BLACK, 0.88),
-  mix(accent, BLACK, 0.96),
-];
-
-/** Lightest readable tone of the accent's own hue, falling back to near-white. */
-const lightOnCandidates = (accent: string): string[] => [
-  shiftLightness(accent, 28),
-  shiftLightness(accent, 36),
-  mix(accent, WHITE, 0.85),
-  mix(accent, WHITE, 0.95),
-];
-
-const firstReadable = (accent: string, candidates: string[]): string => {
-  const readable = candidates.find((candidate) => contrastRatio(candidate, accent) >= 4.5);
-  return readable ?? mostReadable(accent, candidates);
-};
-
-/** Readable text tone for an accent surface: dark on light accents, light on dark ones. */
-const onAccentMain = (accent: string): string => {
-  const candidates =
-    chroma(accent).lab()[0] >= 50
-      ? firstReadable(accent, darkOnCandidates(accent))
-      : firstReadable(accent, lightOnCandidates(accent));
-  return candidates;
-};
-
-/** Lightest tone of the accent hue that stays readable on its dark container. */
-const onAccentContainer = (accent: string, container: string): string => {
-  const candidates = [0.55, 0.7, 0.85].map((amount) => mix(accent, WHITE, amount));
-  const readable = candidates.find((candidate) => contrastRatio(candidate, container) >= 4.5);
-  return readable ?? candidates[candidates.length - 1];
-};
-
 const accentData = (accent: string, bg: string) => {
-  const darken = darkenOnInteract(accent);
-  const shift = (delta: number) => shiftLightness(accent, darken ? -delta : delta);
-  const container = mix(accent, bg, 0.72);
+  const onMain = readableText([accent], [mix(accent, BLACK, 0.88), mix(accent, WHITE, 0.85)]);
+  // RGB mixing away from the text increases contrast monotonically.
+  const interactionTarget = chroma(onMain).luminance() < chroma(accent).luminance() ? WHITE : BLACK;
 
   return {
     Main: accent,
-    MainHover: shift(5),
-    MainActive: shift(10),
-    MainLine: shift(15),
-    OnMain: onAccentMain(accent),
-    Container: container,
-    ContainerHover: mix(accent, bg, 0.66),
-    ContainerActive: mix(accent, bg, 0.6),
-    ContainerLine: mix(accent, bg, 0.54),
-    OnContainer: onAccentContainer(accent, container),
+    MainHover: mix(accent, interactionTarget, 0.05),
+    MainActive: mix(accent, interactionTarget, 0.1),
+    MainLine: mix(accent, interactionTarget, 0.15),
+    OnMain: onMain,
+    ...containerData(
+      mix(accent, bg, 0.72),
+      mix(accent, bg, 0.66),
+      mix(accent, bg, 0.6),
+      mix(accent, bg, 0.54),
+      [0.55, 0.7, 0.85].map((amount) => lighten(accent, amount))
+    ),
   };
 };
 
-/** Neutral gray ramp derived from the palette's own foreground and background. */
 const secondaryData = (fg: string, bg: string) => ({
   Main: fg,
   MainHover: mix(fg, bg, 0.1),
   MainActive: mix(fg, bg, 0.2),
   MainLine: mix(fg, bg, 0.3),
-  OnMain: bg,
-  Container: mix(bg, fg, 0.16),
-  ContainerHover: mix(bg, fg, 0.2),
-  ContainerActive: mix(bg, fg, 0.24),
-  ContainerLine: mix(bg, fg, 0.28),
-  OnContainer: fg,
+  OnMain: readableText([fg, mix(fg, bg, 0.1), mix(fg, bg, 0.2)], [bg]),
+  ...containerData(mix(bg, fg, 0.16), mix(bg, fg, 0.2), mix(bg, fg, 0.24), mix(bg, fg, 0.28), [
+    fg,
+    lighten(fg, 0.25),
+    lighten(fg, 0.5),
+  ]),
 });
 
 export const deriveColorData = (palette: ForkPalette) => {

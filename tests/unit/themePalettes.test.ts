@@ -78,62 +78,84 @@ describe('fork theme palettes', () => {
     });
   });
 
-  it('keeps text readable on all normal surface levels (WCAG AA)', () => {
-    forkThemeRegistry.forEach(({ id }) => {
-      const data = colorGroups(id);
-      SURFACE_GROUPS.forEach((group) => {
-        expect(
-          contrastRatio(data[group].OnContainer, data[group].Container),
-          `${id}.${group}`
-        ).toBeGreaterThanOrEqual(4.5);
+  it.each(forkThemeRegistry)(
+    '$id keeps text at AA contrast in every interaction state',
+    ({ palette }) => {
+      const data = deriveColorData(palette);
+      COLORED_GROUPS.forEach((group) => {
+        const tokens = data[group];
+        (['Container', 'ContainerHover', 'ContainerActive'] as const).forEach((state) => {
+          expect(
+            contrastRatio(tokens.OnContainer, tokens[state]),
+            `${group}.${state}`
+          ).toBeGreaterThanOrEqual(4.5);
+        });
       });
-    });
-  });
-
-  it('keeps text readable on hovered and pressed surface states', () => {
-    forkThemeRegistry.forEach(({ id }) => {
-      const data = colorGroups(id);
-      SURFACE_GROUPS.forEach((group) => {
-        expect(
-          contrastRatio(data[group].OnContainer, data[group].ContainerHover),
-          `${id}.${group}.hover`
-        ).toBeGreaterThanOrEqual(4);
-        expect(
-          contrastRatio(data[group].OnContainer, data[group].ContainerActive),
-          `${id}.${group}.active`
-        ).toBeGreaterThanOrEqual(3.5);
-      });
-    });
-  });
-
-  it('keeps on-accent text readable on normal and interacted accent states', () => {
-    forkThemeRegistry.forEach(({ id }) => {
-      const data = colorGroups(id);
       ACCENT_GROUPS.forEach((group) => {
-        const accent = data[group];
-        expect(
-          contrastRatio(accent.OnMain, accent.Main),
-          `${id}.${group}.OnMain`
-        ).toBeGreaterThanOrEqual(4.5);
-        expect(
-          contrastRatio(accent.OnMain, accent.MainHover),
-          `${id}.${group}.OnMain.hover`
-        ).toBeGreaterThanOrEqual(3.5);
-        expect(
-          contrastRatio(accent.OnMain, accent.MainActive),
-          `${id}.${group}.OnMain.active`
-        ).toBeGreaterThanOrEqual(3);
-        expect(
-          contrastRatio(accent.OnContainer, accent.Container),
-          `${id}.${group}.OnContainer`
-        ).toBeGreaterThanOrEqual(4.5);
-        expect(
-          contrastRatio(accent.OnContainer, accent.ContainerHover),
-          `${id}.${group}.OnContainer.hover`
-        ).toBeGreaterThanOrEqual(4);
+        const tokens = data[group];
+        (['Main', 'MainHover', 'MainActive'] as const).forEach((state) => {
+          expect(
+            contrastRatio(tokens.OnMain, tokens[state]),
+            `${group}.${state}`
+          ).toBeGreaterThanOrEqual(4.5);
+        });
       });
-    });
+    }
+  );
+
+  it.each(['#000000', '#ffffff', '#767676', '#747474', '#ff0000', '#00ff00', '#0000ff'])(
+    'keeps boundary accent %s readable',
+    (accent) => {
+      const { Primary } = deriveColorData({ ...paletteOf('nord'), bg0: '#000000', accent });
+      (['Main', 'MainHover', 'MainActive'] as const).forEach((state) => {
+        expect(contrastRatio(Primary.OnMain, Primary[state]), state).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  );
+
+  it('rejects container ramps without a shared AA foreground', () => {
+    expect(() => deriveColorData({ ...paletteOf('nord'), accent: '#ffffff' })).toThrow(
+      'No AA text color'
+    );
   });
+
+  it('keeps every grayscale accent readable through the light/dark text boundary', () => {
+    Array.from({ length: 256 }, (_, value) => value.toString(16).padStart(2, '0')).forEach(
+      (hex) => {
+        const accent = `#${hex.repeat(3)}`;
+        const { Primary } = deriveColorData({ ...paletteOf('nord'), bg0: '#000000', accent });
+        (['Main', 'MainHover', 'MainActive'] as const).forEach((state) => {
+          expect(
+            contrastRatio(Primary.OnMain, Primary[state]),
+            `${accent}.${state}`
+          ).toBeGreaterThanOrEqual(4.5);
+        });
+      }
+    );
+  });
+
+  it.each(forkThemeRegistry)(
+    '$id preserves source colors and distinct interaction states',
+    ({ palette }) => {
+      const data = deriveColorData(palette);
+      expect(data.Background.Container).toBe(palette.bg0);
+      expect(data.Surface.Container).toBe(palette.bg1);
+      expect(data.Primary.Main).toBe(palette.accent);
+      expect(data.Success.Main).toBe(palette.green);
+      expect(data.Warning.Main).toBe(palette.orange ?? palette.yellow);
+      expect(data.Critical.Main).toBe(palette.red);
+      COLORED_GROUPS.forEach((group) => {
+        const tokens = data[group];
+        expect(
+          new Set([tokens.Container, tokens.ContainerHover, tokens.ContainerActive]).size
+        ).toBe(3);
+      });
+      ACCENT_GROUPS.forEach((group) => {
+        const tokens = data[group];
+        expect(new Set([tokens.Main, tokens.MainHover, tokens.MainActive]).size).toBe(3);
+      });
+    }
+  );
 
   it('keeps accent controls visible against the background (3:1 non-text)', () => {
     forkThemeRegistry.forEach(({ id }) => {
