@@ -23,7 +23,9 @@
 }
 
 .dark-theme,
-.butter-theme {
+.butter-theme,
+/* Shared dark variables class applied by fork dark themes (src/app/themes/fork) */
+.on-dark-variables {
   --tc-link: hsl(213deg 100% 80%);
 
   --mx-uc-1: hsl(208, 100%, 75%);

@@ -2,6 +2,7 @@ import { lightTheme } from 'folds';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { onDarkFontWeight, onLightFontWeight } from '../../config.css';
 import { butterTheme, darkTheme, silverTheme } from '../../colors.css';
+import { forkThemes, darkVariablesClass } from '../themes/fork';
 import { settingsAtom } from '../state/settings';
 import { useSetting } from '../state/hooks/settings';
 
@@ -30,30 +31,35 @@ export const SilverTheme: Theme = {
 export const DarkTheme: Theme = {
   id: 'dark-theme',
   kind: ThemeKind.Dark,
-  classNames: ['dark-theme', darkTheme, onDarkFontWeight, 'prism-dark'],
+  classNames: ['dark-theme', darkTheme, onDarkFontWeight, 'prism-dark', darkVariablesClass],
 };
 export const ButterTheme: Theme = {
   id: 'butter-theme',
   kind: ThemeKind.Dark,
-  classNames: ['butter-theme', butterTheme, onDarkFontWeight, 'prism-dark'],
+  classNames: ['butter-theme', butterTheme, onDarkFontWeight, 'prism-dark', darkVariablesClass],
 };
 
-export const useThemes = (): Theme[] => {
-  const themes: Theme[] = useMemo(() => [LightTheme, SilverTheme, DarkTheme, ButterTheme], []);
+const builtinThemes: Theme[] = [LightTheme, SilverTheme, DarkTheme, ButterTheme];
 
-  return themes;
+const forkThemesAsTheme: Theme[] = forkThemes.map(({ id, classNames }) => ({
+  id,
+  kind: ThemeKind.Dark,
+  classNames,
+}));
+
+export const allThemes: Theme[] = [...builtinThemes, ...forkThemesAsTheme];
+
+export const themeDisplayNames: Record<string, string> = {
+  [LightTheme.id]: 'Light',
+  [SilverTheme.id]: 'Silver',
+  [DarkTheme.id]: 'Dark',
+  [ButterTheme.id]: 'Butter',
+  ...Object.fromEntries(forkThemes.map((theme) => [theme.id, theme.name])),
 };
 
-export const useThemeNames = (): Record<string, string> =>
-  useMemo(
-    () => ({
-      [LightTheme.id]: 'Light',
-      [SilverTheme.id]: 'Silver',
-      [DarkTheme.id]: 'Dark',
-      [ButterTheme.id]: 'Butter',
-    }),
-    []
-  );
+export const useThemes = (): Theme[] => useMemo(() => allThemes, []);
+
+export const useThemeNames = (): Record<string, string> => useMemo(() => themeDisplayNames, []);
 
 export const useSystemThemeKind = (): ThemeKind => {
   const darkModeQueryList = useMemo(() => window.matchMedia('(prefers-color-scheme: dark)'), []);
@@ -75,6 +81,37 @@ export const useSystemThemeKind = (): ThemeKind => {
   return themeKind;
 };
 
+export type ThemeSelectionInput = {
+  useSystemTheme: boolean;
+  systemThemeKind: ThemeKind;
+  themes: Theme[];
+  themeId?: string;
+  lightThemeId?: string;
+  darkThemeId?: string;
+};
+
+/**
+ * Pure selection rule: manual mode picks from all themes with a Light
+ * fallback; system mode picks the saved preference matching the OS kind with
+ * a Light/Dark fallback respectively. Unknown or missing IDs fall back.
+ */
+export const resolveActiveTheme = ({
+  useSystemTheme,
+  systemThemeKind,
+  themes,
+  themeId,
+  lightThemeId,
+  darkThemeId,
+}: ThemeSelectionInput): Theme => {
+  if (!useSystemTheme) {
+    return themes.find((theme) => theme.id === themeId) ?? LightTheme;
+  }
+
+  return systemThemeKind === ThemeKind.Dark
+    ? themes.find((theme) => theme.id === darkThemeId) ?? DarkTheme
+    : themes.find((theme) => theme.id === lightThemeId) ?? LightTheme;
+};
+
 export const useActiveTheme = (): Theme => {
   const systemThemeKind = useSystemThemeKind();
   const themes = useThemes();
@@ -83,18 +120,14 @@ export const useActiveTheme = (): Theme => {
   const [lightThemeId] = useSetting(settingsAtom, 'lightThemeId');
   const [darkThemeId] = useSetting(settingsAtom, 'darkThemeId');
 
-  if (!systemTheme) {
-    const selectedTheme = themes.find((theme) => theme.id === themeId) ?? LightTheme;
-
-    return selectedTheme;
-  }
-
-  const selectedTheme =
-    systemThemeKind === ThemeKind.Dark
-      ? themes.find((theme) => theme.id === darkThemeId) ?? DarkTheme
-      : themes.find((theme) => theme.id === lightThemeId) ?? LightTheme;
-
-  return selectedTheme;
+  return resolveActiveTheme({
+    useSystemTheme: systemTheme,
+    systemThemeKind,
+    themes,
+    themeId,
+    lightThemeId,
+    darkThemeId,
+  });
 };
 
 const ThemeContext = createContext<Theme | null>(null);
