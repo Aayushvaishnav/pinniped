@@ -10,6 +10,7 @@ export const NavCategory = style([
 ]);
 
 export const NavCategoryHeader = style({
+  height: toRem(28),
   gap: config.space.S100,
 });
 
@@ -52,7 +53,7 @@ const NavItemBase = style({
   backgroundColor: Container,
   color: OnContainer,
   outline: 'none',
-  minHeight: toRem(36),
+  minHeight: toRem(32),
 
   selectors: {
     '&:hover, &:focus-visible': {
@@ -105,7 +106,7 @@ export const NavItem = recipe({
 export type RoomSelectorVariants = RecipeVariants<typeof NavItem>;
 export const NavItemContent = style({
   paddingLeft: config.space.S200,
-  paddingRight: config.space.S300,
+  paddingRight: config.space.S200,
   height: 'inherit',
   minWidth: 0,
   flexGrow: 1,

@@ -224,7 +224,7 @@ export function Rooms() {
   const roomVirtualizer = useVirtualizer({
     count: sortedRooms.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 38,
+    estimateSize: () => 32,
     overscan: 10,
   });
 
@@ -239,7 +239,7 @@ export function Rooms() {
         <RoomsEmpty />
       ) : (
         <PageNavContent scrollRef={scrollRef}>
-          <Box direction="Column" gap="300">
+          <Box direction="Column" gap="200">
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createRoomSelected}>
                 <NavButton onClick={() => navigate(getRoomsCreatePath())}>

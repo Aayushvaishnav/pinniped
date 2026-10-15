@@ -193,7 +193,7 @@ export function Home() {
   const directVirtualizer = useVirtualizer({
     count: sortedDirects.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 38,
+    estimateSize: () => 32,
     overscan: 10,
   });
 
@@ -208,7 +208,7 @@ export function Home() {
         <HomeEmpty />
       ) : (
         <PageNavContent scrollRef={scrollRef}>
-          <Box direction="Column" gap="300">
+          <Box direction="Column" gap="200">
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createDirectSelected}>
                 <NavButton onClick={() => navigate(getDirectCreatePath())}>

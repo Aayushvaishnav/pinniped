@@ -612,7 +612,7 @@ export function Space() {
     <PageNav>
       <SpaceHeader />
       <PageNavContent scrollRef={scrollRef}>
-        <Box direction="Column" gap="300">
+        <Box direction="Column" gap="200">
           {tombstoneEvent && (
             <SpaceTombstone
               roomId={space.roomId}
@@ -673,7 +673,7 @@ export function Space() {
                     key={vItem.index}
                     ref={virtualizer.measureElement}
                   >
-                    <div style={{ paddingTop: vItem.index === 0 ? undefined : config.space.S400 }}>
+                    <div style={{ paddingTop: vItem.index === 0 ? undefined : config.space.S200 }}>
                       <NavCategoryHeader>
                         <RoomNavCategoryButton
                           data-category-id={categoryId}
