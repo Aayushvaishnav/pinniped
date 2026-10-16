@@ -11,6 +11,18 @@ import { timeHourMinute } from './time';
 export const formatCopyTimestamp = (ts: number, hour24Clock: boolean): string =>
   timeHourMinute(ts, hour24Clock);
 
+// Matches a matrix user ID inside plain text, e.g. "@alice:example.org" or "@bob:[::1]:8448".
+// Trailing sentence punctuation after the server name is not part of the ID.
+const USER_ID_IN_TEXT = /@[^\s:@]+:[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?::\d+)?/g;
+
+// Cinny sends mentions with the raw mxid as body text, so render them the way
+// the timeline shows them: "@Display Name".
+const resolveMentionsInBody = (room: Room, body: string): string =>
+  body.replace(USER_ID_IN_TEXT, (userId) => {
+    const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId);
+    return name ? `@${name}` : userId;
+  });
+
 const indentBody = (body: string, indent: string): string =>
   body
     .split('\n')
@@ -94,7 +106,7 @@ const getReplyContextLine = (
   const parsed = getTranscriptEventBody(replyEvent, timelineSet);
   if (!parsed || parsed.body.length === 0) return undefined;
 
-  const body = parsed.body.replace(/\n/g, ' ');
+  const body = resolveMentionsInBody(room, parsed.body).replace(/\n/g, ' ');
   return `> <${replySender}> ${body}`;
 };
 
@@ -121,6 +133,6 @@ export const eventToTranscriptLine = (
   const lines: string[] = [];
   const replyLine = getReplyContextLine(room, mEvent, timelineSet);
   if (replyLine) lines.push(replyLine);
-  lines.push(`${prefix}${indentBody(parsed.body, indent)}`);
+  lines.push(`${prefix}${indentBody(resolveMentionsInBody(room, parsed.body), indent)}`);
   return lines.join('\n');
 };
