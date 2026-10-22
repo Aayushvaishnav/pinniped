@@ -28,3 +28,9 @@ export const RoomSearchContentBase = style({
   position: 'relative',
   overflow: 'hidden',
 });
+
+export const SearchFilterChips = style({
+  flexShrink: 0,
+  padding: `${config.space.S200} ${config.space.S300}`,
+  borderBottomWidth: config.borderWidth.B300,
+});

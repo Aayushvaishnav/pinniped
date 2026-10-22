@@ -1,9 +1,5 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 import { config, toRem } from 'folds';
-
-export const SearchForm = style({
-  width: toRem(200),
-});
 
 export const Profile = style({
   minWidth: 0,
@@ -20,10 +16,4 @@ export const ProfileAvatar = style({
 export const ProfileText = style({
   minWidth: 0,
   flexGrow: 1,
-});
-
-globalStyle(`${SearchForm} input`, {
-  flexGrow: 1,
-  flexBasis: 0,
-  minWidth: 0,
 });

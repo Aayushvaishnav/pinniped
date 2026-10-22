@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Box,
+  Chip,
   Header,
   Icon,
   IconButton,
@@ -14,7 +15,8 @@ import {
 } from 'folds';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Room, RoomMember } from 'matrix-js-sdk';
+import { Room, RoomMember, SearchOrderBy } from 'matrix-js-sdk';
+import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import classNames from 'classnames';
 
@@ -38,18 +40,126 @@ import {
   useRecursiveChildRoomScopeFactory,
   useSpaceChildren,
 } from '../../state/hooks/roomList';
-import { useMessageSearch } from '../message-search/useMessageSearch';
+import {
+  SearchExtensions,
+  useMessageSearch,
+  useRankOrderTruncated,
+} from '../message-search/useMessageSearch';
+import {
+  QueryToken,
+  ResolvedSearch,
+  SearchLookup,
+  makeResultFilter,
+  serverMsgtypes,
+  parseSearchQuery,
+  removeQueryToken,
+  resolveSearchQuery,
+} from '../message-search/searchQuery';
+import { StateEvent } from '../../../types/matrix/room';
 import { SearchResultGroup } from '../message-search/SearchResultGroup';
 import { VirtualTile } from '../../components/virtualizer';
 import { ScrollTopContainer } from '../../components/scroll-top-container';
-import { roomSearchTermAtom, roomSearchDrawerActiveAtom } from '../../state/roomSearch';
+import {
+  roomSearchTermAtom,
+  roomSearchDrawerActiveAtom,
+  roomSearchLookupAtom,
+  roomSearchOrderAtom,
+  RoomSearchOrder,
+} from '../../state/roomSearch';
+
+const FILTER_LABELS: Record<string, string> = {
+  from: 'From',
+  in: 'In',
+  mentions: 'Mentions',
+  has: 'Has',
+  before: 'Before',
+  after: 'After',
+  during: 'On',
+  pinned: 'Pinned',
+};
+
+/** Why a query cannot run yet, in words the person can act on. */
+const searchProblems = (search: ResolvedSearch): string[] => {
+  const problems: string[] = [];
+  search.unresolved.forEach(({ operator, value }) =>
+    problems.push(
+      operator === 'in' ? `No room matches in:${value}.` : `No member matches ${operator}:${value}.`
+    )
+  );
+  search.invalid.forEach((token) => problems.push(`"${token.raw}" is not a valid filter.`));
+  if (!search.text && !search.hasFilters) {
+    problems.push('Add a word or phrase to search for, along with your filters.');
+  }
+  return problems;
+};
+
+function SortChips({ order }: { order: RoomSearchOrder }) {
+  const [, setOrder] = useAtom(roomSearchOrderAtom);
+  const rankTruncated = useRankOrderTruncated();
+  return (
+    <Box gap="100" alignItems="Center">
+      <Chip
+        variant="SurfaceVariant"
+        radii="Pill"
+        aria-pressed={order === 'recent'}
+        onClick={() => setOrder('recent')}
+      >
+        <Text size="T200">Newest</Text>
+      </Chip>
+      <Chip
+        variant="SurfaceVariant"
+        radii="Pill"
+        aria-pressed={order === 'oldest'}
+        onClick={() => setOrder('oldest')}
+      >
+        <Text size="T200">Oldest</Text>
+      </Chip>
+      <Chip
+        variant="SurfaceVariant"
+        radii="Pill"
+        aria-pressed={order === 'rank'}
+        onClick={() => setOrder('rank')}
+      >
+        <Text size="T200">{rankTruncated ? 'Relevant (top 500)' : 'Relevant'}</Text>
+      </Chip>
+    </Box>
+  );
+}
+
+function SearchFilterChips({ query }: { query: string }) {
+  const [, setSearchTerm] = useAtom(roomSearchTermAtom);
+  const parsed = useMemo(() => parseSearchQuery(query), [query]);
+  const filters = parsed.tokens.filter(
+    (t): t is Extract<QueryToken, { kind: 'filter' }> => t.kind === 'filter' && !!t.value
+  );
+  if (filters.length === 0) return null;
+
+  return (
+    <Box className={css.SearchFilterChips} gap="100" wrap="Wrap">
+      {filters.map((token) => (
+        <Chip
+          key={token.raw + token.start}
+          variant="Secondary"
+          radii="Pill"
+          after={<Icon size="50" src={Icons.Cross} />}
+          onClick={() => setSearchTerm(removeQueryToken(query, token) || undefined)}
+          aria-label={`Remove filter ${token.raw}`}
+        >
+          <Text size="T200">{`${FILTER_LABELS[token.operator]}: ${token.value}`}</Text>
+        </Chip>
+      ))}
+    </Box>
+  );
+}
 
 type SearchResultsProps = {
-  term: string;
-  rooms: string[];
+  /** the query exactly as typed; keys the cache so edits to filters refetch */
+  query: string;
+  search: ResolvedSearch;
+  order: RoomSearchOrder;
   onOpen: (roomId: string, eventId: string) => void;
 };
-function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
+function SearchResults({ query, search, order, onOpen }: SearchResultsProps) {
   const mx = useMatrixClient();
   const mDirects = useAtomValue(mDirectAtom);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -61,12 +171,54 @@ function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
 
-  const msgSearchParams = useMemo(() => ({ term, rooms }), [term, rooms]);
+  const { text: term, rooms = [] } = search;
+  const problems = searchProblems(search);
+  const ready = problems.length === 0;
+  const resultFilter = useMemo(
+    () =>
+      search.needsClientFilter
+        ? makeResultFilter(search, (roomId) => {
+            const pinned = mx
+              .getRoom(roomId)
+              ?.currentState.getStateEvents(StateEvent.RoomPinnedEvents, '')
+              ?.getContent<RoomPinnedEventsEventContent>().pinned;
+            return new Set(pinned ?? []);
+          })
+        : undefined,
+    [mx, search]
+  );
+  const emptyTerm = !term;
+  // ranking nothing is meaningless, and the server lists by recency in that case
+  const effectiveOrder = emptyTerm && order === 'rank' ? 'recent' : order;
+  const extensions = useMemo<SearchExtensions>(
+    () => ({
+      prefix: true,
+      afterTs: search.after,
+      beforeTs: search.before,
+      ascending: effectiveOrder === 'oldest',
+      msgtypes: serverMsgtypes(search.has),
+      allowEmptyTerm: emptyTerm && search.hasFilters,
+    }),
+    [search.after, search.before, search.has, search.hasFilters, effectiveOrder, emptyTerm]
+  );
+  const msgSearchParams = useMemo(
+    () => ({
+      term,
+      rooms,
+      senders: search.senders,
+      // `oldest` is not a spec order_by; it is recency plus an extension flag
+      order: effectiveOrder === 'rank' ? SearchOrderBy.Rank : SearchOrderBy.Recent,
+      containsUrl: search.has.includes('link'),
+      resultFilter,
+      extensions,
+    }),
+    [term, rooms, search.senders, search.has, effectiveOrder, resultFilter, extensions]
+  );
   const searchMessages = useMessageSearch(msgSearchParams);
 
   const { status, data, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    enabled: !!term,
-    queryKey: ['room-sidebar-search', term, rooms],
+    enabled: ready,
+    queryKey: ['room-sidebar-search', query, effectiveOrder, rooms],
     queryFn: ({ pageParam, signal }) => searchMessages(pageParam, signal),
     initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.nextToken,
@@ -102,14 +254,33 @@ function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
     }
   }, [lastVItemIndex, lastGroupIndex, fetchNextPage, isFetchingNextPage, hasNextPage]);
 
+  // The server tells us which non-spec options it honoured. Say so when one that
+  // changes what the person sees was ignored, instead of silently showing the
+  // wrong order or an empty list.
+  const applied = data?.pages[0]?.applied;
+  const serverNotes: string[] = [];
+  if (status === 'success') {
+    if (effectiveOrder === 'oldest' && !applied?.includes('ascending')) {
+      serverNotes.push('This server cannot sort oldest first, so newest messages are shown first.');
+    }
+    if (emptyTerm && search.hasFilters && !applied?.includes('allow_empty_term')) {
+      serverNotes.push('This server needs a word or phrase to search for along with your filters.');
+    }
+  }
+
   const loadedResults = useMemo(() => groups.reduce((sum, g) => sum + g.items.length, 0), [groups]);
 
   let resultsLabel: string;
-  if (status === 'pending') {
+  if (!ready) {
+    resultsLabel = 'Nothing to search yet';
+  } else if (status === 'pending') {
     resultsLabel = 'Searching...';
   } else if (typeof totalCount === 'number' && totalCount > loadedResults) {
     // the spec only promises an approximate count
     resultsLabel = `${loadedResults} of ~${totalCount} Results`;
+  } else if (hasNextPage && typeof totalCount !== 'number') {
+    // client-side filters hide the server's total, so only say there is more
+    resultsLabel = `${loadedResults}+ Results`;
   } else {
     resultsLabel = `${loadedResults} ${loadedResults === 1 ? 'Result' : 'Results'}`;
   }
@@ -120,7 +291,9 @@ function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
         <Text size="T200" priority="300">
           {resultsLabel}
         </Text>
+        <SortChips order={effectiveOrder} />
       </Box>
+      <SearchFilterChips query={query} />
       <Scroll ref={scrollRef} variant="Background" size="300" visibility="Hover" hideTrack>
         <Box direction="Column" gap="300" style={{ padding: `${config.space.S200} 0` }}>
           <Box ref={scrollTopAnchorRef} />
@@ -142,15 +315,27 @@ function SearchResults({ term, rooms, onOpen }: SearchResultsProps) {
             detailed={status === 'success' && groups.length === 0}
           />
 
-          {status === 'pending' && (
+          {problems.map((problem) => (
+            <Text key={problem} style={{ padding: `0 ${config.space.S300}` }} priority="300">
+              {problem}
+            </Text>
+          ))}
+
+          {serverNotes.map((note) => (
+            <Text key={note} style={{ padding: `0 ${config.space.S300}` }} priority="300">
+              {note}
+            </Text>
+          ))}
+
+          {ready && status === 'pending' && (
             <Box justifyContent="Center">
               <Spinner />
             </Box>
           )}
 
-          {status === 'success' && groups.length === 0 && (
+          {ready && status === 'success' && groups.length === 0 && (
             <Text style={{ padding: config.space.S300 }} align="Center" priority="300">
-              {`No results found for "${term}"`}
+              {`No results found for "${query}"`}
             </Text>
           )}
 
@@ -242,9 +427,43 @@ export function RoomSearchDrawer({ room, members }: RoomSearchDrawerProps) {
     navigateRoom(roomId, eventId);
   };
 
+  const lookup = useMemo<SearchLookup>(() => {
+    const users = new Map<string, string>();
+    const rooms: SearchLookup['rooms'] = [];
+    searchRooms.forEach((roomId) => {
+      const searchRoom = mx.getRoom(roomId);
+      if (!searchRoom) return;
+      rooms.push({ roomId, name: searchRoom.name });
+      searchRoom.getJoinedMembers().forEach((member) => {
+        if (!users.has(member.userId)) users.set(member.userId, member.name);
+      });
+    });
+    return {
+      users: Array.from(users, ([userId, name]) => ({ userId, name })),
+      rooms,
+    };
+  }, [mx, searchRooms]);
+
+  const setLookup = useSetAtom(roomSearchLookupAtom);
+  useEffect(() => {
+    setLookup(lookup);
+    return () => setLookup({ users: [], rooms: [] });
+  }, [lookup, setLookup]);
+
+  const order = useAtomValue(roomSearchOrderAtom);
+  const search = useMemo(
+    () =>
+      searchTerm
+        ? resolveSearchQuery(parseSearchQuery(searchTerm), lookup, searchRooms)
+        : undefined,
+    [searchTerm, lookup, searchRooms]
+  );
+
   let drawerContent: React.ReactNode;
-  if (searchTerm) {
-    drawerContent = <SearchResults term={searchTerm} rooms={searchRooms} onOpen={handleOpen} />;
+  if (searchTerm && search) {
+    drawerContent = (
+      <SearchResults query={searchTerm} search={search} order={order} onOpen={handleOpen} />
+    );
   } else if (direct) {
     drawerContent = (
       <Box grow="Yes">
