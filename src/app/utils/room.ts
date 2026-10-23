@@ -361,6 +361,25 @@ export const parseReplyFormattedBody = (
   return `<mx-reply><blockquote>${replyToLink}${userLink}<br />${formattedBody}</blockquote></mx-reply>`;
 };
 
+const SPOILER_PLACEHOLDER = '[spoiler]';
+
+// Hides spoilered text in a notification body. Prefers the formatted body, whose
+// spoiler spans are authoritative; falls back to the markdown `||spoiler||` syntax.
+const redactSpoilers = (content: Record<string, unknown>, body: string): string => {
+  const formatted = content.formatted_body;
+  if (typeof formatted === 'string' && formatted.includes('data-mx-spoiler')) {
+    const doc = new DOMParser().parseFromString(formatted, 'text/html');
+    doc.querySelectorAll('mx-reply').forEach((el) => el.remove());
+    doc.querySelectorAll('[data-mx-spoiler]').forEach((el) => {
+      el.textContent = SPOILER_PLACEHOLDER;
+    });
+    doc.querySelectorAll('br').forEach((el) => el.replaceWith('\n'));
+    doc.querySelectorAll('p, div, li, blockquote').forEach((el) => el.append('\n'));
+    return (doc.body.textContent ?? '').trim();
+  }
+  return body.replace(/\|\|[\s\S]+?\|\|/g, SPOILER_PLACEHOLDER);
+};
+
 // Plain-text preview for OS notification bodies; falls back to a label for non-text types.
 export const getEventBodyForNotification = (mEvent: MatrixEvent): string => {
   if (mEvent.isRedacted()) return 'Message deleted';
@@ -375,7 +394,8 @@ export const getEventBodyForNotification = (mEvent: MatrixEvent): string => {
   if (eventType !== MessageEvent.RoomMessage) return '';
 
   const content = mEvent.getContent();
-  const body = typeof content.body === 'string' ? trimReplyFromBody(content.body) : '';
+  const rawBody = typeof content.body === 'string' ? trimReplyFromBody(content.body) : '';
+  const body = redactSpoilers(content, rawBody);
 
   switch (content.msgtype) {
     case MsgType.Image:
