@@ -17,6 +17,7 @@ import {
   StateEvent,
 } from '../../types/matrix/room';
 import { getStateEvent, getStateEvents, isValidChild } from '../utils/room';
+import { useLeftRooms } from '../state/leftRooms';
 import { isRoomId, rateLimitedActions } from '../utils/matrix';
 
 type RoomToJoin = {
@@ -55,6 +56,7 @@ export const useSpaceAutoJoinGlobal = () => {
   const roomToParents = useAtomValue(roomToParentsAtom);
   const orphanSpaces = useOrphanSpaces(mx, allRoomsAtom, roomToParents);
   const [sidebarItems] = useSidebarItems(orphanSpaces);
+  const leftRooms = useLeftRooms();
   const attemptedRef = useRef<Set<string>>(new Set());
   const [updateCount, forceUpdate] = useForceUpdate();
 
@@ -129,6 +131,9 @@ export const useSpaceAutoJoinGlobal = () => {
         const joined = childRoom?.getMyMembership() === Membership.Join;
         const isSpace = childRoom?.isSpaceRoom() || spaceRooms.has(childId);
 
+        // Never join back rooms the user explicitly left.
+        if (!joined && leftRooms.has(childId)) return;
+
         if (isSpace) {
           // Skip pinned subspaces entirely: don't join them and don't recurse
           // into them, leaving them for the user to manage manually.
@@ -167,5 +172,5 @@ export const useSpaceAutoJoinGlobal = () => {
         // Users can still join manually via the lobby Join button.
       }
     });
-  }, [mx, autoJoinSpaces, spaceRooms, pinnedSpaces]);
+  }, [mx, autoJoinSpaces, spaceRooms, pinnedSpaces, leftRooms]);
 };

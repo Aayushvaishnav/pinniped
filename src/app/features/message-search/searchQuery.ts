@@ -354,6 +354,7 @@ export const makeResultFilter = (
       const relation = event.content['m.relates_to'];
       // an edit is pinned under the id of the event it replaces
       const id = relation?.rel_type === 'm.replace' ? relation.event_id : event.event_id;
+      if (!id) return false;
       if (!getPinned(event.room_id).has(id)) return false;
     }
     return true;

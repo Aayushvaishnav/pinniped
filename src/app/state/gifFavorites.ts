@@ -64,13 +64,13 @@ const parseFavorites = (list: unknown): StoredFavorite[] => {
 export const getGifFavorites = (mx: MatrixClient): StoredFavorite[] => {
   const content = getAccountData(
     mx,
-    AccountDataEvent.KibbyGifFavorites
+    AccountDataEvent.PinnipedGifFavorites
   )?.getContent<GifFavoritesContent>();
   return parseFavorites(content?.favorites);
 };
 
 const setGifFavorites = (mx: MatrixClient, favorites: StoredFavorite[]): Promise<unknown> =>
-  mx.setAccountData(AccountDataEvent.KibbyGifFavorites, { favorites });
+  mx.setAccountData(AccountDataEvent.PinnipedGifFavorites, { favorites });
 
 export const toggleGifFavorite = (mx: MatrixClient, fav: FavoriteGif): Promise<unknown> => {
   const id = getFavoriteGifId(fav);
@@ -84,10 +84,10 @@ export const toggleGifFavorite = (mx: MatrixClient, fav: FavoriteGif): Promise<u
 
 /**
  * Reactively returns the user's favourite GIFs, updating when the
- * `im.kibby.gif_favorites` account data event changes.
+ * `club.stablecat.pinniped.gif_favorites` account data event changes.
  */
 export const useGifFavorites = (): StoredFavorite[] => {
-  const event = useAccountData(AccountDataEvent.KibbyGifFavorites);
+  const event = useAccountData(AccountDataEvent.PinnipedGifFavorites);
   return useMemo(() => parseFavorites(event?.getContent<GifFavoritesContent>().favorites), [event]);
 };
 

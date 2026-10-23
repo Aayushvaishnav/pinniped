@@ -28,6 +28,7 @@ import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { migrateLegacyAccountData } from '../../state/accountDataMigration';
 import { migrateGifFavorites } from '../../state/gifFavorites';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { mDirectAtom } from '../../state/mDirectList';
@@ -41,7 +42,11 @@ function GifFavoritesMigration() {
 
   useEffect(() => {
     // failed writes keep the legacy store, so we retry on next launch
-    migrateGifFavorites(mx).catch(() => undefined);
+    // legacy im.kibby.* types must be copied first so the localStorage merge
+    // lands on top of the migrated favourites
+    migrateLegacyAccountData(mx)
+      .then(() => migrateGifFavorites(mx))
+      .catch(() => undefined);
   }, [mx]);
 
   return null;

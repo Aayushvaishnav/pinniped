@@ -24,6 +24,7 @@ import { stopPropagation } from '../../utils/keyboard';
 import { getSpaceChildren } from '../../utils/room';
 import { Membership } from '../../../types/matrix/room';
 import { rateLimitedActions } from '../../utils/matrix';
+import { leaveRoomExplicitly } from '../../state/leftRooms';
 
 type LeaveSpacePromptProps = {
   roomId: string;
@@ -45,11 +46,11 @@ export function LeaveSpacePrompt({ roomId, onDone, onCancel }: LeaveSpacePromptP
             return room.getMyMembership() === Membership.Join;
           });
           await rateLimitedActions(childIds, async (childId) => {
-            await mx.leave(childId);
+            await leaveRoomExplicitly(mx, childId);
           });
         }
       }
-      await mx.leave(roomId);
+      await leaveRoomExplicitly(mx, roomId);
     }, [mx, roomId, leaveRooms])
   );
 

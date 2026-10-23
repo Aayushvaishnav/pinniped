@@ -13,7 +13,7 @@ import { useAccountData } from './useAccountData';
  * Reads the current per-user room order content from account data.
  */
 export const getRoomOrderContent = (mx: MatrixClient): KibbyRoomOrderContent =>
-  getAccountData(mx, AccountDataEvent.KibbyRoomOrder)?.getContent<KibbyRoomOrderContent>() ?? {};
+  getAccountData(mx, AccountDataEvent.PinnipedRoomOrder)?.getContent<KibbyRoomOrderContent>() ?? {};
 
 /**
  * Merges a partial update into the existing room order content and returns the
@@ -37,7 +37,7 @@ export const setRoomSortMode = (mx: MatrixClient, spaceId: string, sortMode: Roo
   const content = makeRoomOrderContent(mx, {
     sortModes: { [spaceId]: sortMode },
   });
-  mx.setAccountData(AccountDataEvent.KibbyRoomOrder, content);
+  mx.setAccountData(AccountDataEvent.PinnipedRoomOrder, content);
 };
 
 /**
@@ -48,16 +48,16 @@ export const setRoomOrder = (mx: MatrixClient, parentSpaceId: string, orderedRoo
   const content = makeRoomOrderContent(mx, {
     orders: { [parentSpaceId]: orderedRoomIds },
   });
-  mx.setAccountData(AccountDataEvent.KibbyRoomOrder, content);
+  mx.setAccountData(AccountDataEvent.PinnipedRoomOrder, content);
 };
 
 /**
  * Reactively returns the per-user room order content, updating when the
- * `im.kibby.room_order` account data event changes.
+ * `club.stablecat.pinniped.room_order` account data event changes.
  */
 export const useRoomOrderContent = (): KibbyRoomOrderContent => {
   const mx = useMatrixClient();
-  const event = useAccountData(AccountDataEvent.KibbyRoomOrder);
+  const event = useAccountData(AccountDataEvent.PinnipedRoomOrder);
   return event?.getContent<KibbyRoomOrderContent>() ?? getRoomOrderContent(mx);
 };
 

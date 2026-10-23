@@ -1,3 +1,5 @@
+import { AccountDataEvents } from 'matrix-js-sdk';
+
 export enum AccountDataEvent {
   PushRules = 'm.push_rules',
   Direct = 'm.direct',
@@ -5,8 +7,9 @@ export enum AccountDataEvent {
 
   CinnySpaces = 'in.cinny.spaces',
 
-  KibbyRoomOrder = 'im.kibby.room_order',
-  KibbyGifFavorites = 'im.kibby.gif_favorites',
+  PinnipedRoomOrder = 'club.stablecat.pinniped.room_order',
+  PinnipedGifFavorites = 'club.stablecat.pinniped.gif_favorites',
+  PinnipedLeftRooms = 'club.stablecat.pinniped.left_rooms',
 
   ElementRecentEmoji = 'io.element.recent_emoji',
 
@@ -20,6 +23,16 @@ export enum AccountDataEvent {
   CrossSigningUser = 'm.cross_signing.user',
   MegolmBackupV1 = 'm.megolm_backup.v1',
 }
+
+/** Pre-rename `im.kibby.*` account data types, migrated to their Pinniped equivalents. */
+export const LEGACY_ACCOUNT_DATA_MIGRATIONS: [
+  legacy: keyof AccountDataEvents,
+  current: keyof AccountDataEvents
+][] = [
+  ['im.kibby.room_order', AccountDataEvent.PinnipedRoomOrder],
+  ['im.kibby.gif_favorites', AccountDataEvent.PinnipedGifFavorites],
+  ['im.kibby.left_rooms', AccountDataEvent.PinnipedLeftRooms],
+];
 
 export type MDirectContent = Record<string, string[]>;
 

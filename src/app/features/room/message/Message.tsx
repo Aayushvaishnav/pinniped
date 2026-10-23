@@ -788,10 +788,10 @@ export const Message = as<'div', MessageProps>(
 
     const eventStatus = mEvent.status;
     const isSending =
-      eventStatus === EventStatus.Sending ||
-      eventStatus === EventStatus.Queued ||
-      eventStatus === EventStatus.Encrypting;
-    const isFailed = eventStatus === EventStatus.NotSent;
+      eventStatus === EventStatus.SENDING ||
+      eventStatus === EventStatus.QUEUED ||
+      eventStatus === EventStatus.ENCRYPTING;
+    const isFailed = eventStatus === EventStatus.NOT_SENT;
 
     const [retryState, resendMessage] = useAsyncCallback(
       useCallback(() => mx.resendEvent(mEvent, room), [mx, mEvent, room])

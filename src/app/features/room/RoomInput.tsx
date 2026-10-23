@@ -151,7 +151,7 @@ const SEND_FAILURE_MESSAGE =
 const addReplyRelation = (content: IContent, replyDraft?: IReplyDraft): IContent => {
   if (!replyDraft) return content;
 
-  const relation: IContent = {
+  const relation: Record<string, unknown> = {
     'm.in_reply_to': {
       event_id: replyDraft.eventId,
     },
@@ -523,7 +523,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         url: mxc,
         info,
       };
-      mx.sendEvent(roomId, EventType.Sticker, addReplyRelation(content, replyDraft));
+      mx.sendEvent(roomId, EventType.Sticker, addReplyRelation(content, replyDraft) as any);
       setReplyDraft(undefined);
     };
 

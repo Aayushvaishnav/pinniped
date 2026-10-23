@@ -311,7 +311,7 @@ export const useSpaceJoinedHierarchy = (
     mx,
     useCallback(
       (mEvent) => {
-        if (mEvent.getType() !== AccountDataEvent.KibbyRoomOrder) return;
+        if (mEvent.getType() !== AccountDataEvent.PinnipedRoomOrder) return;
         setHierarchy(getSpaceJoinedHierarchy(spaceId, getRoom, excludeRoom, sortRoomItems));
       },
       [spaceId, setHierarchy, getRoom, excludeRoom, sortRoomItems]
