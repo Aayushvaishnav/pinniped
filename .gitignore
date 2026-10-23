@@ -26,3 +26,6 @@ room-view.png
 
 # Fork-only (must not leak upstream)
 AGENTS.md
+
+# Playwright browsers (sandboxed download)
+.pw-browsers/
