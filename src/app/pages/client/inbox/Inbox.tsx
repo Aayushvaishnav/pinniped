@@ -12,7 +12,7 @@ import { allInvitesAtom } from '../../../state/room-list/inviteList';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 
-function InvitesNavItem() {
+export function InvitesNavItem() {
   const invitesSelected = useInboxInvitesSelected();
   const allInvites = useAtomValue(allInvitesAtom);
   const inviteCount = allInvites.length;

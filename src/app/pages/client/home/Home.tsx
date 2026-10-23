@@ -16,7 +16,6 @@ import {
   toRem,
 } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useAtom, useAtomValue } from 'jotai';
 import FocusTrap from 'focus-trap-react';
 import { factoryRoomIdByActivity } from '../../../utils/sort';
 import {
@@ -35,16 +34,14 @@ import { useDirectCreateSelected } from '../../../hooks/router/useDirectSelected
 import { useDirectRooms } from '../direct/useDirectRooms';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { VirtualTile } from '../../../components/virtualizer';
-import { RoomNavCategoryButton, RoomNavItem } from '../../../features/room-nav';
-import { makeNavCategoryId } from '../../../state/closedNavCategories';
+import { RoomNavItem } from '../../../features/room-nav';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
-import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavHeader, PageNavContent } from '../../../components/page';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
-import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
 import { stopPropagation } from '../../../utils/keyboard';
+import { InvitesNavItem } from '../inbox/Inbox';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import {
@@ -167,28 +164,22 @@ function HomeEmpty() {
   );
 }
 
-const DIRECT_CATEGORY_ID = makeNavCategoryId('home', 'direct');
 export function Home() {
   const mx = useMatrixClient();
   useNavToActivePathMapper('home');
   const scrollRef = useRef<HTMLDivElement>(null);
   const directs = useDirectRooms();
   const notificationPreferences = useRoomsNotificationPreferencesContext();
-  const roomToUnread = useAtomValue(roomToUnreadAtom);
   const navigate = useNavigate();
 
   const selectedRoomId = useSelectedRoom();
   const createDirectSelected = useDirectCreateSelected();
   const noRoomToDisplay = directs.length === 0;
-  const [closedCategories, setClosedCategories] = useAtom(useClosedNavCategoriesAtom());
 
-  const sortedDirects = useMemo(() => {
-    const items = Array.from(directs).sort(factoryRoomIdByActivity(mx));
-    if (closedCategories.has(DIRECT_CATEGORY_ID)) {
-      return items.filter((rId) => roomToUnread.has(rId) || rId === selectedRoomId);
-    }
-    return items;
-  }, [mx, directs, closedCategories, roomToUnread, selectedRoomId]);
+  const sortedDirects = useMemo(
+    () => Array.from(directs).sort(factoryRoomIdByActivity(mx)),
+    [mx, directs]
+  );
 
   const directVirtualizer = useVirtualizer({
     count: sortedDirects.length,
@@ -196,10 +187,6 @@ export function Home() {
     estimateSize: () => 32,
     overscan: 10,
   });
-
-  const handleCategoryClick = useCategoryHandler(setClosedCategories, (categoryId) =>
-    closedCategories.has(categoryId)
-  );
 
   return (
     <PageNav>
@@ -209,6 +196,9 @@ export function Home() {
       ) : (
         <PageNavContent scrollRef={scrollRef}>
           <Box direction="Column" gap="200">
+            <NavCategory>
+              <InvitesNavItem />
+            </NavCategory>
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createDirectSelected}>
                 <NavButton onClick={() => navigate(getDirectCreatePath())}>
@@ -229,13 +219,11 @@ export function Home() {
             </NavCategory>
             <NavCategory>
               <NavCategoryHeader>
-                <RoomNavCategoryButton
-                  closed={closedCategories.has(DIRECT_CATEGORY_ID)}
-                  data-category-id={DIRECT_CATEGORY_ID}
-                  onClick={handleCategoryClick}
-                >
-                  Direct Messages
-                </RoomNavCategoryButton>
+                <Box grow="Yes" style={{ padding: `0 ${config.space.S200}` }}>
+                  <Text size="T200" priority="300" truncate>
+                    Direct Messages
+                  </Text>
+                </Box>
               </NavCategoryHeader>
               <div
                 style={{
