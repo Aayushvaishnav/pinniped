@@ -1,6 +1,9 @@
 import React, {
   ChangeEventHandler,
+  RefObject,
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -96,6 +99,60 @@ const useFavoriteGifPreview = (
   return { src: fav.videoUrl, video: true };
 };
 
+// One IntersectionObserver for the whole grid. Tiles register here and only
+// mount their media while near the visible part of the scroller, so a long
+// scroll doesn't leave hundreds of looping videos decoding at once.
+type VisibilityObserver = {
+  observe: (el: Element, onChange: (visible: boolean) => void) => () => void;
+};
+const GifVisibilityContext = createContext<VisibilityObserver | undefined>(undefined);
+
+const useGifVisibilityObserver = (rootRef: RefObject<HTMLElement>): VisibilityObserver => {
+  const callbacks = useRef(new Map<Element, (visible: boolean) => void>());
+  const observerRef = useRef<IntersectionObserver>();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => callbacks.current.get(entry.target)?.(entry.isIntersecting));
+      },
+      { root: rootRef.current, rootMargin: '200px 0px' }
+    );
+    observerRef.current = observer;
+    callbacks.current.forEach((_, el) => observer.observe(el));
+    return () => {
+      observer.disconnect();
+      observerRef.current = undefined;
+    };
+  }, [rootRef]);
+
+  return useMemo(
+    () => ({
+      observe: (el, onChange) => {
+        callbacks.current.set(el, onChange);
+        observerRef.current?.observe(el);
+        return () => {
+          callbacks.current.delete(el);
+          observerRef.current?.unobserve(el);
+        };
+      },
+    }),
+    []
+  );
+};
+
+// `mounted` re-runs registration once a tile whose src was pending renders its element
+const useGifTileVisible = (ref: RefObject<HTMLElement>, mounted: boolean): boolean => {
+  const observer = useContext(GifVisibilityContext);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!observer || !el) return undefined;
+    return observer.observe(el, setVisible);
+  }, [observer, ref, mounted]);
+  return visible;
+};
+
 type GifTileProps = {
   fav: FavoriteGif;
   onClick: (fav: FavoriteGif) => void;
@@ -107,11 +164,47 @@ function GifTile({ fav, onClick, isFavorited, onToggleFavorite }: GifTileProps) 
   const title = getFavoriteTitle(fav);
   const { src, aspect, video } = useFavoriteGifPreview(fav);
   const [hovered, setHovered] = useState(false);
+  const tileRef = useRef<HTMLDivElement>(null);
+  const visible = useGifTileVisible(tileRef, !!src);
   if (!src) return null;
+
+  const mediaStyle = { aspectRatio: aspect ?? '1 / 1' };
+
+  let media: React.ReactNode;
+  if (!visible) {
+    // keep the tile's size while its media is unmounted
+    media = <div className={css.GifTileImg} style={mediaStyle} />;
+  } else if (video) {
+    media = (
+      // eslint-disable-next-line jsx-a11y/media-has-caption
+      <video
+        className={css.GifTileImg}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        title={title}
+        src={src}
+        style={mediaStyle}
+      />
+    );
+  } else {
+    media = (
+      <img
+        className={css.GifTileImg}
+        loading="lazy"
+        alt={title}
+        src={src}
+        style={mediaStyle}
+      />
+    );
+  }
 
   return (
     <Box
       as="div"
+      ref={tileRef}
       className={css.GifTile}
       title={title}
       aria-label={title || 'GIF'}
@@ -135,28 +228,7 @@ function GifTile({ fav, onClick, isFavorited, onToggleFavorite }: GifTileProps) 
       >
         <Icon src={Icons.Star} size="200" filled={isFavorited} />
       </button>
-      {video ? (
-        // eslint-disable-next-line jsx-a11y/media-has-caption
-        <video
-          className={css.GifTileImg}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          title={title}
-          src={src}
-          style={aspect ? { aspectRatio: aspect } : undefined}
-        />
-      ) : (
-        <img
-          className={css.GifTileImg}
-          loading="lazy"
-          alt={title}
-          src={src}
-          style={aspect ? { aspectRatio: aspect } : undefined}
-        />
-      )}
+      {media}
     </Box>
   );
 }
@@ -190,6 +262,8 @@ export function GifPicker({ onGifSelect, requestClose }: GifPickerProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const visibilityObserver = useGifVisibilityObserver(scrollRef);
 
   const favoriteIds = useMemo(() => new Set(favorites.map((f) => f.id)), [favorites]);
 
@@ -354,6 +428,7 @@ export function GifPicker({ onGifSelect, requestClose }: GifPickerProps) {
             </GifStatus>
           )}
           {displayGifs.length > 0 && (
+            <GifVisibilityContext.Provider value={visibilityObserver}>
             <div className={css.GifGrid}>
               {displayGifs.map((fav) => {
                 const id = getFavoriteGifId(fav);
@@ -368,6 +443,7 @@ export function GifPicker({ onGifSelect, requestClose }: GifPickerProps) {
                 );
               })}
             </div>
+            </GifVisibilityContext.Provider>
           )}
           {!isFavouritesTab && loadingMore && (
             <Box
