@@ -12,8 +12,13 @@ import { allInvitesAtom } from '../../../state/room-list/inviteList';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 
-export function InvitesNavItem() {
-  const invitesSelected = useInboxInvitesSelected();
+type InvitesNavItemProps = {
+  to?: string;
+  selected?: boolean;
+};
+export function InvitesNavItem({ to, selected }: InvitesNavItemProps) {
+  const inboxInvitesSelected = useInboxInvitesSelected();
+  const invitesSelected = selected ?? inboxInvitesSelected;
   const allInvites = useAtomValue(allInvitesAtom);
   const inviteCount = allInvites.length;
 
@@ -24,7 +29,7 @@ export function InvitesNavItem() {
       highlight={inviteCount > 0}
       aria-selected={invitesSelected}
     >
-      <NavLink to={getInboxInvitesPath()}>
+      <NavLink to={to ?? getInboxInvitesPath()}>
         <NavItemContent>
           <Box as="span" grow="Yes" alignItems="Center" gap="200">
             <Avatar size="200" radii="400">

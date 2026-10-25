@@ -12,6 +12,8 @@ import {
   PopOut,
   RectCords,
   Text,
+  Tooltip,
+  TooltipProvider,
   config,
   toRem,
 } from 'folds';
@@ -19,18 +21,27 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import FocusTrap from 'focus-trap-react';
 import { factoryRoomIdByActivity } from '../../../utils/sort';
 import {
-  NavButton,
   NavCategory,
   NavCategoryHeader,
   NavEmptyCenter,
   NavEmptyLayout,
   NavItem,
   NavItemContent,
+  NavLink,
 } from '../../../components/nav';
-import { getDirectCreatePath, getHomeRoomPath } from '../../pathUtils';
+import {
+  getDirectCreatePath,
+  getHomeInvitesPath,
+  getHomePath,
+  getHomeRoomPath,
+} from '../../pathUtils';
 import { getCanonicalAliasOrRoomId } from '../../../utils/matrix';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
 import { useDirectCreateSelected } from '../../../hooks/router/useDirectSelected';
+import {
+  useHomeIndexSelected,
+  useHomeInvitesSelected,
+} from '../../../hooks/router/useHomeSelected';
 import { useDirectRooms } from '../direct/useDirectRooms';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { VirtualTile } from '../../../components/virtualizer';
@@ -174,6 +185,8 @@ export function Home() {
 
   const selectedRoomId = useSelectedRoom();
   const createDirectSelected = useDirectCreateSelected();
+  const homeIndexSelected = useHomeIndexSelected();
+  const invitesSelected = useHomeInvitesSelected();
   const noRoomToDisplay = directs.length === 0;
 
   const sortedDirects = useMemo(
@@ -197,25 +210,23 @@ export function Home() {
         <PageNavContent scrollRef={scrollRef}>
           <Box direction="Column" gap="200">
             <NavCategory>
-              <InvitesNavItem />
-            </NavCategory>
-            <NavCategory>
-              <NavItem variant="Background" radii="400" aria-selected={createDirectSelected}>
-                <NavButton onClick={() => navigate(getDirectCreatePath())}>
+              <NavItem variant="Background" radii="400" aria-selected={homeIndexSelected}>
+                <NavLink to={getHomePath()}>
                   <NavItemContent>
                     <Box as="span" grow="Yes" alignItems="Center" gap="200">
                       <Avatar size="200" radii="400">
-                        <Icon src={Icons.Mention} size="100" />
+                        <Icon src={Icons.Home} size="100" filled={homeIndexSelected} />
                       </Avatar>
                       <Box as="span" grow="Yes">
                         <Text as="span" size="Inherit" truncate>
-                          Create Chat
+                          Home
                         </Text>
                       </Box>
                     </Box>
                   </NavItemContent>
-                </NavButton>
+                </NavLink>
               </NavItem>
+              <InvitesNavItem to={getHomeInvitesPath()} selected={invitesSelected} />
             </NavCategory>
             <NavCategory>
               <NavCategoryHeader>
@@ -223,6 +234,31 @@ export function Home() {
                   <Text size="T200" priority="300" truncate>
                     Direct Messages
                   </Text>
+                </Box>
+                <Box shrink="No">
+                  <TooltipProvider
+                    position="Right"
+                    offset={4}
+                    tooltip={
+                      <Tooltip>
+                        <Text>Create Chat</Text>
+                      </Tooltip>
+                    }
+                  >
+                    {(triggerRef) => (
+                      <IconButton
+                        ref={triggerRef}
+                        aria-label="Create Chat"
+                        aria-pressed={createDirectSelected}
+                        variant="Background"
+                        size="300"
+                        radii="300"
+                        onClick={() => navigate(getDirectCreatePath())}
+                      >
+                        <Icon src={Icons.Plus} size="100" />
+                      </IconButton>
+                    )}
+                  </TooltipProvider>
                 </Box>
               </NavCategoryHeader>
               <div

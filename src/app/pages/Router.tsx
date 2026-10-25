@@ -172,6 +172,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           <Route path={_CREATE_PATH} element={<HomeCreateRoom />} />
           <Route path={_JOIN_PATH} element={<p>join</p>} />
           <Route path={_SEARCH_PATH} element={<HomeSearch />} />
+          <Route path={_INVITES_PATH} element={<Invites />} />
           <Route
             path={_ROOM_PATH}
             element={

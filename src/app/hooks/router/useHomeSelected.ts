@@ -1,6 +1,7 @@
 import { useMatch } from 'react-router-dom';
 import {
   getHomeCreatePath,
+  getHomeInvitesPath,
   getHomeJoinPath,
   getHomePath,
   getHomeSearchPath,
@@ -41,6 +42,26 @@ export const useHomeSearchSelected = (): boolean => {
     path: getHomeSearchPath(),
     caseSensitive: true,
     end: false,
+  });
+
+  return !!match;
+};
+
+export const useHomeInvitesSelected = (): boolean => {
+  const match = useMatch({
+    path: getHomeInvitesPath(),
+    caseSensitive: true,
+    end: false,
+  });
+
+  return !!match;
+};
+
+export const useHomeIndexSelected = (): boolean => {
+  const match = useMatch({
+    path: getHomePath(),
+    caseSensitive: true,
+    end: true,
   });
 
   return !!match;
