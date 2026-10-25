@@ -8,7 +8,7 @@ import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { PowerLevelsContextProvider, usePowerLevels } from '../../hooks/usePowerLevels';
-import { useRoom } from '../../hooks/useRoom';
+import { useIsDirectRoom, useRoom } from '../../hooks/useRoom';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomMembers } from '../../hooks/useRoomMembers';
 import { CallView } from '../call/CallView';
@@ -17,6 +17,7 @@ import { callChatAtom } from '../../state/callEmbed';
 import { CallChatView } from './CallChatView';
 import { useCallEmbed } from '../../hooks/useCallEmbed';
 import { useCallMembers, useCallSession } from '../../hooks/useCall';
+import { DmCallSplit } from './DmCallSplit';
 
 export function Room() {
   const { eventId } = useParams();
@@ -32,13 +33,23 @@ export function Room() {
   const powerLevels = usePowerLevels(room);
   const members = useRoomMembers(mx, room.roomId);
   const chat = useAtomValue(callChatAtom);
+  const direct = useIsDirectRoom();
 
   const callView = callEmbed?.roomId === room.roomId || room.isCallRoom() || callMembers.length > 0;
+
+  // In DMs the call sits above the chat instead of replacing it.
+  const dmSplit = callView && direct && !room.isCallRoom();
 
   return (
     <PowerLevelsContextProvider value={powerLevels}>
       <Box grow="Yes">
-        {callView && (screenSize === ScreenSize.Desktop || !chat) && (
+        {dmSplit && (
+          <Box grow="Yes" direction="Column">
+            <RoomViewHeader />
+            <DmCallSplit call={<CallView />} chat={<RoomView eventId={eventId} />} />
+          </Box>
+        )}
+        {!dmSplit && callView && (screenSize === ScreenSize.Desktop || !chat) && (
           <Box grow="Yes" direction="Column">
             <RoomViewHeader callView />
             <Box grow="Yes">
@@ -55,7 +66,7 @@ export function Room() {
           </Box>
         )}
 
-        {callView && chat && (
+        {!dmSplit && callView && chat && (
           <>
             {screenSize === ScreenSize.Desktop && (
               <Line variant="Background" direction="Vertical" size="300" />
@@ -63,7 +74,7 @@ export function Room() {
             <CallChatView />
           </>
         )}
-        {!callView && screenSize === ScreenSize.Desktop && isDrawer && (
+        {(!callView || dmSplit) && screenSize === ScreenSize.Desktop && isDrawer && (
           <>
             <Line variant="Background" direction="Vertical" size="300" />
             <RoomSearchDrawer key={room.roomId} room={room} members={members} />
