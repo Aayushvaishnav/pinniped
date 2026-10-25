@@ -115,12 +115,26 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   return mx;
 };
 
+/**
+ * Replaces any cached copy of the homeserver's client well-known. The call widget reads it
+ * through the HTTP cache on every join (for the RTC focus), and a well-known served without
+ * Cache-Control can be heuristically cached for days, hiding server-side changes.
+ */
+const refreshWellKnownCache = (mx: MatrixClient) => {
+  const domain = mx.getDomain();
+  if (!domain) return;
+  fetch(`https://${domain}/.well-known/matrix/client`, { cache: 'reload' }).catch(() => {
+    // best effort: a stale copy just keeps the previous RTC focus
+  });
+};
+
 export const startClient = async (mx: MatrixClient) => {
   // Push the session to the service worker before syncing so that
   // authenticated media requests have the Authorization header from the
   // very first request. This covers the login -> navigate flow where no
   // page reload occurs and the SW may not have the session yet.
   pushSessionToSW(mx.baseUrl, mx.getAccessToken() ?? undefined);
+  refreshWellKnownCache(mx);
   await mx.startClient({
     lazyLoadMembers: true,
     unstableMSC4429SyncUserProfileFields: USER_PROFILE_FIELDS,
