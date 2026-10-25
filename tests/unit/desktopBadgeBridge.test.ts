@@ -42,7 +42,7 @@ describe('Windows badge IPC', () => {
     };
     runInNewContext(readFileSync(new URL('../../electron/main.cjs', import.meta.url), 'utf8'), {
       __dirname: '/app/electron',
-      process: { platform: 'win32' },
+      process: { platform: 'win32', env: {} },
       require: (name: string) => {
         if (name === 'electron') return electron;
         if (name === 'path') return { join: (...parts: string[]) => parts.join('/') };

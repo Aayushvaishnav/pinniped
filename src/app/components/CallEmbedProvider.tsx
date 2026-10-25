@@ -362,6 +362,15 @@ function CallUtils({ embed }: { embed: CallEmbed }) {
     }, [setCallEmbed])
   );
 
+  // Lets the desktop dev shell leave the call cleanly before it reloads the window.
+  useEffect(() => {
+    const w = window as unknown as { __leaveCall?: () => Promise<unknown> };
+    w.__leaveCall = () => embed.hangup();
+    return () => {
+      delete w.__leaveCall;
+    };
+  }, [embed]);
+
   return null;
 }
 

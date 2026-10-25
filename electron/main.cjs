@@ -18,6 +18,9 @@ const { createRichPresenceServer } = require('./rich-presence.cjs');
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const APP_ICON = path.join(__dirname, 'build', 'icon.png');
 
+// Dev only (`just dev-electron`): expose DevTools over CDP on localhost for layout debugging.
+if (process.env.CINNY_DEV_RELOAD) app.commandLine.appendSwitch('remote-debugging-port', '9333');
+
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
@@ -180,6 +183,38 @@ function createWindow() {
   });
 
   mainWindow.loadURL(`${APP_ORIGIN}/`);
+  if (process.env.CINNY_DEV_RELOAD) watchDistForReload();
+}
+
+// Dev only (`just dev-electron`): reload the window whenever `vite build --watch`
+// finishes writing a new index.html. Same origin as production, so the session sticks.
+let reloadTimer = null;
+function watchDistForReload() {
+  const fs = require('fs');
+  // Reloading destroys the call iframe, so leave the call properly first instead of
+  // letting the widget get killed mid-call.
+  const reloadAfterLeavingCall = async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    try {
+      await Promise.race([
+        mainWindow.webContents.executeJavaScript(
+          'window.__leaveCall ? window.__leaveCall() : null'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    } catch {
+      // not in a call, or page not ready
+    }
+    // Plain reload: reloadIgnoringCache bypasses the service worker, which then can't add
+    // the access token to authenticated media requests.
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+  };
+  fs.watch(DIST_DIR, (_event, filename) => {
+    if (filename !== 'index.html') return;
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(reloadAfterLeavingCall, 500);
+  });
 }
 
 const showMainWindow = () => {
