@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, PopOut, toRem } from 'folds';
+import { Menu, Overlay, OverlayBackdrop, OverlayCenter, PopOut, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useCloseUserRoomProfile, useUserRoomProfileState } from '../state/hooks/userRoomProfile';
 import { UserRoomProfile } from './user-profile';
@@ -10,7 +10,7 @@ import { SpaceProvider } from '../hooks/useSpace';
 import { RoomProvider } from '../hooks/useRoom';
 
 function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) {
-  const { roomId, spaceId, userId, cords, position } = state;
+  const { roomId, spaceId, userId, cords, position, centered } = state;
   const allJoinedRooms = useAllJoinedRoomsSet();
   const getRoom = useGetRoom(allJoinedRooms);
   const room = getRoom(roomId);
@@ -20,31 +20,34 @@ function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) 
 
   if (!room) return null;
 
-  return (
-    <PopOut
-      anchor={cords}
-      position={position ?? 'Top'}
-      align="Start"
-      content={
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: close,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
-          <Menu style={{ width: toRem(340) }}>
-            <SpaceProvider value={space ?? null}>
-              <RoomProvider value={room}>
-                <UserRoomProfile userId={userId} />
-              </RoomProvider>
-            </SpaceProvider>
-          </Menu>
-        </FocusTrap>
-      }
-    />
+  const card = (
+    <FocusTrap
+      focusTrapOptions={{
+        initialFocus: false,
+        onDeactivate: close,
+        clickOutsideDeactivates: true,
+        escapeDeactivates: stopPropagation,
+      }}
+    >
+      <Menu style={{ width: toRem(340) }}>
+        <SpaceProvider value={space ?? null}>
+          <RoomProvider value={room}>
+            <UserRoomProfile userId={userId} />
+          </RoomProvider>
+        </SpaceProvider>
+      </Menu>
+    </FocusTrap>
   );
+
+  if (centered) {
+    return (
+      <Overlay open backdrop={<OverlayBackdrop />}>
+        <OverlayCenter>{card}</OverlayCenter>
+      </Overlay>
+    );
+  }
+
+  return <PopOut anchor={cords} position={position ?? 'Top'} align="Start" content={card} />;
 }
 
 export function UserRoomProfileRenderer() {

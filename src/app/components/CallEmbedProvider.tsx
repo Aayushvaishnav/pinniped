@@ -58,6 +58,7 @@ import { getRoomPermissionsAPI } from '../hooks/useRoomPermissions';
 import { useLivekitSupport } from '../hooks/useLivekitSupport';
 import { CallAvatarAnimation } from '../styles/Animations.css';
 import { webRTCSupported } from '../utils/rtc';
+import { useOpenCenteredUserRoomProfile } from '../state/hooks/userRoomProfile';
 
 type IncomingCallInfo = {
   room: Room;
@@ -365,6 +366,22 @@ function CallUtils({ embed }: { embed: CallEmbed }) {
       setCallEmbed(undefined);
     }, [setCallEmbed])
   );
+
+  // The call's tile menu asks for "View Profile"; only trust it from our own call iframe.
+  const openProfile = useOpenCenteredUserRoomProfile();
+  useEffect(() => {
+    const onMessage = (evt: MessageEvent) => {
+      if (evt.source !== embed.iframe.contentWindow || evt.origin !== window.location.origin) {
+        return;
+      }
+      const { type, userId } = evt.data ?? {};
+      if (type === 'cinny:view-profile' && typeof userId === 'string') {
+        openProfile(embed.roomId, undefined, userId);
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [embed, openProfile]);
 
   // Lets the desktop dev shell leave the call cleanly before it reloads the window.
   useEffect(() => {
