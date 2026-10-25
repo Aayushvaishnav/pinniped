@@ -54,6 +54,30 @@ if ('serviceWorker' in navigator) {
     }
   });
 
+  navigator.serviceWorker.addEventListener('controllerchange', sendSessionToSW);
+
+  // A hard reload (Ctrl+Shift+R) bypasses the SW, and Chromium won't let the already-active
+  // SW claim such a page, so authenticated media would be fetched without a token. Reload
+  // normally once to get the page controlled; the flag stops a loop if that doesn't help.
+  const HARD_RELOAD_KEY = 'cinny.swControlReload';
+  /** Returns true when it has started a reload, in which case the app must not mount. */
+  const reloadIfUncontrolled = (registration: ServiceWorkerRegistration): boolean => {
+    try {
+      if (navigator.serviceWorker.controller || !registration.active) {
+        sessionStorage.removeItem(HARD_RELOAD_KEY);
+        return false;
+      }
+      if (!sessionStorage.getItem(HARD_RELOAD_KEY)) {
+        sessionStorage.setItem(HARD_RELOAD_KEY, '1');
+        window.location.reload();
+        return true;
+      }
+    } catch {
+      // sessionStorage unavailable: mount uncontrolled rather than risk a reload loop
+    }
+    return false;
+  };
+
   // Wait for the SW to be active and have the session before mounting the
   // app so that authenticated media requests are intercepted with the
   // Authorization header from the very first request. On subsequent visits
@@ -61,9 +85,10 @@ if ('serviceWorker' in navigator) {
   // the SW installs. A 3s timeout ensures the app still loads if the SW
   // is slow to activate or fails to register.
   Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise<void>((resolve) => setTimeout(() => resolve(), 3000)),
-  ]).then(() => {
+    navigator.serviceWorker.ready.then(reloadIfUncontrolled),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000)),
+  ]).then((reloading) => {
+    if (reloading) return;
     sendSessionToSW();
     mountApp();
   });
