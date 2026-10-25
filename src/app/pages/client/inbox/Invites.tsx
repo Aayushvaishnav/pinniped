@@ -188,40 +188,25 @@ function InviteCard({
   const leaving =
     leaveState.status === AsyncStatus.Loading || leaveState.status === AsyncStatus.Success;
 
+  const details = [
+    invite.isDirect && 'Direct Message',
+    invite.isSpace && 'Space',
+    invite.isEncrypted && 'Encrypted',
+  ].filter(Boolean);
+  const subtitle = invite.reason ? `Reason: ${invite.reason}` : invite.roomTopic;
+
   return (
-    <SequenceCard
-      variant="SurfaceVariant"
-      direction="Column"
+    <Box
+      direction={compact ? 'Column' : 'Row'}
+      alignItems={compact ? 'Stretch' : 'Center'}
       gap="300"
-      style={{ padding: config.space.S400 }}
+      style={{
+        padding: `${config.space.S300} ${config.space.S200}`,
+        borderBottom: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+      }}
     >
-      {(invite.isEncrypted || invite.isDirect || invite.isSpace) && (
-        <Box gap="200" alignItems="Center">
-          {invite.isEncrypted && (
-            <Box shrink="No" alignItems="Center" justifyContent="Center">
-              <Badge variant="Success" fill="Solid" size="400" radii="300">
-                <Text size="L400">Encrypted</Text>
-              </Badge>
-            </Box>
-          )}
-          {invite.isDirect && (
-            <Box shrink="No" alignItems="Center" justifyContent="Center">
-              <Badge variant="Primary" fill="Solid" size="400" radii="300">
-                <Text size="L400">Direct Message</Text>
-              </Badge>
-            </Box>
-          )}
-          {invite.isSpace && (
-            <Box shrink="No" alignItems="Center" justifyContent="Center">
-              <Badge variant="Secondary" fill="Soft" size="400" radii="300">
-                <Text size="L400">Space</Text>
-              </Badge>
-            </Box>
-          )}
-        </Box>
-      )}
-      <Box gap="300">
-        <Avatar size="300">
+      <Box grow="Yes" gap="300" alignItems="Center" style={{ minWidth: 0 }}>
+        <Avatar size="400">
           <RoomAvatar
             roomId={invite.roomId}
             src={hideAvatar ? undefined : invite.roomAvatar}
@@ -233,106 +218,94 @@ function InviteCard({
             )}
           />
         </Avatar>
-        <Box direction={compact ? 'Column' : 'Row'} grow="Yes" gap="200">
-          <Box grow="Yes" direction="Column" gap="200">
-            <Box direction="Column">
-              <Text size="T300" truncate>
-                <b>{invite.roomName}</b>
-              </Text>
-              {invite.roomTopic && (
-                <Text
-                  size="T200"
-                  onClick={openTopic}
-                  onKeyDown={onEnterOrSpace(openTopic)}
-                  tabIndex={0}
-                  truncate
-                >
-                  {invite.roomTopic}
-                </Text>
-              )}
-              <Overlay open={viewTopic} backdrop={<OverlayBackdrop />}>
-                <OverlayCenter>
-                  <FocusTrap
-                    focusTrapOptions={{
-                      initialFocus: false,
-                      clickOutsideDeactivates: true,
-                      onDeactivate: closeTopic,
-                      escapeDeactivates: stopPropagation,
-                    }}
-                  >
-                    <RoomTopicViewer
-                      name={invite.roomName}
-                      topic={invite.roomTopic ?? ''}
-                      requestClose={closeTopic}
-                    />
-                  </FocusTrap>
-                </OverlayCenter>
-              </Overlay>
-            </Box>
-            {joinState.status === AsyncStatus.Error && (
-              <Text size="T200" style={{ color: color.Critical.Main }}>
-                {joinState.error.message}
-              </Text>
-            )}
-            {leaveState.status === AsyncStatus.Error && (
-              <Text size="T200" style={{ color: color.Critical.Main }}>
-                {leaveState.error.message}
-              </Text>
-            )}
-          </Box>
-          <Box gap="200" shrink="No" alignItems="Center">
-            <Button
-              onClick={leave}
-              size="300"
-              variant="Secondary"
-              radii="300"
-              fill="Soft"
-              disabled={joining || leaving}
-              before={leaving ? <Spinner variant="Secondary" size="100" /> : undefined}
-            >
-              <Text size="B300">Decline</Text>
-            </Button>
-            <Button
-              onClick={join}
-              size="300"
-              variant="Success"
-              fill="Soft"
-              radii="300"
-              outlined
-              disabled={joining || leaving}
-              before={joining ? <Spinner variant="Success" fill="Soft" size="100" /> : undefined}
-            >
-              <Text size="B300">Accept</Text>
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-      <Box direction="Column">
-        <Box gap="200" alignItems="Baseline">
-          <Box grow="Yes">
-            <Text size="T200" priority="300">
-              From: <b>{invite.senderId}</b>
+        <Box grow="Yes" direction="Column" style={{ minWidth: 0 }}>
+          <Box gap="200" alignItems="Baseline">
+            <Text size="T300" truncate>
+              <b>{invite.roomName}</b>
             </Text>
+            {typeof invite.inviteTs === 'number' && invite.inviteTs !== 0 && (
+              <Box shrink="No">
+                <Time
+                  size="T200"
+                  ts={invite.inviteTs}
+                  hour24Clock={hour24Clock}
+                  dateFormatString={dateFormatString}
+                  priority="300"
+                />
+              </Box>
+            )}
           </Box>
-          {typeof invite.inviteTs === 'number' && invite.inviteTs !== 0 && (
-            <Box shrink="No">
-              <Time
-                size="T200"
-                ts={invite.inviteTs}
-                hour24Clock={hour24Clock}
-                dateFormatString={dateFormatString}
-                priority="300"
-              />
-            </Box>
+          <Text size="T200" priority="300" truncate>
+            From {invite.senderId}
+            {details.length > 0 && ` · ${details.join(' · ')}`}
+          </Text>
+          {subtitle && (
+            <Text
+              size="T200"
+              priority="300"
+              onClick={invite.reason ? undefined : openTopic}
+              onKeyDown={invite.reason ? undefined : onEnterOrSpace(openTopic)}
+              tabIndex={invite.reason ? undefined : 0}
+              truncate
+            >
+              {subtitle}
+            </Text>
+          )}
+          {joinState.status === AsyncStatus.Error && (
+            <Text size="T200" style={{ color: color.Critical.Main }}>
+              {joinState.error.message}
+            </Text>
+          )}
+          {leaveState.status === AsyncStatus.Error && (
+            <Text size="T200" style={{ color: color.Critical.Main }}>
+              {leaveState.error.message}
+            </Text>
           )}
         </Box>
-        {invite.reason && (
-          <Text size="T200" priority="300">
-            Reason: {invite.reason}
-          </Text>
-        )}
       </Box>
-    </SequenceCard>
+      <Overlay open={viewTopic} backdrop={<OverlayBackdrop />}>
+        <OverlayCenter>
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              clickOutsideDeactivates: true,
+              onDeactivate: closeTopic,
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <RoomTopicViewer
+              name={invite.roomName}
+              topic={invite.roomTopic ?? ''}
+              requestClose={closeTopic}
+            />
+          </FocusTrap>
+        </OverlayCenter>
+      </Overlay>
+      <Box gap="200" shrink="No" alignItems="Center">
+        <Button
+          onClick={join}
+          size="300"
+          variant="Secondary"
+          fill="Soft"
+          radii="300"
+          disabled={joining || leaving}
+          before={joining ? <Spinner variant="Secondary" size="100" /> : undefined}
+        >
+          <Text size="B300">Accept</Text>
+        </Button>
+        <Button
+          onClick={leave}
+          size="300"
+          variant="Critical"
+          fill="Solid"
+          radii="300"
+          disabled={joining || leaving}
+          before={leaving ? <Spinner variant="Critical" fill="Solid" size="100" /> : undefined}
+        >
+          <Text size="B300">Decline</Text>
+        </Button>
+      </Box>
+    </Box>
   );
 }
 
@@ -429,9 +402,11 @@ function KnownInvites({
 }: KnownInvitesProps) {
   return (
     <Box direction="Column" gap="200">
-      <Text size="H4">Primary</Text>
+      <Text size="L400" priority="300">
+        Primary – {invites.length}
+      </Text>
       {invites.length > 0 ? (
-        <Box direction="Column" gap="100">
+        <Box direction="Column">
           {invites.map((invite) => (
             <InviteCard
               key={invite.roomId}
@@ -488,7 +463,9 @@ function UnknownInvites({
   return (
     <Box direction="Column" gap="200">
       <Box gap="200" justifyContent="SpaceBetween" alignItems="Center">
-        <Text size="H4">Public</Text>
+        <Text size="L400" priority="300">
+          Public – {invites.length}
+        </Text>
         <Box>
           {invites.length > 0 && (
             <Chip
@@ -504,7 +481,7 @@ function UnknownInvites({
         </Box>
       </Box>
       {invites.length > 0 ? (
-        <Box direction="Column" gap="100">
+        <Box direction="Column">
           {invites.map((invite) => (
             <InviteCard
               key={invite.roomId}
@@ -585,7 +562,9 @@ function SpamInvites({
 
   return (
     <Box direction="Column" gap="200">
-      <Text size="H4">Spam</Text>
+      <Text size="L400" priority="300">
+        Spam – {invites.length}
+      </Text>
       {invites.length > 0 ? (
         <Box direction="Column" gap="100">
           <SequenceCard
