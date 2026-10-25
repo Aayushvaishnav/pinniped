@@ -1,6 +1,8 @@
 import React, { ComponentProps, MutableRefObject, ReactNode } from 'react';
 import { Box, Header, Line, Scroll, Text, as } from 'folds';
 import classNames from 'classnames';
+import { useAtomValue } from 'jotai';
+import { callFullscreenAtom } from '../../state/callEmbed';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import * as css from './style.css';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -12,11 +14,14 @@ type PageRootProps = {
 
 export function PageRoot({ nav, children }: PageRootProps) {
   const screenSize = useScreenSizeContext();
+  const callFullscreen = useAtomValue(callFullscreenAtom);
 
   return (
     <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
-      {nav}
-      {screenSize !== ScreenSize.Mobile && (
+      <Box shrink="No" style={{ display: callFullscreen ? 'none' : undefined }}>
+        {nav}
+      </Box>
+      {screenSize !== ScreenSize.Mobile && !callFullscreen && (
         <Line variant="Background" size="300" direction="Vertical" />
       )}
       {children}

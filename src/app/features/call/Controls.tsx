@@ -18,7 +18,7 @@ type MicrophoneButtonProps = {
 export function MicrophoneButton({ enabled, onToggle }: MicrophoneButtonProps) {
   const [micState, toggleMic] = useAsyncCallback(onToggle);
   const loading = micState.status === AsyncStatus.Loading;
-  
+
   return (
     <TooltipProvider
       position="Top"
@@ -32,7 +32,7 @@ export function MicrophoneButton({ enabled, onToggle }: MicrophoneButtonProps) {
       {(anchorRef) => (
         <IconButton
           ref={anchorRef}
-          variant={enabled ? 'Surface' : 'Warning'}
+          variant={enabled ? 'Surface' : 'Critical'}
           fill="Soft"
           radii="400"
           size="400"
@@ -65,7 +65,7 @@ export function SoundButton({ enabled, onToggle }: SoundButtonProps) {
       {(anchorRef) => (
         <IconButton
           ref={anchorRef}
-          variant={enabled ? 'Surface' : 'Warning'}
+          variant={enabled ? 'Surface' : 'Critical'}
           fill="Soft"
           radii="400"
           size="400"

@@ -18,7 +18,7 @@ import {
 import { CallControlEvent } from '../plugins/call/CallControl';
 import { useMatrixClient } from './useMatrixClient';
 import { ThemeKind, useTheme } from './useTheme';
-import { callEmbedAtom } from '../state/callEmbed';
+import { callEmbedAtom, callIdleAtom } from '../state/callEmbed';
 import { useResizeObserver } from './useResizeObserver';
 import { CallControlState } from '../plugins/call/CallControlState';
 import { useCallMembersChange, useCallSession } from './useCall';
@@ -179,4 +179,59 @@ export const useCallEmbedPlacementSync = (containerViewRef: RefObject<HTMLDivEle
     syncCallEmbedPlacement,
     useCallback(() => containerViewRef.current, [containerViewRef])
   );
+};
+
+const CALL_IDLE_MS = 3000;
+
+/**
+ * Tracks pointer/keyboard activity (in the app and inside the call iframe) and flips
+ * `callIdleAtom` after a few quiet seconds, so the call view can fade its UI. The call document also
+ * gets `data-cinny-idle` so the call UI itself can hide its labels.
+ */
+export const useCallIdle = (embed?: CallEmbed) => {
+  const setIdle = useSetAtom(callIdleAtom);
+
+  useEffect(() => {
+    if (!embed) {
+      setIdle(false);
+      return undefined;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const attached = new Set<Document>();
+
+    const applyIdle = (idle: boolean) => {
+      setIdle(idle);
+      const root = embed.document?.documentElement;
+      if (root) root.dataset.cinnyIdle = String(idle);
+    };
+
+    const onActivity = () => {
+      applyIdle(false);
+      clearTimeout(timer);
+      timer = setTimeout(() => applyIdle(true), CALL_IDLE_MS);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'wheel'] as const;
+    const attach = (doc?: Document) => {
+      if (!doc || attached.has(doc)) return;
+      attached.add(doc);
+      events.forEach((evt) => doc.addEventListener(evt, onActivity, { passive: true }));
+    };
+    const attachAll = () => {
+      attach(document);
+      attach(embed.document);
+    };
+
+    attachAll();
+    embed.iframe.addEventListener('load', attachAll);
+    onActivity();
+
+    return () => {
+      clearTimeout(timer);
+      embed.iframe.removeEventListener('load', attachAll);
+      attached.forEach((doc) => events.forEach((evt) => doc.removeEventListener(evt, onActivity)));
+      setIdle(false);
+    };
+  }, [embed, setIdle]);
 };
