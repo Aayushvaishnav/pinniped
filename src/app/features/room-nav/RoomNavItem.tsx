@@ -17,11 +17,14 @@ import {
   RectCords,
   Badge,
   Spinner,
+  IconSrc,
 } from 'folds';
 import { useFocusWithin, useHover } from 'react-aria';
 import FocusTrap from 'focus-trap-react';
 import { useAtom, useAtomValue } from 'jotai';
 import { CallMembership } from 'matrix-js-sdk/lib/matrixrtc/CallMembership';
+import { useCallControlState } from '../../plugins/call';
+import { CallControl } from '../../plugins/call/CallControl';
 import { NavItem, NavItemContent, NavItemOptions, NavLink } from '../../components/nav';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
@@ -260,6 +263,21 @@ function CallChatToggle() {
   );
 }
 
+/** State icons after a voice channel member's name. */
+function CallMemberStateIcon({ src, label }: { src: IconSrc; label: string }) {
+  return (
+    <Box shrink="No" title={label} aria-label={label} style={{ opacity: config.opacity.P300 }}>
+      <Icon size="50" src={src} />
+    </Box>
+  );
+}
+
+/** Only the local user's deafen state is known: it's this client's sound toggle. */
+function SelfDeafenedIcon({ control }: { control: CallControl }) {
+  const { sound } = useCallControlState(control);
+  return sound ? null : <CallMemberStateIcon src={Icons.HeadphoneMute} label="Deafened" />;
+}
+
 type CallNavItemMembersProps = {
   room: Room;
   members: CallMembership[];
@@ -269,9 +287,9 @@ function CallNavItemMembers({ room, members }: CallNavItemMembersProps) {
   const useAuthentication = useMediaAuthentication();
   const openUserProfile = useOpenUserRoomProfile();
   const callEmbed = useCallEmbed();
-  const { speakers, screenSharers } = useCallParticipantActivity(
-    callEmbed?.roomId === room.roomId ? callEmbed : undefined
-  );
+  const roomCallEmbed = callEmbed?.roomId === room.roomId ? callEmbed : undefined;
+  const { speakers, screenSharers, muted } = useCallParticipantActivity(roomCallEmbed);
+  const myUserId = mx.getSafeUserId();
 
   return (
     <Box
@@ -298,6 +316,7 @@ function CallNavItemMembers({ room, members }: CallNavItemMembersProps) {
               name,
               speakers.has(userId) && 'speaking',
               screenSharers.has(userId) && 'sharing screen',
+              muted.has(userId) && 'muted',
             ]
               .filter(Boolean)
               .join(', ')}
@@ -326,13 +345,19 @@ function CallNavItemMembers({ room, members }: CallNavItemMembersProps) {
             <Text size="T300" priority={speakers.has(userId) ? '500' : '300'} truncate>
               {name}
             </Text>
-            {screenSharers.has(userId) && (
-              <Box shrink="No" style={{ marginLeft: 'auto' }} title="Sharing screen">
-                <Badge size="300" variant="Critical" fill="Solid" radii="300">
-                  <Text size="L400">LIVE</Text>
-                </Badge>
-              </Box>
-            )}
+            <Box shrink="No" alignItems="Center" gap="100" style={{ marginLeft: 'auto' }}>
+              {muted.has(userId) && <CallMemberStateIcon src={Icons.MicMute} label="Muted" />}
+              {roomCallEmbed && userId === myUserId && (
+                <SelfDeafenedIcon control={roomCallEmbed.control} />
+              )}
+              {screenSharers.has(userId) && (
+                <Box shrink="No" title="Sharing screen">
+                  <Badge size="300" variant="Critical" fill="Solid" radii="300">
+                    <Text size="L400">LIVE</Text>
+                  </Badge>
+                </Box>
+              )}
+            </Box>
           </Box>
         );
       })}

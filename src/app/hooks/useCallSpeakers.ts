@@ -6,11 +6,13 @@ import { useCallJoined } from './useCallEmbed';
 export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
   const [speakers, setSpeakers] = useState(new Set<string>());
   const [screenSharers, setScreenSharers] = useState(new Set<string>());
+  const [muted, setMuted] = useState(new Set<string>());
   const joined = useCallJoined(callEmbed);
 
   useEffect(() => {
     setSpeakers(new Set());
     setScreenSharers(new Set());
+    setMuted(new Set());
     if (!callEmbed || !joined) return undefined;
 
     let observer: MutationObserver | undefined;
@@ -22,6 +24,7 @@ export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
       const updateSpeakers = () => {
         const next = new Set<string>();
         const sharing = new Set<string>();
+        const mutedNow = new Set<string>();
         // Read every tile: a mutation batch need not include speakers whose state is unchanged.
         document.querySelectorAll('[data-video-fit]').forEach((element) => {
           const speaking = element.getAttribute('data-cinny-speaking') === 'true';
@@ -33,8 +36,16 @@ export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
           if (!userId) return;
           // Element Call identifies local and remote presentation tiles with this suffix.
           if (element.getAttribute('data-id')?.endsWith(':screen-share')) sharing.add(userId);
-          else if (speaking) next.add(userId);
+          else {
+            if (speaking) next.add(userId);
+            if (element.getAttribute('data-cinny-muted') === 'true') mutedNow.add(userId);
+          }
         });
+        setMuted((previous) =>
+          previous.size === mutedNow.size && Array.from(mutedNow).every((id) => previous.has(id))
+            ? previous
+            : mutedNow
+        );
         setScreenSharers((previous) =>
           previous.size === sharing.size && Array.from(sharing).every((id) => previous.has(id))
             ? previous
@@ -53,7 +64,13 @@ export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
         subtree: true,
         childList: true,
         attributes: true,
-        attributeFilter: ['data-cinny-speaking', 'data-cinny-user-id', 'aria-label', 'data-id'],
+        attributeFilter: [
+          'data-cinny-speaking',
+          'data-cinny-muted',
+          'data-cinny-user-id',
+          'aria-label',
+          'data-id',
+        ],
       });
       updateSpeakers();
     };
@@ -69,6 +86,7 @@ export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
   return {
     speakers: callEmbed && joined ? speakers : new Set<string>(),
     screenSharers: callEmbed && joined ? screenSharers : new Set<string>(),
+    muted: callEmbed && joined ? muted : new Set<string>(),
   };
 };
 
