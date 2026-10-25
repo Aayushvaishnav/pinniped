@@ -9,6 +9,7 @@ import {
   Text,
   Menu,
   MenuItem,
+  color,
   config,
   PopOut,
   toRem,
@@ -438,7 +439,14 @@ export function RoomNavItem({
   const iconOpacity = unread ? config.opacity.P500 : config.opacity.P300;
   let avatarContent: ReactNode;
   if (isVoiceChannel) {
-    avatarContent = <Icon style={{ opacity: iconOpacity }} size="100" src={Icons.VolumeHigh} />;
+    avatarContent = (
+      <Icon
+        style={callMembers.length > 0 ? { color: color.Success.Main } : { opacity: iconOpacity }}
+        size="100"
+        src={Icons.VolumeHigh}
+        filled={callMembers.length > 0}
+      />
+    );
   } else if (showAvatar) {
     avatarContent = (
       <RoomAvatar
@@ -489,7 +497,17 @@ export function RoomNavItem({
                 </Avatar>
               </AvatarPresence>
               <Box as="span" grow="Yes" direction="Column">
-                <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+                <Text
+                  priority={unread ? '500' : '300'}
+                  as="span"
+                  size="Inherit"
+                  style={
+                    isVoiceChannel && callMembers.length > 0
+                      ? { color: color.Success.Main }
+                      : undefined
+                  }
+                  truncate
+                >
                   {displayName}
                 </Text>
                 {(statusMsg || richPresence) && (

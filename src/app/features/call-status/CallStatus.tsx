@@ -1,81 +1,47 @@
 import React from 'react';
-import { Box, Spinner } from 'folds';
+import { Box, color, Icon, Icons, Spinner, Text } from 'folds';
 import classNames from 'classnames';
-import { LiveChip } from './LiveChip';
 import * as css from './styles.css';
 import { CallRoomName } from './CallRoomName';
-import { CallControl } from './CallControl';
+import { CallControl, CallHangupButton } from './CallControl';
 import { ContainerColor } from '../../styles/ContainerColor.css';
-import { useCallMembers, useCallSession } from '../../hooks/useCall';
-import { ScreenSize, useScreenSize } from '../../hooks/useScreenSize';
-import { MemberGlance } from './MemberGlance';
-import { StatusDivider } from './components';
 import { CallEmbed } from '../../plugins/call/CallEmbed';
-import { useCallJoined } from '../../hooks/useCallEmbed';
-import { useCallSpeakers } from '../../hooks/useCallSpeakers';
-import { MemberSpeaking } from './MemberSpeaking';
+import { useCallConnectionStatus, useCallJoined } from '../../hooks/useCallEmbed';
 
 type CallStatusProps = {
   callEmbed: CallEmbed;
 };
+/** "Voice Connected" panel for the bottom of the room list. */
 export function CallStatus({ callEmbed }: CallStatusProps) {
   const { room } = callEmbed;
 
-  const callSession = useCallSession(room);
-  const callMembers = useCallMembers(callSession);
-  const screenSize = useScreenSize();
   const callJoined = useCallJoined(callEmbed);
-  const speakers = useCallSpeakers(callEmbed);
-
-  const compact = screenSize === ScreenSize.Mobile;
-
-  const memberVisible = callJoined && callMembers.length > 0;
+  const connectionStatus = useCallConnectionStatus(callEmbed);
 
   return (
     <Box
       className={classNames(css.CallStatus, ContainerColor({ variant: 'Background' }))}
       shrink="No"
-      gap="400"
-      alignItems={compact ? undefined : 'Center'}
-      direction={compact ? 'Column' : 'Row'}
+      direction="Column"
+      gap="200"
     >
-      <Box grow="Yes" alignItems="Center" gap="200">
-        {memberVisible ? (
-          <Box shrink="No">
-            <LiveChip room={room} members={callMembers} />
-          </Box>
+      <Box alignItems="Center" gap="200">
+        {callJoined ? (
+          <Icon size="200" src={Icons.VolumeHigh} filled style={{ color: color.Success.Main }} />
         ) : (
           <Spinner variant="Secondary" size="200" />
         )}
-        <Box grow="Yes" alignItems="Center" gap="Inherit">
-          {!compact && (
-            <>
-              <CallRoomName room={room} />
-              {speakers.size > 0 && (
-                <>
-                  <StatusDivider />
-                  <span data-spacing-node />
-                  <MemberSpeaking room={room} speakers={speakers} />
-                </>
-              )}
-            </>
-          )}
+        <Box grow="Yes" direction="Column" style={{ minWidth: 0 }}>
+          <Text size="T300" style={{ color: color.Success.Main }} truncate>
+            {callJoined ? 'Voice Connected' : connectionStatus}
+          </Text>
+          <CallRoomName room={room} plain />
         </Box>
-        {memberVisible && (
-          <Box shrink="No">
-            <MemberGlance room={room} members={callMembers} speakers={speakers} />
-          </Box>
-        )}
+        <Box shrink="No">
+          <CallHangupButton callEmbed={callEmbed} callJoined={callJoined} />
+        </Box>
       </Box>
-      {memberVisible && !compact && <StatusDivider />}
-      <Box shrink="No" alignItems="Center" gap="Inherit">
-        {compact && (
-          <Box grow="Yes">
-            <CallRoomName room={room} />
-          </Box>
-        )}
-        <CallControl callJoined={callJoined} compact={compact} callEmbed={callEmbed} />
-      </Box>
+      <CallControl callJoined={callJoined} callEmbed={callEmbed} />
     </Box>
   );
 }

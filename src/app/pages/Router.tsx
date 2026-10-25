@@ -70,7 +70,6 @@ import { Create } from './client/create';
 import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { getFallbackSession } from '../state/sessions';
-import { CallStatusRenderer } from './CallStatusRenderer';
 import { CallEmbedProvider } from '../components/CallEmbedProvider';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
@@ -138,7 +137,6 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                         >
                           <Outlet />
                         </ClientLayout>
-                        <CallStatusRenderer />
                       </CallEmbedProvider>
                       <SearchModalRenderer />
                       <UserRoomProfileRenderer />

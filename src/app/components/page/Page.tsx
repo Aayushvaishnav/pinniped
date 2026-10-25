@@ -3,6 +3,7 @@ import { Box, Header, Line, Scroll, Text, as } from 'folds';
 import classNames from 'classnames';
 import { useAtomValue } from 'jotai';
 import { callFullscreenAtom } from '../../state/callEmbed';
+import { CallStatusRenderer } from '../../pages/CallStatusRenderer';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import * as css from './style.css';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -44,6 +45,8 @@ export function PageNav({ size, children }: ClientDrawerLayoutProps & css.PageNa
     >
       <Box grow="Yes" direction="Column">
         {children}
+        {/* The call status sits at the bottom of the room list. */}
+        {!size && <CallStatusRenderer />}
       </Box>
     </Box>
   );

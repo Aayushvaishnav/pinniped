@@ -521,12 +521,12 @@ function SpaceTab({
             >
               <Badge
                 aria-label={currentCallInSpace ? 'Current call' : 'Call in progress'}
-                variant={currentCallInSpace ? 'Success' : 'Secondary'}
+                variant="Success"
                 fill="Solid"
                 radii="Pill"
-                size={folder ? '200' : '300'}
+                size={folder ? '300' : '400'}
               >
-                <Icon size="50" src={Icons.VolumeHigh} />
+                <Icon size="50" src={Icons.VolumeHigh} filled />
               </Badge>
             </div>
           )}

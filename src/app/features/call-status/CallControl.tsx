@@ -1,7 +1,6 @@
-import { Box, Chip, Icon, IconButton, Icons, Spinner, Text, Tooltip, TooltipProvider } from 'folds';
+import { Box, Icon, IconButton, Icons, Spinner, Text, Tooltip, TooltipProvider } from 'folds';
 import React, { useCallback } from 'react';
 import { useSetAtom } from 'jotai';
-import { StatusDivider } from './components';
 import { CallEmbed, useCallControlState } from '../../plugins/call';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { callEmbedAtom } from '../../state/callEmbed';
@@ -14,7 +13,7 @@ type MicrophoneButtonProps = {
 function MicrophoneButton({ enabled, onToggle, disabled }: MicrophoneButtonProps) {
   const [micState, toggleMic] = useAsyncCallback(onToggle);
   const loading = micState.status === AsyncStatus.Loading;
-  
+
   return (
     <TooltipProvider
       position="Top"
@@ -27,10 +26,11 @@ function MicrophoneButton({ enabled, onToggle, disabled }: MicrophoneButtonProps
       {(anchorRef) => (
         <IconButton
           ref={anchorRef}
-          variant={enabled ? 'Surface' : 'Warning'}
+          variant={enabled ? 'Surface' : 'Critical'}
           fill="Soft"
           radii="300"
           size="300"
+          style={{ width: '100%' }}
           onClick={toggleMic}
           outlined
           disabled={disabled || loading}
@@ -60,10 +60,11 @@ function SoundButton({ enabled, onToggle, disabled }: SoundButtonProps) {
       {(anchorRef) => (
         <IconButton
           ref={anchorRef}
-          variant={enabled ? 'Surface' : 'Warning'}
+          variant={enabled ? 'Surface' : 'Critical'}
           fill="Soft"
           radii="300"
           size="300"
+          style={{ width: '100%' }}
           onClick={() => onToggle()}
           outlined
           disabled={disabled}
@@ -104,6 +105,7 @@ function VideoButton({ enabled, onToggle, disabled }: VideoButtonProps) {
           fill="Soft"
           radii="300"
           size="300"
+          style={{ width: '100%' }}
           onClick={toggleVideo}
           outlined
           disabled={disabled || loading}
@@ -141,6 +143,7 @@ function ScreenShareButton({ enabled, onToggle, disabled }: ScreenShareButtonPro
           fill="Soft"
           radii="300"
           size="300"
+          style={{ width: '100%' }}
           onClick={onToggle}
           outlined
           disabled={disabled}
@@ -152,21 +155,14 @@ function ScreenShareButton({ enabled, onToggle, disabled }: ScreenShareButtonPro
   );
 }
 
-export function CallControl({
+export function CallHangupButton({
   callEmbed,
-  compact,
   callJoined,
 }: {
   callEmbed: CallEmbed;
-  compact: boolean;
   callJoined: boolean;
 }) {
-  const { microphone, video, sound, screenshare } = useCallControlState(callEmbed.control);
   const setCallEmbed = useSetAtom(callEmbedAtom);
-
-  const handleMicrophoneToggle = useCallback(() => callEmbed.control.toggleMicrophone(), [callEmbed]);
-  const handleVideoToggle = useCallback(() => callEmbed.control.toggleVideo(), [callEmbed]);
-
   const [hangupState, hangup] = useAsyncCallback(
     useCallback(() => callEmbed.hangup(), [callEmbed])
   );
@@ -182,54 +178,78 @@ export function CallControl({
   };
 
   return (
-    <Box shrink="No" alignItems="Center" gap="300">
-      <Box alignItems="Inherit" gap="200">
+    <TooltipProvider
+      position="Top"
+      tooltip={
+        <Tooltip>
+          <Text size="T200">Disconnect</Text>
+        </Tooltip>
+      }
+    >
+      {(anchorRef) => (
+        <IconButton
+          ref={anchorRef}
+          variant="Critical"
+          fill="None"
+          radii="300"
+          size="300"
+          onClick={handleHangup}
+          disabled={exiting}
+          aria-label="Disconnect"
+        >
+          {exiting ? (
+            <Spinner variant="Critical" fill="Soft" size="50" />
+          ) : (
+            <Icon size="100" src={Icons.PhoneDown} filled />
+          )}
+        </IconButton>
+      )}
+    </TooltipProvider>
+  );
+}
+
+/** Row of equal-width call buttons for the voice panel. */
+export function CallControl({
+  callEmbed,
+  callJoined,
+}: {
+  callEmbed: CallEmbed;
+  callJoined: boolean;
+}) {
+  const { microphone, video, sound, screenshare } = useCallControlState(callEmbed.control);
+
+  const handleMicrophoneToggle = useCallback(
+    () => callEmbed.control.toggleMicrophone(),
+    [callEmbed]
+  );
+  const handleVideoToggle = useCallback(() => callEmbed.control.toggleVideo(), [callEmbed]);
+
+  return (
+    <Box grow="Yes" gap="100">
+      <Box grow="Yes">
         <MicrophoneButton
           enabled={microphone}
           onToggle={handleMicrophoneToggle}
           disabled={!callJoined}
         />
+      </Box>
+      <Box grow="Yes">
         <SoundButton
           enabled={sound}
           onToggle={() => callEmbed.control.toggleSound()}
           disabled={!callJoined}
         />
-        {!compact && <StatusDivider />}
-        <VideoButton
-          enabled={video}
-          onToggle={handleVideoToggle}
+      </Box>
+      <Box grow="Yes">
+        <VideoButton enabled={video} onToggle={handleVideoToggle} disabled={!callJoined} />
+      </Box>
+      <Box grow="Yes">
+        <ScreenShareButton
+          enabled={screenshare}
+          onToggle={() => callEmbed.control.toggleScreenshare()}
           disabled={!callJoined}
         />
-        {!compact && (
-          <ScreenShareButton
-            enabled={screenshare}
-            onToggle={() => callEmbed.control.toggleScreenshare()}
-            disabled={!callJoined}
-          />
-        )}
       </Box>
-      <StatusDivider />
-      <Chip
-        variant="Critical"
-        radii="Pill"
-        fill="Soft"
-        before={
-          exiting ? (
-            <Spinner variant="Critical" fill="Soft" size="50" />
-          ) : (
-            <Icon size="50" src={Icons.PhoneDown} filled />
-          )
-        }
-        disabled={exiting}
-        outlined
-        onClick={handleHangup}
-      >
-        {!compact && (
-          <Text as="span" size="L400">
-            End
-          </Text>
-        )}
-      </Chip>
     </Box>
   );
 }
