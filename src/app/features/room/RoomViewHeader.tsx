@@ -69,7 +69,7 @@ import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import { RoomSettingsPage } from '../../state/roomSettings';
-import { useCallEmbed, useCallStart } from '../../hooks/useCallEmbed';
+import { useCallEmbed, useCallStart, useCallStartPreferences } from '../../hooks/useCallEmbed';
 import { useLivekitSupport } from '../../hooks/useLivekitSupport';
 import { webRTCSupported } from '../../utils/rtc';
 
@@ -311,6 +311,7 @@ function CallButton() {
 
   const callEmbed = useCallEmbed();
   const startCall = useCallStart(direct);
+  const startPreferences = useCallStartPreferences();
   const callStarted = callEmbed && callEmbed.roomId === room.roomId;
   const inAnotherCall = callEmbed && !callStarted;
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
@@ -342,11 +343,7 @@ function CallButton() {
             onClick={handleOpenMenu}
             onContextMenu={(evt) => {
               evt.preventDefault();
-              startCall(room, {
-                microphone: true,
-                video: true,
-                sound: true,
-              });
+              startCall(room, startPreferences(true));
             }}
             disabled={inAnotherCall || callStarted}
             aria-pressed={!!menuAnchor}
@@ -372,8 +369,8 @@ function CallButton() {
             }}
           >
             <CallMenu
-              onVideoCall={() => startCall(room, { microphone: true, video: true, sound: true })}
-              onVoiceCall={() => startCall(room, { microphone: true, video: false, sound: true })}
+              onVideoCall={() => startCall(room, startPreferences(true))}
+              onVoiceCall={() => startCall(room, startPreferences(false))}
               requestClose={() => setMenuAnchor(undefined)}
             />
           </FocusTrap>

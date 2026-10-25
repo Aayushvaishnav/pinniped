@@ -5,6 +5,8 @@ import { ElementMediaStateDetail, ElementMediaStatePayload, ElementWidgetActions
 
 export enum CallControlEvent {
   StateUpdate = 'state_update',
+  /** Emitted only for toggles the user made, with the values they chose. */
+  UserToggle = 'user_toggle',
 }
 
 export class CallControl extends EventEmitter implements CallControlState {
@@ -124,7 +126,7 @@ export class CallControl extends EventEmitter implements CallControlState {
     });
     this.onBodyMutation();
   }
-  
+
   private onBodyMutation() {
     if (!this.document) return;
 
@@ -165,7 +167,7 @@ export class CallControl extends EventEmitter implements CallControlState {
 
   private async setMediaState(state: ElementMediaStatePayload) {
     const data = await this.call.transport.send(ElementWidgetActions.DeviceMute, state);
-    return new Promise<typeof data>(resolve => {
+    return new Promise<typeof data>((resolve) => {
       if (this.mediaStatePromiseResolver) {
         this.mediaStatePromiseResolver();
       }
@@ -227,6 +229,7 @@ export class CallControl extends EventEmitter implements CallControlState {
       audio_enabled: !this.microphone,
       video_enabled: this.video,
     };
+    this.emit(CallControlEvent.UserToggle, { microphone: payload.audio_enabled });
     return this.setMediaState(payload);
   }
 
@@ -242,6 +245,7 @@ export class CallControl extends EventEmitter implements CallControlState {
     const sound = !this.sound;
 
     this.setSound(sound);
+    this.emit(CallControlEvent.UserToggle, { sound });
 
     const state = new CallControlState(
       this.microphone,
