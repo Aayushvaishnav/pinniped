@@ -34,7 +34,6 @@ import {
   isRoomAlias,
   mxcUrlToHttp,
 } from '../../utils/matrix';
-import { useStateEvent } from '../../hooks/useStateEvent';
 import { PageHeader } from '../../components/page';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -78,6 +77,8 @@ import { InviteUserPrompt } from '../../components/invite-user-prompt';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import { RoomSettingsPage } from '../../state/roomSettings';
 import { callChatAtom, callIdleAtom } from '../../state/callEmbed';
+import { roomSearchDrawerActiveAtom } from '../../state/roomSearch';
+import { RoomSearchBar } from '../message-search/RoomSearchBar';
 import { useCallParticipantActivity } from '../../hooks/useCallSpeakers';
 import { CallEmbed } from '../../plugins/call/CallEmbed';
 import { useCallEmbed, useCallStart, useCallStartPreferences } from '../../hooks/useCallEmbed';
@@ -478,8 +479,7 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
   const direct = useIsDirectRoom();
 
   const pinnedEvents = useRoomPinnedEvents(room);
-  const encryptionEvent = useStateEvent(room, StateEvent.RoomEncryption);
-  const encryptedRoom = !!encryptionEvent;
+  const searchDrawerActive = useAtomValue(roomSearchDrawerActiveAtom);
   const avatarMxc = useRoomAvatar(room, direct);
   const name = useRoomName(room);
   const topic = useRoomTopic(room);
@@ -638,8 +638,8 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
           </Box>
         </Box>
 
-        <Box shrink="No">
-          {!callView && !encryptedRoom && (
+        <Box shrink="No" alignItems="Center" gap="100">
+          {!callView && screenSize !== ScreenSize.Desktop && (
             <TooltipProvider
               position="Bottom"
               offset={4}
@@ -803,6 +803,15 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
               </FocusTrap>
             }
           />
+          {!callView && screenSize === ScreenSize.Desktop && (
+            <Box
+              onFocusCapture={() => {
+                if (!searchDrawerActive) handleSearchClick();
+              }}
+            >
+              <RoomSearchBar />
+            </Box>
+          )}
         </Box>
       </Box>
     </PageHeader>

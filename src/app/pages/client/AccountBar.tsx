@@ -25,9 +25,7 @@ import { UnreadBadge } from '../../components/unread-badge';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useNavToActivePathAtom } from '../../state/hooks/navToActivePath';
 import { ContainerColor } from '../../styles/ContainerColor.css';
-import { roomSearchDrawerActiveAtom } from '../../state/roomSearch';
-import { RoomSearchBar } from '../../features/message-search/RoomSearchBar';
-import { TopBarProfile } from './TopBarProfile';
+import { AccountBarProfile } from './AccountBarProfile';
 
 function InboxButton() {
   const screenSize = useScreenSizeContext();
@@ -97,9 +95,7 @@ function InboxButton() {
   );
 }
 
-export function TopBar() {
-  const drawerActive = useAtomValue(roomSearchDrawerActiveAtom);
-
+export function AccountBar() {
   return (
     <Header
       variant="Background"
@@ -110,12 +106,9 @@ export function TopBar() {
         padding: `0 ${config.space.S200}`,
       }}
     >
-      <Box alignItems="Center" grow="Yes" gap="200">
-        <TopBarProfile />
-        <Box alignItems="Center" justifyContent="End" grow="Yes" gap="200">
-          {drawerActive && <RoomSearchBar />}
-          <InboxButton />
-        </Box>
+      <Box alignItems="Center" grow="Yes" gap="200" justifyContent="SpaceBetween">
+        <AccountBarProfile />
+        <InboxButton />
       </Box>
     </Header>
   );

@@ -43,12 +43,6 @@ export function Room() {
   return (
     <PowerLevelsContextProvider value={powerLevels}>
       <Box grow="Yes">
-        {dmSplit && (
-          <Box grow="Yes" direction="Column">
-            <RoomViewHeader />
-            <DmCallSplit call={<CallView />} chat={<RoomView eventId={eventId} />} />
-          </Box>
-        )}
         {!dmSplit && callView && (screenSize === ScreenSize.Desktop || !chat) && (
           <Box grow="Yes" direction="Column">
             <RoomViewHeader callView />
@@ -57,15 +51,6 @@ export function Room() {
             </Box>
           </Box>
         )}
-        {!callView && (
-          <Box grow="Yes" direction="Column">
-            <RoomViewHeader />
-            <Box grow="Yes">
-              <RoomView eventId={eventId} />
-            </Box>
-          </Box>
-        )}
-
         {!dmSplit && callView && chat && (
           <>
             {screenSize === ScreenSize.Desktop && (
@@ -74,11 +59,26 @@ export function Room() {
             <CallChatView />
           </>
         )}
-        {(!callView || dmSplit) && screenSize === ScreenSize.Desktop && isDrawer && (
-          <>
-            <Line variant="Background" direction="Vertical" size="300" />
-            <RoomSearchDrawer key={room.roomId} room={room} members={members} />
-          </>
+        {/* The header spans the chat and the drawer, so they read as one bar. */}
+        {(!callView || dmSplit) && (
+          <Box grow="Yes" direction="Column">
+            <RoomViewHeader />
+            <Box grow="Yes">
+              {dmSplit ? (
+                <DmCallSplit call={<CallView />} chat={<RoomView eventId={eventId} />} />
+              ) : (
+                <Box grow="Yes">
+                  <RoomView eventId={eventId} />
+                </Box>
+              )}
+              {screenSize === ScreenSize.Desktop && isDrawer && (
+                <>
+                  <Line variant="Background" direction="Vertical" size="300" />
+                  <RoomSearchDrawer key={room.roomId} room={room} members={members} />
+                </>
+              )}
+            </Box>
+          </Box>
         )}
       </Box>
     </PowerLevelsContextProvider>

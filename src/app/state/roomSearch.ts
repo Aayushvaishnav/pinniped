@@ -6,11 +6,11 @@ import type { SearchLookup } from '../features/message-search/searchQuery';
 export const roomSearchTermAtom = atom<string | undefined>(undefined);
 
 // Whether the room search drawer is currently mounted and visible.
-// TopBar reads this to decide whether to show the search input.
+// The room header reads this to decide whether to show the search input.
 export const roomSearchDrawerActiveAtom = atom<boolean>(false);
 
 // Who and what the open search can reach. The drawer knows its scope; the search
-// box in the top bar needs it to autocomplete `from:` and `in:`.
+// box in the room header needs it to autocomplete `from:` and `in:`.
 export const roomSearchLookupAtom = atom<SearchLookup>({ users: [], rooms: [] });
 
 // `oldest` is a recency sort the server must opt in to; see SEARCH_EXTENSION_KEY

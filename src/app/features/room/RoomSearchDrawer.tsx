@@ -2,15 +2,12 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Box,
   Chip,
-  Header,
   Icon,
   IconButton,
   Icons,
   Scroll,
   Spinner,
   Text,
-  Tooltip,
-  TooltipProvider,
   config,
 } from 'folds';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -29,7 +26,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useSpaceOptionally } from '../../hooks/useSpace';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
-import { useSetSetting, useSetting } from '../../state/hooks/settings';
+import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { mDirectAtom } from '../../state/mDirectList';
 import { allRoomsAtom } from '../../state/room-list/roomList';
@@ -398,7 +395,6 @@ export function RoomSearchDrawer({ room, members }: RoomSearchDrawerProps) {
   const space = useSpaceOptionally();
   const direct = useIsDirectRoom();
   const { navigateRoom } = useRoomNavigate();
-  const setPeopleDrawer = useSetSetting(settingsAtom, 'isPeopleDrawer');
 
   const [searchTerm, setSearchTerm] = useAtom(roomSearchTermAtom);
   const setDrawerActive = useSetAtom(roomSearchDrawerActiveAtom);
@@ -488,32 +484,6 @@ export function RoomSearchDrawer({ room, members }: RoomSearchDrawerProps) {
       shrink="No"
       direction="Column"
     >
-      <Header className={css.RoomSearchDrawerHeader} variant="Background" size="600">
-        <Box grow="Yes" alignItems="Center" justifyContent="End">
-          <TooltipProvider
-            position="Bottom"
-            align="End"
-            offset={4}
-            tooltip={
-              <Tooltip>
-                <Text>Close</Text>
-              </Tooltip>
-            }
-          >
-            {(triggerRef) => (
-              <IconButton
-                ref={triggerRef}
-                variant="Background"
-                onClick={() => setPeopleDrawer(false)}
-                aria-label={direct ? 'Close profile' : 'Close member list'}
-              >
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            )}
-          </TooltipProvider>
-        </Box>
-      </Header>
-
       {drawerContent}
     </Box>
   );

@@ -10,12 +10,6 @@ export const RoomSearchDrawerWide = style({
   width: toRem(450),
 });
 
-export const RoomSearchDrawerHeader = style({
-  flexShrink: 0,
-  padding: `${config.space.S200} ${config.space.S300}`,
-  borderBottomWidth: config.borderWidth.B300,
-});
-
 export const SearchResultsHeader = style({
   flexShrink: 0,
   alignItems: 'Center',

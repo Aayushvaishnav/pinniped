@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Box } from 'folds';
 import { useAtomValue } from 'jotai';
-import { TopBar } from './TopBar';
+import { AccountBar } from './AccountBar';
 import { callFullscreenAtom } from '../../state/callEmbed';
 
 type ClientLayoutProps = {
@@ -14,7 +14,7 @@ export function ClientLayout({ nav, children }: ClientLayoutProps) {
   return (
     <Box grow="Yes" direction="Column">
       <div style={{ display: callFullscreen ? 'none' : 'contents' }}>
-        <TopBar />
+        <AccountBar />
       </div>
       <Box grow="Yes">
         <Box shrink="No" style={{ display: callFullscreen ? 'none' : undefined }}>

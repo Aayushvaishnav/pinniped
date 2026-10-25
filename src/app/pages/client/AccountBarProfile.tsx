@@ -9,9 +9,9 @@ import { useUserPresence } from '../../hooks/useUserPresence';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { nameInitials } from '../../utils/common';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
-import * as css from './TopBar.css';
+import * as css from './AccountBar.css';
 
-export function TopBarProfile() {
+export function AccountBarProfile() {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const userId = mx.getSafeUserId();

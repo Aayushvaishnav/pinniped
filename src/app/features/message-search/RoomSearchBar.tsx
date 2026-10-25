@@ -116,9 +116,10 @@ export function RoomSearchBar() {
         value={value}
         style={{ flexGrow: 1, paddingRight: config.space.S200 }}
         placeholder="Search messages"
-        variant="Surface"
+        variant="Background"
         size="300"
         radii="400"
+        outlined
         autoComplete="off"
         spellCheck={false}
         role="combobox"
