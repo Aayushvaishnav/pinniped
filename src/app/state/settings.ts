@@ -60,6 +60,8 @@ export interface Settings {
   spaceRoleMode: boolean;
 
   developerTools: boolean;
+  /** Message range export, offered under Developer Tools. */
+  messageExport: boolean;
 
   onlySignedDevices: boolean;
 }
@@ -106,6 +108,7 @@ const defaultSettings: Settings = {
   spaceRoleMode: false,
 
   developerTools: false,
+  messageExport: false,
 
   onlySignedDevices: false,
 };

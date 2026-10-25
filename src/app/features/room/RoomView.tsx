@@ -22,6 +22,9 @@ import { useSetting } from '../../state/hooks/settings';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
 import { useRoom } from '../../hooks/useRoom';
+import { ExportAnchorProvider } from './export/ExportAnchorProvider';
+import { ChatExportBar } from './export/ChatExportBar';
+import { useMessageExportEnabled } from './export/useMessageExportEnabled';
 
 const FN_KEYS_REGEX = /^F\d+$/;
 const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
@@ -90,17 +93,22 @@ export function RoomView({ eventId }: { eventId?: string }) {
     )
   );
 
+  const messageExportEnabled = useMessageExportEnabled();
+
   return (
     <Page ref={roomViewRef}>
       <Box grow="Yes" direction="Column">
-        <RoomTimeline
-          key={roomId}
-          room={room}
-          eventId={eventId}
-          roomInputRef={roomInputRef}
-          editor={editor}
-        />
-        <RoomViewTyping room={room} />
+        <ExportAnchorProvider roomId={roomId}>
+          {messageExportEnabled && <ChatExportBar room={room} />}
+          <RoomTimeline
+            key={roomId}
+            room={room}
+            eventId={eventId}
+            roomInputRef={roomInputRef}
+            editor={editor}
+          />
+          <RoomViewTyping room={room} />
+        </ExportAnchorProvider>
       </Box>
       <Box shrink="No" direction="Column">
         <div style={{ padding: `0 ${config.space.S400}` }}>

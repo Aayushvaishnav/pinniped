@@ -21,6 +21,7 @@ type DeveloperToolsProps = {
 export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
   const mx = useMatrixClient();
   const [developerTools, setDeveloperTools] = useSetting(settingsAtom, 'developerTools');
+  const [messageExport, setMessageExport] = useSetting(settingsAtom, 'messageExport');
   const [expand, setExpend] = useState(false);
   const [accountDataType, setAccountDataType] = useState<string | null>();
 
@@ -92,6 +93,17 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                     direction="Column"
                     gap="400"
                   >
+                    <SettingTile
+                      title="Message Export"
+                      description="Adds Export From Here and Export Up To Here to the message menu, to save a range of messages as a file."
+                      after={
+                        <Switch
+                          variant="Primary"
+                          value={messageExport}
+                          onChange={setMessageExport}
+                        />
+                      }
+                    />
                     <SettingTile
                       title="Access Token"
                       description="Copy access token to clipboard."

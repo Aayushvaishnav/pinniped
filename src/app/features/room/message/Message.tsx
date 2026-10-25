@@ -87,6 +87,9 @@ import {
   useGifFavorites,
   useToggleGifFavorite,
 } from '../../../state/gifFavorites';
+import { MessageExportItem } from '../export/MessageExportItem';
+import { useExportAnchor } from '../export/ExportAnchorProvider';
+import * as exportCss from '../export/styles.css';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
 
@@ -765,6 +768,7 @@ export const Message = as<'div', MessageProps>(
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const senderId = mEvent.getSender() ?? '';
+    const exportAnchor = useExportAnchor(mEvent.getId());
 
     const [hover, setHover] = useState(false);
     const { hoverProps } = useHover({ onHoverChange: setHover });
@@ -1008,6 +1012,15 @@ export const Message = as<'div', MessageProps>(
         {...focusWithinProps}
         ref={ref}
       >
+        {exportAnchor && (
+          <span
+            className={classNames(
+              exportCss.AnchorMark,
+              exportAnchor === 'start' ? exportCss.AnchorMarkStart : exportCss.AnchorMarkEnd
+            )}
+            aria-hidden
+          />
+        )}
         {!edit && (hover || !!menuAnchor || !!emojiBoardAnchor) && (
           <div className={css.MessageOptionsBase}>
             <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
@@ -1212,6 +1225,18 @@ export const Message = as<'div', MessageProps>(
                             />
                           )}
                           <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
+                          <MessageExportItem
+                            room={room}
+                            mEvent={mEvent}
+                            place="start"
+                            onClose={closeMenu}
+                          />
+                          <MessageExportItem
+                            room={room}
+                            mEvent={mEvent}
+                            place="end"
+                            onClose={closeMenu}
+                          />
                           {canPinEvent && (
                             <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />
                           )}
