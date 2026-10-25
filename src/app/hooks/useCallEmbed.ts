@@ -108,8 +108,22 @@ export const useCallJoined = (embed?: CallEmbed): boolean => {
 };
 
 export const useCallHangupEvent = (embed: CallEmbed, callback: () => void) => {
-  useClientWidgetApiEvent(embed.call, ElementWidgetActions.HangupCall, callback);
-  useClientWidgetApiEvent(embed.call, ElementWidgetActions.Close, callback);
+  // Log who ended the call: an unexpected widget-initiated hangup is otherwise invisible.
+  const logAndCallback = (action: string) => (evt: unknown) => {
+    // eslint-disable-next-line no-console
+    console.info(`[call] widget requested ${action}`, evt);
+    callback();
+  };
+  useClientWidgetApiEvent(
+    embed.call,
+    ElementWidgetActions.HangupCall,
+    useCallback(logAndCallback('hangup'), [callback]) // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  useClientWidgetApiEvent(
+    embed.call,
+    ElementWidgetActions.Close,
+    useCallback(logAndCallback('close'), [callback]) // eslint-disable-line react-hooks/exhaustive-deps
+  );
 };
 
 export const useCallMemberSoundSync = (embed: CallEmbed) => {
