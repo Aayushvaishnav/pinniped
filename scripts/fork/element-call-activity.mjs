@@ -17,7 +17,14 @@ export function patchCallActivity(source) {
   );
 }
 
+// Prefer the Element Call fork (scripts/fork/element-call, built by
+// `npm run build:element-call` or the Dockerfile). Without a fork build, fall back to
+// the published embedded package plus the minified-bundle patch below.
 export function prepareElementCall() {
+  const fork = path.resolve(
+    process.env.ELEMENT_CALL_FORK_DIST ?? 'node_modules/.cache/cinny-element-call-fork'
+  );
+  if (fs.existsSync(path.join(fork, 'index.html'))) return fork;
   const root = path.resolve('node_modules/@element-hq/element-call-embedded');
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   if (pkg.version !== '0.20.1')
