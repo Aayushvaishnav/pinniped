@@ -117,8 +117,9 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 480,
-    minHeight: 400,
+    // Keeps the sidebar, room list and call side by side.
+    minWidth: 940,
+    minHeight: 500,
     backgroundColor: '#15171e',
     autoHideMenuBar: true,
     title: 'Pinniped',
