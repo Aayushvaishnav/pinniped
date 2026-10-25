@@ -21,10 +21,13 @@ RUN npm run build
 
 
 ## App
-FROM nginx:1.31.2-alpine
+# Unprivileged nginx: runs as uid 101 on port 8080, with its pid and temp files in /tmp.
+FROM nginxinc/nginx-unprivileged:1.31.2-alpine
 
+USER root
 COPY --from=builder /src/dist /app
 COPY --from=builder /src/docker-nginx.conf /etc/nginx/conf.d/default.conf
 
 RUN rm -rf /usr/share/nginx/html \
   && ln -s /app /usr/share/nginx/html
+USER 101
