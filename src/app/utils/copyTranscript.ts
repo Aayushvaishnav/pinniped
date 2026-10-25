@@ -118,10 +118,14 @@ export const eventToTranscriptLine = (
   room: Room,
   mEvent: MatrixEvent,
   timelineSet?: EventTimelineSet,
-  hour24Clock = true
+  hour24Clock = true,
+  bodyOnly = false
 ): string | undefined => {
   const parsed = getTranscriptEventBody(mEvent, timelineSet);
   if (!parsed) return undefined;
+
+  // A single copied message carries no sender or timestamp.
+  if (bodyOnly) return `${parsed.prefix}${resolveMentionsInBody(room, parsed.body)}`;
 
   const senderId = mEvent.getSender() ?? '';
   const sender = getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;

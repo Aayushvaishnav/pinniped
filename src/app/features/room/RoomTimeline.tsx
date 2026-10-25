@@ -1870,7 +1870,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             room,
             mEvent,
             eventTimeline.getTimelineSet(),
-            hour24Clock
+            hour24Clock,
+            itemFrom === itemTo
           );
           if (line) transcript.push(line);
         }
