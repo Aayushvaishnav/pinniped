@@ -9,6 +9,7 @@ import {
 import { CallMembership } from 'matrix-js-sdk/lib/matrixrtc/CallMembership';
 import { useEffect, useState } from 'react';
 import { MatrixRTCSessionManagerEvents } from 'matrix-js-sdk/lib/matrixrtc/MatrixRTCSessionManager';
+import { Membership } from '../../types/matrix/room';
 import { useMatrixClient } from './useMatrixClient';
 import { getSpaceChildren } from '../utils/room';
 
@@ -87,6 +88,8 @@ export const useSpaceHasCall = (space: Room): boolean => {
       const version = stateVersion;
       const results = await Promise.all(
         childRoomIds.map(async (roomId) => {
+          // The server refuses state for rooms we have not joined (403).
+          if (mx.getRoom(roomId)?.getMyMembership() !== Membership.Join) return false;
           try {
             const state = await mx.roomState(roomId);
             const membershipEvents = state.filter(

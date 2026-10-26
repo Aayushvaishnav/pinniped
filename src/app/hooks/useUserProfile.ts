@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ClientEvent, UserEvent, UserEventHandlerMap } from 'matrix-js-sdk';
+import { ClientEvent, MatrixClient, UserEvent, UserEventHandlerMap } from 'matrix-js-sdk';
 import { useMatrixClient } from './useMatrixClient';
 
 export type UserProfile = {
@@ -8,6 +8,39 @@ export type UserProfile = {
   extended: Record<string, unknown>;
   loaded: boolean;
 };
+// Every message and member row asks for its sender's profile. Share one request
+// per user and remember failures for a while, so an unreachable homeserver costs
+// one request instead of one per row and per remount.
+const PROFILE_FAILURE_TTL_MS = 5 * 60 * 1000;
+const profileFailures = new Map<string, number>();
+const profileRequests = new Map<string, Promise<Record<string, unknown>>>();
+
+const hasRecentProfileFailure = (userId: string): boolean => {
+  const failedAt = profileFailures.get(userId);
+  if (failedAt === undefined) return false;
+  if (Date.now() - failedAt < PROFILE_FAILURE_TTL_MS) return true;
+  profileFailures.delete(userId);
+  return false;
+};
+
+const fetchExtendedProfile = (
+  mx: MatrixClient,
+  userId: string
+): Promise<Record<string, unknown>> => {
+  const pending = profileRequests.get(userId);
+  if (pending) return pending;
+
+  const request = mx
+    .getExtendedProfile(userId)
+    .catch((err) => {
+      profileFailures.set(userId, Date.now());
+      throw err;
+    })
+    .finally(() => profileRequests.delete(userId));
+  profileRequests.set(userId, request);
+  return request;
+};
+
 export const useUserProfile = (userId: string): UserProfile => {
   const mx = useMatrixClient();
 
@@ -47,16 +80,20 @@ export const useUserProfile = (userId: string): UserProfile => {
       }));
     };
 
-    mx.getExtendedProfile(userId).then(
-      (info) =>
-        setProfile({
-          avatarUrl: typeof info.avatar_url === 'string' ? info.avatar_url : undefined,
-          displayName: typeof info.displayname === 'string' ? info.displayname : undefined,
-          extended: info,
-          loaded: true,
-        }),
-      () => setProfile((current) => ({ ...current, loaded: true }))
-    );
+    if (hasRecentProfileFailure(userId)) {
+      setProfile((current) => ({ ...current, loaded: true }));
+    } else {
+      fetchExtendedProfile(mx, userId).then(
+        (info) =>
+          setProfile({
+            avatarUrl: typeof info.avatar_url === 'string' ? info.avatar_url : undefined,
+            displayName: typeof info.displayname === 'string' ? info.displayname : undefined,
+            extended: info,
+            loaded: true,
+          }),
+        () => setProfile((current) => ({ ...current, loaded: true }))
+      );
+    }
 
     mx.on(ClientEvent.UserProfileUpdate, onProfileUpdate);
     user?.on(UserEvent.AvatarUrl, onAvatarChange);
