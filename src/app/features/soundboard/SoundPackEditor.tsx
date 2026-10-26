@@ -15,6 +15,7 @@ import {
   MAX_SOUND_MS,
 } from '../../plugins/sound-pack';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { EmojiPickerButton } from './EmojiPickerButton';
 import { useSoundBlobUrl } from './useSoundPlayer';
 
 const formatDuration = (ms?: number) => (ms === undefined ? '' : `${(ms / 1000).toFixed(1)} s`);
@@ -28,6 +29,7 @@ type SoundRowProps = {
 function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
   const getBlobUrl = useSoundBlobUrl();
   const [editing, setEditing] = useState(false);
+  const [emoji, setEmoji] = useState(sound.emoji);
   const [busy, setBusy] = useState(false);
   const audioRef = useRef<HTMLAudioElement>();
 
@@ -42,10 +44,9 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
     evt.preventDefault();
     const form = evt.currentTarget;
     const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
-    const emoji = (form.elements.namedItem('emoji') as HTMLInputElement).value.trim();
     if (!name) return;
     setBusy(true);
-    await onSave(sound.id, name, emoji).catch(() => undefined);
+    await onSave(sound.id, name, emoji ?? '').catch(() => undefined);
     setBusy(false);
     setEditing(false);
   };
@@ -60,16 +61,9 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
     return (
       <SettingTile>
         <Box as="form" onSubmit={handleSave} gap="200" alignItems="End">
-          <Box direction="Column" gap="100" style={{ width: 72 }}>
+          <Box direction="Column" gap="100">
             <Text size="L400">Emoji</Text>
-            <Input
-              name="emoji"
-              size="400"
-              variant="Secondary"
-              radii="300"
-              defaultValue={sound.emoji}
-              maxLength={8}
-            />
+            <EmojiPickerButton value={emoji} onChange={setEmoji} />
           </Box>
           <Box direction="Column" gap="100" grow="Yes">
             <Text size="L400">Name</Text>
@@ -91,7 +85,10 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
             variant="Secondary"
             fill="Soft"
             radii="300"
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setEmoji(sound.emoji);
+              setEditing(false);
+            }}
           >
             <Text size="B400">Cancel</Text>
           </Button>
@@ -158,6 +155,7 @@ export function SoundPackEditor({ pack, canEdit, onUpdate }: SoundPackEditorProp
   const mx = useMatrixClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File>();
+  const [newEmoji, setNewEmoji] = useState<string>();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -168,7 +166,6 @@ export function SoundPackEditor({ pack, canEdit, onUpdate }: SoundPackEditorProp
     const name =
       (form.elements.namedItem('name') as HTMLInputElement).value.trim() ||
       file.name.replace(/\.[^.]+$/, '');
-    const emoji = (form.elements.namedItem('emoji') as HTMLInputElement).value.trim();
 
     setUploading(true);
     setError(undefined);
@@ -183,12 +180,13 @@ export function SoundPackEditor({ pack, canEdit, onUpdate }: SoundPackEditorProp
         withSound(pack.content, id, {
           url,
           name,
-          emoji: emoji || undefined,
+          emoji: newEmoji,
           info: { mimetype: file.type, size: file.size, duration },
         })
       );
       form.reset();
       setFile(undefined);
+      setNewEmoji(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed.');
     } finally {
@@ -239,9 +237,9 @@ export function SoundPackEditor({ pack, canEdit, onUpdate }: SoundPackEditorProp
               alignItems="End"
               style={{ marginTop: config.space.S200 }}
             >
-              <Box direction="Column" gap="100" style={{ width: 72 }}>
+              <Box direction="Column" gap="100">
                 <Text size="L400">Emoji</Text>
-                <Input name="emoji" size="400" variant="Secondary" radii="300" maxLength={8} />
+                <EmojiPickerButton value={newEmoji} onChange={setNewEmoji} />
               </Box>
               <Box direction="Column" gap="100" grow="Yes">
                 <Text size="L400">Name</Text>
