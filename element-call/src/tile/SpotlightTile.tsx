@@ -87,6 +87,10 @@ interface SpotlightUserMediaItemBaseProps extends SpotlightMemberMediaItemBasePr
   videoFit: "contain" | "cover";
   videoEnabled: boolean;
   nameTagLeadingIcon?: ReactNode;
+  // Cinny reads these to mirror speaking and mute state into its own UI, like on a grid tile.
+  "data-cinny-speaking"?: boolean;
+  "data-cinny-muted"?: boolean;
+  "data-cinny-user-id"?: string;
 }
 
 interface SpotlightLocalUserMediaItemProps extends SpotlightUserMediaItemBaseProps {
@@ -132,6 +136,7 @@ const SpotlightUserMediaItem: FC<SpotlightUserMediaItemProps> = ({
   const videoEnabled = useBehavior(vm.videoEnabled$);
   // Cinny: show the mute state on the spotlight's name tag too, like the strip tiles.
   const audioEnabled = useBehavior(vm.audioEnabled$);
+  const speaking = useBehavior(vm.speaking$);
   const playbackMuted = useBehavior(
     vm.local ? notPlaybackMuted : vm.playbackMuted$,
   );
@@ -159,6 +164,9 @@ const SpotlightUserMediaItem: FC<SpotlightUserMediaItemProps> = ({
           data-muted
         />
       ) : undefined,
+    "data-cinny-speaking": speaking,
+    "data-cinny-muted": !audioEnabled,
+    "data-cinny-user-id": vm.userId,
     targetWidth,
     targetHeight,
     ...props,
