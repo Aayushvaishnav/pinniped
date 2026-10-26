@@ -191,6 +191,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
   const [simulcast] = useSetting(settingsAtom, 'callSimulcast');
   const [screenShare] = useSetting(settingsAtom, 'callScreenShare');
   const [soundVolume] = useSetting(settingsAtom, 'soundVolume');
+  const [soundboardVolume] = useSetting(settingsAtom, 'soundboardVolume');
   const [audioInput] = useSetting(settingsAtom, 'callAudioInput');
   const [audioOutput] = useSetting(settingsAtom, 'callAudioOutput');
 
@@ -201,13 +202,23 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
         simulcast,
         screenShare: `${screenShare.resolution}:${screenShare.fps}`,
         soundVolume,
+        soundboardVolume,
         audioInput,
         audioOutput,
       })
       .catch(() => {
         // The widget is not ready yet; it was seeded from the same setting via its URL.
       });
-  }, [denoise, simulcast, screenShare, soundVolume, audioInput, audioOutput, embed]);
+  }, [
+    denoise,
+    simulcast,
+    screenShare,
+    soundVolume,
+    soundboardVolume,
+    audioInput,
+    audioOutput,
+    embed,
+  ]);
 };
 
 export const useCallEmbedPlacementSync = (containerViewRef: RefObject<HTMLDivElement>): void => {

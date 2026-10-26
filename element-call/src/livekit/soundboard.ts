@@ -14,13 +14,13 @@ import {
 import { type Logger } from "matrix-js-sdk/lib/logger";
 import { Subject } from "rxjs";
 
+import { soundboardVolume } from "../settings/settings";
+
 /**
  * Soundboard commands from the embedding client (ElementWidgetActions.Soundboard).
  * `url` is a same-origin (blob:) URL of an audio file the client has already downloaded.
  */
-export type SoundboardCommand =
-  | { op: "play"; url: string; volume?: number }
-  | { op: "stop" };
+export type SoundboardCommand = { op: "play"; url: string } | { op: "stop" };
 
 export const soundboardCommand$ = new Subject<SoundboardCommand>();
 
@@ -91,23 +91,27 @@ export class Soundboard {
     return this.publication;
   }
 
-  public async play(url: string, volume = 1): Promise<void> {
+  public async play(url: string): Promise<void> {
     await this.ctx.resume();
     const [buffer] = await Promise.all([this.decode(url), this.publish()]);
 
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
+    // The call gets the sound at full level: each listener scales what they hear with their own
+    // soundboard volume. The local copy for the user is scaled the same way.
     const gain = this.ctx.createGain();
-    gain.gain.value = Math.max(0, Math.min(volume, 1));
+    const monitor = this.ctx.createGain();
+    monitor.gain.value = Math.max(0, Math.min(soundboardVolume.getValue(), 1));
     source.connect(gain);
-    // To the call, and to the local speakers so the user hears it too.
     gain.connect(this.output.destination);
-    gain.connect(this.ctx.destination);
+    gain.connect(monitor);
+    monitor.connect(this.ctx.destination);
     this.playing.add(source);
     source.addEventListener("ended", () => {
       this.playing.delete(source);
       source.disconnect();
       gain.disconnect();
+      monitor.disconnect();
     });
     source.start();
   }

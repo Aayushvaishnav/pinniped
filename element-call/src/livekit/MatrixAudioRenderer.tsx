@@ -19,6 +19,7 @@ import { logger } from "matrix-js-sdk/lib/logger";
 import { useEarpieceAudioConfig } from "../MediaDevicesContext";
 import { useReactiveState } from "../useReactiveState";
 import * as controls from "../controls";
+import { soundboardVolume, useSetting } from "../settings/settings";
 
 export interface MatrixAudioRendererProps {
   /**
@@ -107,6 +108,7 @@ export function LivekitRoomAudioRenderer({
   // shouldUseAudioContext is set to false if stereoPan === 0 to allow standby bluetooth playback.
 
   const { pan: stereoPan, volume: volumeFactor } = useEarpieceAudioConfig();
+  const [soundboardVolumeLevel] = useSetting(soundboardVolume);
   const shouldUseAudioContext = stereoPan !== 0;
 
   // initialize the potentially used audio context.
@@ -144,6 +146,12 @@ export function LivekitRoomAudioRenderer({
           key={getTrackReferenceId(trackRef)}
           trackRef={trackRef}
           muted={muted}
+          // Soundboard sounds are sent at full level; the listener sets how loud they are.
+          volume={
+            trackRef.publication.trackName === "soundboard"
+              ? soundboardVolumeLevel
+              : undefined
+          }
           audioContext={shouldUseAudioContext ? audioContext : undefined}
           audioNodes={audioNodes}
         />

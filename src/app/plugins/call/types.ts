@@ -54,9 +54,11 @@ export type ElementCallSettings = {
   screenShare: string;
   /** Volume of the call's own sounds, 0-1. */
   soundVolume: number;
+  /** How loud soundboard sounds are for this client, 0-1. */
+  soundboardVolume: number;
   audioInput: string;
   audioOutput: string;
 };
 
 /** `url` is a blob: URL of the audio, which the same-origin call widget can read. */
-export type SoundboardCommand = { op: 'play'; url: string; volume: number } | { op: 'stop' };
+export type SoundboardCommand = { op: 'play'; url: string } | { op: 'stop' };

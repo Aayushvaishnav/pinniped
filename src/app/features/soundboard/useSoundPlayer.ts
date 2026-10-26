@@ -35,16 +35,15 @@ export const useSoundBlobUrl = () => {
 /** Plays soundboard sounds into the call: everyone in it hears them, and so do you. */
 export const useSoundPlayer = (callEmbed: CallEmbed) => {
   const getBlobUrl = useSoundBlobUrl();
-  const [volume] = useSetting(settingsAtom, 'soundboardVolume');
   const [recent, setRecent] = useSetting(settingsAtom, 'soundboardRecent');
 
   const play = useCallback(
     async (sound: Sound) => {
       const url = await getBlobUrl(sound.url);
-      await callEmbed.soundboard({ op: 'play', url, volume });
+      await callEmbed.soundboard({ op: 'play', url });
       setRecent([sound.key, ...recent.filter((k) => k !== sound.key)].slice(0, MAX_RECENT));
     },
-    [callEmbed, getBlobUrl, volume, recent, setRecent]
+    [callEmbed, getBlobUrl, recent, setRecent]
   );
 
   const stop = useCallback(() => callEmbed.soundboard({ op: 'stop' }), [callEmbed]);

@@ -13,7 +13,10 @@ import { type Behavior } from "../state/Behavior";
 import { useBehavior } from "../useBehavior";
 
 export class Setting<T> {
-  public constructor(key: string, public readonly defaultValue: T) {
+  public constructor(
+    key: string,
+    public readonly defaultValue: T,
+  ) {
     this.key = `matrix-setting-${key}`;
 
     const storedValue = localStorage.getItem(this.key);
@@ -24,7 +27,7 @@ export class Setting<T> {
       } catch (e) {
         logger.warn(
           `Invalid value stored for setting ${key}: ${storedValue}.`,
-          e
+          e,
         );
       }
     }
@@ -62,13 +65,13 @@ export function useSetting<T>(setting: Setting<T>): [T, (value: T) => void] {
 // null = undecided
 export const optInAnalytics = new Setting<boolean | null>(
   "opt-in-analytics",
-  null
+  null,
 );
 // TODO: This setting can be disabled. Work out an approach to disableable
 // settings thats works for Observables in addition to React.
 export const useOptInAnalytics = (): [
   boolean | null,
-  ((value: boolean | null) => void) | null
+  ((value: boolean | null) => void) | null,
 ] => {
   const setting = useSetting(optInAnalytics);
   return PosthogAnalytics.instance.isEnabled() ? setting : [false, null];
@@ -82,27 +85,27 @@ export const debugTileLayout = new Setting("debug-tile-layout", false);
 
 export const showConnectionStats = new Setting<boolean>(
   "show-connection-stats",
-  false
+  false,
 );
 
 export const audioInput = new Setting<string | undefined>(
   "audio-input",
-  undefined
+  undefined,
 );
 export const audioOutput = new Setting<string | undefined>(
   "audio-output",
-  undefined
+  undefined,
 );
 export const videoInput = new Setting<string | undefined>(
   "video-input",
-  undefined
+  undefined,
 );
 
 export const backgroundBlur = new Setting<boolean>("background-blur", false);
 
 export const denoiseMode = new Setting<"off" | "deepfilternet">(
   "denoise-mode",
-  "off"
+  "off",
 );
 
 /**
@@ -114,24 +117,30 @@ export const videoSimulcast = new Setting<boolean>("video-simulcast", false);
 /** Screen share quality as `<resolution>:<fps>` (see parseScreenShareQuality), chosen by the client. */
 export const screenShareQuality = new Setting<string>(
   "screen-share-quality",
-  "720p:60"
+  "720p:60",
 );
+
+/**
+ * How loud soundboard sounds are for this listener, 0-1: those of other participants and the
+ * local copy of your own. Sounds go out at full level, so each listener sets their own.
+ */
+export const soundboardVolume = new Setting<number>("soundboard-volume", 1);
 
 export const showHandRaisedTimer = new Setting<boolean>(
   "hand-raised-show-timer",
-  false
+  false,
 );
 
 export const showReactions = new Setting<boolean>("reactions-show", true);
 
 export const playReactionsSound = new Setting<boolean>(
   "reactions-play-sound",
-  true
+  true,
 );
 
 export const soundEffectVolume = new Setting<number>(
   "sound-effect-volume",
-  0.6
+  0.6,
 );
 
 export const muteAllAudio = new Setting<boolean>("mute-all-audio", false);
@@ -140,12 +149,12 @@ export const alwaysShowSelf = new Setting<boolean>("always-show-self", true);
 
 export const alwaysShowIphoneEarpiece = new Setting<boolean>(
   "always-show-iphone-earpiece",
-  false
+  false,
 );
 
 export const enableExtendedLivekitLogs = new Setting<boolean>(
   "extended-livekit-logs",
-  false
+  false,
 );
 
 export enum MatrixRTCMode {
@@ -162,10 +171,10 @@ export enum MatrixRTCMode {
 
 export const matrixRTCMode = new Setting<MatrixRTCMode>(
   "matrix-rtc-mode",
-  MatrixRTCMode.Legacy
+  MatrixRTCMode.Legacy,
 );
 
 export const customLivekitUrl = new Setting<string | null>(
   "custom-livekit-url",
-  null
+  null,
 );
