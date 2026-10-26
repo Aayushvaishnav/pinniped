@@ -16,8 +16,11 @@ import {
 } from "livekit-client";
 
 const defaultLiveKitPublishOptions: TrackPublishDefaults = {
-  audioPreset: AudioPresets.music,
-  dtx: true,
+  // 96 kbps mono: browser-WebRTC default voice bitrates sound noticeably
+  // worse than Discord; bandwidth is cheap next to that.
+  audioPreset: AudioPresets.musicHighQuality,
+  // Opus comfort noise (CNG) during silence is audible as persistent hiss.
+  dtx: false,
   // disable red because the livekit server strips out red packets for clients
   // that don't support it (firefox) but of course that doesn't work with e2ee.
   red: false,

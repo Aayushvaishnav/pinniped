@@ -161,5 +161,8 @@
       "esbuild": "^0.28.0"
     }
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "denoise-voice-clarity": "0.2.2"
+  }
 }

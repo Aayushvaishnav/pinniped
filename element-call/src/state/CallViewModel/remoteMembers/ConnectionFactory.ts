@@ -28,6 +28,11 @@ import type { MediaDevices } from "../../MediaDevices.ts";
 import type { Behavior } from "../../Behavior.ts";
 import type { ProcessorState } from "../../../livekit/TrackProcessorContext.tsx";
 import { defaultLiveKitOptions } from "../../../livekit/options.ts";
+import {
+  voiceClarityCapture,
+  voiceClaritySupported,
+} from "../../../livekit/voiceClarity.ts";
+import { voiceClarity } from "../../../settings/settings";
 
 // TODO evaluate if this should be done like the Publisher Factory
 export interface ConnectionFactory {
@@ -138,6 +143,9 @@ function generateRoomOption({
   echoCancellation: boolean;
   noiseSuppression: boolean;
 }): RoomOptions {
+  // While the DeepFilterNet denoiser owns the mic track, the browser's own
+  // noise suppression and AGC must be off (echo cancellation stays on).
+  const voiceClarityActive = voiceClaritySupported() && voiceClarity.getValue();
   return {
     ...defaultLiveKitOptions,
     videoCaptureDefaults: {
@@ -149,7 +157,9 @@ function generateRoomOption({
       ...defaultLiveKitOptions.audioCaptureDefaults,
       deviceId: devices.audioInput.selected$.value?.id,
       echoCancellation,
-      noiseSuppression,
+      ...(voiceClarityActive
+        ? voiceClarityCapture
+        : { noiseSuppression }),
     },
     audioOutput: {
       // When using controlled audio devices, we don't want to set the

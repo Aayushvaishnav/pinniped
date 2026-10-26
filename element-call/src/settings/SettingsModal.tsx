@@ -23,8 +23,10 @@ import {
   useSetting,
   soundEffectVolume as soundEffectVolumeSetting,
   backgroundBlur as backgroundBlurSetting,
+  voiceClarity as voiceClaritySetting,
   developerMode,
 } from "./settings";
+import { voiceClaritySupported } from "../livekit/voiceClarity";
 import { PreferencesSettingsTab } from "./PreferencesSettingsTab";
 import { Slider } from "../Slider";
 import { DeviceSelection } from "./DeviceSelection";
@@ -70,6 +72,32 @@ export const SettingsModal: FC<Props> = ({
   livekitRooms,
 }) => {
   const { t } = useTranslation();
+
+  // Generate a `Checkbox` input to turn neural noise suppression on or off.
+  const VoiceClarityCheckbox: React.FC = (): ReactNode => {
+    const [active, setActive] = useSetting(voiceClaritySetting);
+    const supported = voiceClaritySupported();
+
+    return (
+      <>
+        <h4>{t("settings.voice_clarity_header")}</h4>
+
+        <FieldRow>
+          <InputField
+            id="activateVoiceClarity"
+            label={t("settings.voice_clarity_label")}
+            description={
+              supported ? "" : t("settings.voice_clarity_not_supported")
+            }
+            type="checkbox"
+            checked={!!active}
+            onChange={(b): void => setActive(b.target.checked)}
+            disabled={!supported}
+          />
+        </FieldRow>
+      </>
+    );
+  };
 
   // Generate a `Checkbox` input to turn blur on or off.
   const BlurCheckbox: React.FC = (): ReactNode => {
@@ -165,6 +193,8 @@ export const SettingsModal: FC<Props> = ({
             />
           </div>
         </Form>
+        <Separator />
+        <VoiceClarityCheckbox />
       </>
     ),
   };

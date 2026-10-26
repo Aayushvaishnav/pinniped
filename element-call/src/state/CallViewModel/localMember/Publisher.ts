@@ -7,6 +7,7 @@ Please see LICENSE in the repository root for full details.
 */
 import {
   ConnectionState as LivekitConnectionState,
+  LocalAudioTrack,
   type LocalTrackPublication,
   LocalVideoTrack,
   ParticipantEvent,
@@ -29,6 +30,7 @@ import {
   type ProcessorState,
   trackProcessorSync,
 } from "../../../livekit/TrackProcessorContext.tsx";
+import { voiceClaritySync } from "../../../livekit/voiceClarity.ts";
 import { getUrlParams } from "../../../UrlParams.ts";
 import { observeTrackReference$ } from "../../observeTrackReference";
 import { type Connection } from "../remoteMembers/Connection.ts";
@@ -73,6 +75,8 @@ export class Publisher {
 
     // Setup track processor syncing (blur)
     this.observeTrackProcessors(this.scope, room, trackerProcessorState$);
+    // Setup neural noise suppression / voice clarity syncing
+    this.observeVoiceClarity(this.scope, room);
     // Observe media device changes and update LiveKit active devices accordingly
     this.observeMediaDevices(this.scope, devices, controlledAudioDevices);
 
@@ -92,6 +96,14 @@ export class Publisher {
 
     this.logger.info(`Start to stop tracks`);
     try {
+      // Close the denoise engine's AudioContext before the tracks go away;
+      // unpublishing alone would leave it open.
+      const micTrack = this.connection.livekitRoom.localParticipant.getTrackPublication(
+        Track.Source.Microphone,
+      )?.track;
+      if (micTrack instanceof LocalAudioTrack) {
+        await micTrack.stopProcessor();
+      }
       await this.stopTracks();
       this.logger.info(`Done to stop tracks`);
     } catch (e) {
@@ -439,5 +451,24 @@ export class Publisher {
       null,
     );
     trackProcessorSync(scope, track$, trackerProcessorState$);
+  }
+
+  private observeVoiceClarity(
+    scope: ObservableScope,
+    room: LivekitRoom,
+  ): void {
+    const track$ = scope.behavior(
+      observeTrackReference$(
+        room.localParticipant,
+        Track.Source.Microphone,
+      ).pipe(
+        map((trackRef) => {
+          const track = trackRef?.publication.track;
+          return track instanceof LocalAudioTrack ? track : null;
+        }),
+      ),
+      null,
+    );
+    voiceClaritySync(scope, track$, this.logger);
   }
 }
