@@ -28,6 +28,7 @@ import { ServerConfigsLoader } from '../../components/ServerConfigsLoader';
 import { CapabilitiesProvider } from '../../hooks/useCapabilities';
 import { MediaConfigProvider } from '../../hooks/useMediaConfig';
 import { MatrixClientProvider } from '../../hooks/useMatrixClient';
+import { DebugHandle } from '../../hooks/useDebugHandle';
 import { IdleDetector } from '../../hooks/useIdleDetector';
 import { RichPresencePublisher } from '../../hooks/useRichPresencePublisher';
 import { SpecVersions } from './SpecVersions';
@@ -226,6 +227,7 @@ export function ClientRoot({ children }: ClientRootProps) {
           <MatrixClientProvider value={mx}>
             <RichPresencePublisher />
             <IdleDetector />
+            <DebugHandle />
             <ServerConfigsLoader>
               {(serverConfigs) => (
                 <CapabilitiesProvider value={serverConfigs.capabilities ?? {}}>
