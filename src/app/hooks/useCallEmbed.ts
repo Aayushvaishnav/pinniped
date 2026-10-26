@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { MatrixClient, Room } from 'matrix-js-sdk';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { IWidgetApiRequest } from 'matrix-widget-api';
 import {
   CallEmbed,
   ElementCallThemeKind,
@@ -18,6 +19,7 @@ import {
 import { CallControlEvent } from '../plugins/call/CallControl';
 import { useSetting } from '../state/hooks/settings';
 import { settingsAtom } from '../state/settings';
+import { playCallEndSound } from '../sound/play';
 import { useMatrixClient } from './useMatrixClient';
 import { ThemeKind, useTheme } from './useTheme';
 import { callEmbedAtom, callIdleAtom } from '../state/callEmbed';
@@ -121,10 +123,17 @@ export const useCallHangupEvent = (embed: CallEmbed, callback: () => void) => {
     ElementWidgetActions.HangupCall,
     useCallback(logAndCallback('hangup'), [callback]) // eslint-disable-line react-hooks/exhaustive-deps
   );
-  useClientWidgetApiEvent(
+  useClientWidgetApiEvent<IWidgetApiRequest>(
     embed.call,
     ElementWidgetActions.Close,
-    useCallback(logAndCallback('close'), [callback]) // eslint-disable-line react-hooks/exhaustive-deps
+    useCallback(
+      (evt) => {
+        // The call closes without playing its end sound (see getCallSoundHandoff): play it here.
+        playCallEndSound(evt.detail?.data?.reason);
+        logAndCallback('close')(evt);
+      },
+      [callback] // eslint-disable-line react-hooks/exhaustive-deps
+    )
   );
 };
 

@@ -55,3 +55,34 @@ export const getCallSoundOverrides = (): Record<string, string> => {
   });
   return overrides;
 };
+
+// Why a call ended (as the call widget reports it) -> the override that carries its sound.
+const CALL_END_SOUND_OVERRIDES = {
+  timeout: 'timeout',
+  decline: 'decline',
+  user: 'left',
+} as const;
+
+/**
+ * The end reasons whose sound Cinny plays itself (see playCallEndSound), for the call to
+ * close right away instead of staying on screen until its own sound has finished.
+ */
+export const getCallSoundHandoff = (): string[] => {
+  const overrides = getCallSoundOverrides();
+  return Object.entries(CALL_END_SOUND_OVERRIDES)
+    .filter(([, override]) => overrides[override])
+    .map(([reason]) => reason);
+};
+
+/** Plays the end-of-call sound for a reason in getCallSoundHandoff, after the call has closed. */
+export const playCallEndSound = (reason: unknown): void => {
+  if (typeof reason !== 'string' || !(reason in CALL_END_SOUND_OVERRIDES)) return;
+  const url =
+    getCallSoundOverrides()[
+      CALL_END_SOUND_OVERRIDES[reason as keyof typeof CALL_END_SOUND_OVERRIDES]
+    ];
+  if (!url) return;
+  const audio = new Audio(url);
+  audio.volume = getSettings().soundVolume;
+  audio.play().catch(() => undefined);
+};

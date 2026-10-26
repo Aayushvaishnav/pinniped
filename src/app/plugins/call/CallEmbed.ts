@@ -25,7 +25,7 @@ import {
   ElementMediaStateDetail,
   ElementWidgetActions,
 } from './types';
-import { getCallSoundOverrides } from '../../sound/play';
+import { getCallSoundHandoff, getCallSoundOverrides } from '../../sound/play';
 import { getSettings } from '../../state/settings';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
@@ -139,6 +139,9 @@ export class CallEmbed {
     params.append('soundVolume', settings.soundVolume.toString());
     params.append('audioInput', settings.callAudioInput);
     params.append('audioOutput', settings.callAudioOutput);
+
+    const soundHandoff = getCallSoundHandoff();
+    if (soundHandoff.length > 0) params.append('soundHandoff', soundHandoff.join(','));
 
     const soundOverrides = getCallSoundOverrides();
     if (Object.keys(soundOverrides).length > 0) {

@@ -319,20 +319,26 @@ export const GroupCallView: FC<Props> = ({
       reason: "timeout" | "user" | "allOthersLeft" | "decline" | "error",
     ): void => {
       let audioPromise: Promise<void> | undefined = undefined;
-      switch (reason) {
-        case "allOthersLeft":
-          // When "allOthersLeft", the leaveSoundEffect$ in CallEventAudioRenderer
-          // already plays the "left" sound when the remote participant's media
-          // disappears. We play it here silenced (volumeOverwrite = 0) so we have the right duration in the audioPromise.
-          // (used to destory the widget)
-          audioPromise = leaveSoundContext.current?.playSound("left", 0);
-          break;
-        case "timeout":
-        case "decline":
-          audioPromise = leaveSoundContext.current?.playSound(reason);
-          break;
-        default:
-          audioPromise = leaveSoundContext.current?.playSound("left");
+      // The client plays this reason's sound itself, so there is nothing to
+      // wait for: closing right away is what makes the call disappear promptly.
+      const soundHandedOff =
+        widget !== null && !!getUrlParams().soundHandoff?.includes(reason);
+      if (!soundHandedOff) {
+        switch (reason) {
+          case "allOthersLeft":
+            // When "allOthersLeft", the leaveSoundEffect$ in CallEventAudioRenderer
+            // already plays the "left" sound when the remote participant's media
+            // disappears. We play it here silenced (volumeOverwrite = 0) so we have the right duration in the audioPromise.
+            // (used to destory the widget)
+            audioPromise = leaveSoundContext.current?.playSound("left", 0);
+            break;
+          case "timeout":
+          case "decline":
+            audioPromise = leaveSoundContext.current?.playSound(reason);
+            break;
+          default:
+            audioPromise = leaveSoundContext.current?.playSound("left");
+        }
       }
 
       setJoined(false);
@@ -386,7 +392,9 @@ export const GroupCallView: FC<Props> = ({
             // error occurs we should keep the widget open until the user reads it.
             if (reason != "error" && !getUrlParams().returnToLobby) {
               try {
-                await widget.api.transport.send(ElementWidgetActions.Close, {});
+                await widget.api.transport.send(ElementWidgetActions.Close, {
+                  reason,
+                });
               } catch (e) {
                 logger.error("Failed to send close action", e);
               }
