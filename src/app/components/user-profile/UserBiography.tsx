@@ -1,5 +1,11 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import parse from 'html-react-parser';
 import { Box, Text, as, config } from 'folds';
+import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { parseBlockMD, parseInlineMD } from '../../plugins/markdown';
+import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../plugins/react-custom-html-parser';
+import { sanitizeCustomHtml, sanitizeText } from '../../utils/sanitize';
 
 const COLLAPSED_LINES = 6;
 
@@ -7,9 +13,20 @@ type UserBiographyProps = {
   biography: string;
 };
 export const UserBiography = as<'div', UserBiographyProps>(({ biography, ...props }, ref) => {
+  const mx = useMatrixClient();
+  const useAuthentication = useMediaAuthentication();
   const textRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
+
+  const content = useMemo(
+    () =>
+      parse(
+        sanitizeCustomHtml(parseBlockMD(sanitizeText(biography), parseInlineMD)),
+        getReactCustomHtmlParser(mx, undefined, { linkifyOpts: LINKIFY_OPTS, useAuthentication })
+      ),
+    [mx, biography, useAuthentication]
+  );
 
   useLayoutEffect(() => {
     const el = textRef.current;
@@ -24,19 +41,13 @@ export const UserBiography = as<'div', UserBiographyProps>(({ biography, ...prop
         ref={textRef}
         priority="300"
         style={{
-          whiteSpace: 'pre-wrap',
           overflowWrap: 'anywhere',
           ...(expanded
             ? { maxHeight: '40vh', overflowY: 'auto' }
-            : {
-                display: '-webkit-box',
-                WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: COLLAPSED_LINES,
-                overflow: 'hidden',
-              }),
+            : { maxHeight: `${COLLAPSED_LINES}lh`, overflow: 'hidden' }),
         }}
       >
-        {biography}
+        {content}
       </Text>
       {(overflowing || expanded) && (
         <Text

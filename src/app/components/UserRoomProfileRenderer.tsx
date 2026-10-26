@@ -9,6 +9,9 @@ import { stopPropagation } from '../utils/keyboard';
 import { SpaceProvider } from '../hooks/useSpace';
 import { RoomProvider } from '../hooks/useRoom';
 
+// Tall enough for the card with a collapsed, maximum-length bio.
+const RESERVED_CARD_HEIGHT = 520;
+
 function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) {
   const { roomId, spaceId, userId, cords, position, centered } = state;
   const allJoinedRooms = useAllJoinedRoomsSet();
@@ -47,7 +50,26 @@ function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) 
     );
   }
 
-  return <PopOut anchor={cords} position={position ?? 'Top'} align="Start" content={card} />;
+  // PopOut measures its content once, when it opens, but the profile (and its
+  // bio) loads afterwards and grows the card, so a card placed near the bottom
+  // edge would end up clipped. Reserve the height of a full card with an
+  // invisible, click-through spacer so placement always leaves enough room.
+  const popPosition = position ?? 'Top';
+  const reserved = (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: popPosition === 'Top' ? 'flex-end' : 'flex-start',
+        minHeight: `min(${toRem(RESERVED_CARD_HEIGHT)}, 100vh)`,
+        pointerEvents: 'none',
+      }}
+    >
+      <div style={{ pointerEvents: 'auto' }}>{card}</div>
+    </div>
+  );
+
+  return <PopOut anchor={cords} position={popPosition} align="Start" content={reserved} />;
 }
 
 export function UserRoomProfileRenderer() {
