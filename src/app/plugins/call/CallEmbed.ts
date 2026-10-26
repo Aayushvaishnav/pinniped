@@ -120,6 +120,9 @@ export class CallEmbed {
       lang: 'en-EN',
       theme: themeKind,
       header: 'none',
+      // The widget's index.html keeps its name across deploys; a new URL per build
+      // means no cache can hand out an old widget.
+      v: __APP_COMMIT__,
     });
 
     if (!room.isCallRoom() && CallEmbed.startingCall(intent)) {
