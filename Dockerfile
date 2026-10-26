@@ -20,6 +20,8 @@ COPY . /src/
 COPY --from=element-call /element-call-dist /src/node_modules/.cache/cinny-element-call-fork
 ARG APP_COMMIT=unknown
 ENV APP_COMMIT=$APP_COMMIT
+# The widget was built in the stage above; do not rebuild it from the copied source.
+ENV ELEMENT_CALL_FORK_REBUILD=0
 ENV NODE_OPTIONS=--max_old_space_size=4096
 RUN npm run build
 

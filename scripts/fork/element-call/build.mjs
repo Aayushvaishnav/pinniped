@@ -13,13 +13,40 @@ const repoRoot = path.resolve(here, '../../..');
 export const ELEMENT_CALL_SRC = path.join(repoRoot, 'element-call');
 export const ELEMENT_CALL_TAG = 'v0.20.1';
 
-const run = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, stdio: 'inherit' });
+// CI=true keeps pnpm from prompting (and aborting) when there is no TTY, as under vite.
+const run = (cmd, args, cwd) =>
+  execFileSync(cmd, args, { cwd, stdio: 'inherit', env: { ...process.env, CI: 'true' } });
+
+const mtime = (file) => (fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0);
+
+function newestMtime(target) {
+  if (!fs.existsSync(target)) return 0;
+  const stat = fs.statSync(target);
+  if (!stat.isDirectory()) return stat.mtimeMs;
+  return fs
+    .readdirSync(target)
+    .reduce((newest, name) => Math.max(newest, newestMtime(path.join(target, name))), stat.mtimeMs);
+}
+
+// Everything that ends up in the widget bundle; element-call/dist and node_modules do not.
+const SOURCE_INPUTS = ['src', 'locales', 'public', 'index.html', 'package.json', 'pnpm-lock.yaml'];
+const sourcesNewestMtime = () =>
+  Math.max(...SOURCE_INPUTS.map((name) => newestMtime(path.join(ELEMENT_CALL_SRC, name))));
+
+/** Whether the vendored source exists and is newer than the build at outDir. */
+export function elementCallForkStale(outDir) {
+  if (!fs.existsSync(path.join(ELEMENT_CALL_SRC, 'package.json'))) return false;
+  return sourcesNewestMtime() > mtime(path.join(outDir, 'index.html'));
+}
 
 export function buildElementCallFork(outDir) {
   if (!fs.existsSync(path.join(ELEMENT_CALL_SRC, 'package.json'))) {
     throw new Error(`Element Call source not found at ${ELEMENT_CALL_SRC}`);
   }
-  run('pnpm', ['install', '--frozen-lockfile'], ELEMENT_CALL_SRC);
+  const installed = mtime(path.join(ELEMENT_CALL_SRC, 'node_modules/.modules.yaml'));
+  if (installed < mtime(path.join(ELEMENT_CALL_SRC, 'pnpm-lock.yaml'))) {
+    run('pnpm', ['install', '--frozen-lockfile'], ELEMENT_CALL_SRC);
+  }
   run('pnpm', ['build:embedded'], ELEMENT_CALL_SRC);
 
   fs.rmSync(outDir, { recursive: true, force: true });
@@ -27,11 +54,9 @@ export function buildElementCallFork(outDir) {
   // The embedded vite build disables publicDir, so the self-hosted
   // DeepFilterNet runtime assets (fetched by the widget at runtime) are
   // copied here explicitly.
-  fs.cpSync(
-    path.join(ELEMENT_CALL_SRC, 'public/df3'),
-    path.join(outDir, 'df3'),
-    { recursive: true }
-  );
+  fs.cpSync(path.join(ELEMENT_CALL_SRC, 'public/df3'), path.join(outDir, 'df3'), {
+    recursive: true,
+  });
   return outDir;
 }
 

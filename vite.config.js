@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import buildConfig from './build.config';
 import { prepareElementCall } from './scripts/fork/element-call-activity.mjs';
+import { buildElementCallFork, ELEMENT_CALL_SRC } from './scripts/fork/element-call/build.mjs';
 
 // Fork-only: short commit hash baked into the bundle. The container build has
 // no .git, so the Dockerfile passes it in as APP_COMMIT.
@@ -138,6 +139,48 @@ function serveRuntimeCopies(elementCallPath) {
   };
 }
 
+// Dev only: rebuild the vendored Element Call widget when its source changes and
+// reload the page, so editing element-call/ behaves like editing src/.
+function rebuildElementCallOnChange(outDir) {
+  return {
+    name: 'vite-plugin-rebuild-element-call',
+    apply: 'serve',
+    configureServer(server) {
+      if (process.env.ELEMENT_CALL_FORK_REBUILD === '0' || !fs.existsSync(ELEMENT_CALL_SRC)) return;
+      const watched = ['src', 'locales', 'public', 'index.html'].map((n) =>
+        path.join(ELEMENT_CALL_SRC, n)
+      );
+      server.watcher.add(watched);
+      let timer;
+      let building = false;
+      let again = false;
+      const rebuild = () => {
+        if (building) {
+          again = true;
+          return;
+        }
+        building = true;
+        try {
+          buildElementCallFork(outDir);
+          server.ws.send({ type: 'full-reload' });
+        } catch (e) {
+          server.config.logger.error(`Element Call rebuild failed: ${e.message}`);
+        }
+        building = false;
+        if (again) {
+          again = false;
+          rebuild();
+        }
+      };
+      server.watcher.on('all', (_event, file) => {
+        if (!watched.some((w) => file === w || file.startsWith(w + path.sep))) return;
+        clearTimeout(timer);
+        timer = setTimeout(rebuild, 300);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   appType: 'spa',
   publicDir: false,
@@ -160,6 +203,10 @@ export default defineConfig({
   server: {
     port: 8080,
     host: true,
+    watch: {
+      // The widget build output is reloaded explicitly by rebuildElementCallOnChange.
+      ignored: ['**/element-call/dist/**', '**/.pnpm-store/**'],
+    },
     fs: {
       // Allow serving files from one level up to the project root
       allow: ['..'],
@@ -168,6 +215,7 @@ export default defineConfig({
   plugins: [
     serverMatrixSdkCryptoWasm('/node_modules/.vite/deps/pkg/matrix_sdk_crypto_wasm_bg.wasm'),
     serveRuntimeCopies(elementCallPath),
+    rebuildElementCallOnChange(elementCallPath),
     viteStaticCopy(copyFiles),
     vanillaExtractPlugin(),
     wasm(),

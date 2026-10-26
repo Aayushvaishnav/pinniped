@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { buildElementCallFork, elementCallForkStale } from './element-call/build.mjs';
 
 // Element Call 0.20.1 suppresses its speaking CSS in spotlight/one-to-one layouts.
 // Expose the existing raw observable value on the media tile for Cinny's sidebar.
@@ -24,6 +25,12 @@ export function prepareElementCall() {
   const fork = path.resolve(
     process.env.ELEMENT_CALL_FORK_DIST ?? 'node_modules/.cache/cinny-element-call-fork'
   );
+  // Rebuild the vendored widget whenever its source is newer than the last build,
+  // so `vite`/`vite build` never serve a stale call widget.
+  // The container and nix builds prebuild (or skip) the widget themselves and opt out.
+  if (process.env.ELEMENT_CALL_FORK_REBUILD !== '0' && elementCallForkStale(fork)) {
+    buildElementCallFork(fork);
+  }
   if (fs.existsSync(path.join(fork, 'index.html'))) return fork;
   const root = path.resolve('node_modules/@element-hq/element-call-embedded');
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
