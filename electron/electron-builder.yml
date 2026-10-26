@@ -22,9 +22,13 @@ files:
 extraMetadata:
   main: electron/main.cjs
 
-# unpacked app dir: `just sync` rsyncs a fresh dist into the installed app
-# without repacking an asar on every iteration
-asar: false
+# one archive instead of ~thousands of loose files (faster install and start).
+# Electron reads asar transparently in the main process, which is all that
+# touches these files (the app:// handler serves dist, nothing spawns them).
+# The window/tray icon is the one file handed to the OS as a real path.
+asar: true
+asarUnpack:
+  - electron/build/icon.png
 
 # app ships no node_modules (main uses only node built-ins), skip native rebuild
 npmRebuild: false

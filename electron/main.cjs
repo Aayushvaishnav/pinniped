@@ -17,7 +17,10 @@ const { createRichPresenceServer } = require('./rich-presence.cjs');
 
 // dist sits next to electron/ in both dev and the packaged asar
 const DIST_DIR = path.join(__dirname, '..', 'dist');
-const APP_ICON = path.join(__dirname, 'build', 'icon.png');
+// Unpacked from the asar (see asarUnpack): the OS reads the icon by path.
+const APP_ICON = path
+  .join(__dirname, 'build', 'icon.png')
+  .replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 
 // Dev only (`just dev-electron`): load the vite dev server (HMR) instead of the
 // built bundle in dist/.
