@@ -29,6 +29,7 @@ declare global {
       versions: { electron: string; chrome: string; node: string };
       showWindow?: () => void;
       setBadgeCount?: (count: number, overlayPng?: string, hasUnread?: boolean) => void;
+      getSystemIdleTime?: () => Promise<number>;
       supportsRichPresenceBridge?: true;
       startRichPresenceBridge?: () => Promise<RichPresenceBridgeStartResult>;
       stopRichPresenceBridge?: () => Promise<void>;

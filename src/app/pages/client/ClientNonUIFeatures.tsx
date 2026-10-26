@@ -2,6 +2,7 @@ import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MatrixEvent, MatrixEventEvent, Room, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { isUserActive } from '../../state/idle';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/pinniped.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/pinniped-unread.svg';
@@ -245,7 +246,7 @@ function MessageNotifications() {
   useEffect(() => {
     const processEvent = (mEvent: MatrixEvent, room: Room) => {
       if (mx.getSyncState() !== 'SYNCING') return;
-      if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
+      if (isUserActive() && (selectedRoomId === room?.roomId || notificationSelected)) return;
       if (
         room.isSpaceRoom() ||
         !isNotificationEvent(mEvent) ||

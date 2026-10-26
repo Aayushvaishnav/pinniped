@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('cinnyDesktop', {
   showWindow: () => ipcRenderer.send('window:show'),
   setBadgeCount: (count, overlay, hasUnread) =>
     ipcRenderer.send('badge:set', { count, overlay, hasUnread }),
+  getSystemIdleTime: () => ipcRenderer.invoke('system:idle-time'),
   supportsRichPresenceBridge: true,
   startRichPresenceBridge: () => ipcRenderer.invoke('rich-presence:start'),
   stopRichPresenceBridge: () => ipcRenderer.invoke('rich-presence:stop'),

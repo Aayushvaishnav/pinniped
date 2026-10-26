@@ -8,6 +8,7 @@ const {
   ipcMain,
   nativeImage,
   Tray,
+  powerMonitor,
 } = require('electron');
 const path = require('path');
 const { registerAppScheme, registerAppHandler, APP_ORIGIN } = require('./app-protocol.cjs');
@@ -69,6 +70,10 @@ ipcMain.handle('rich-presence:stop', async () => {
     // ignore
   }
 });
+
+// Seconds since the last keyboard/mouse input anywhere on the system; the
+// renderer uses it for idle detection.
+ipcMain.handle('system:idle-time', () => powerMonitor.getSystemIdleTime());
 
 // Unread mentions and DMs shown on the app icon: dock badge (macOS), Unity
 // launcher count (Linux, where the desktop supports it) and a taskbar overlay

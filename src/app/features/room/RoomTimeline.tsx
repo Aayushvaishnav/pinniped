@@ -101,6 +101,7 @@ import {
   useIntersectionObserver,
 } from '../../hooks/useIntersectionObserver';
 import { markAsRead } from '../../utils/notifications';
+import { isUserActive } from '../../state/idle';
 import { useDebounce } from '../../hooks/useDebounce';
 import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
@@ -644,14 +645,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         // otherwise we update timeline without paginating
         // so timeline can be updated with evt like: edits, reactions etc
         if (atBottomRef.current) {
-          if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
+          if (isUserActive() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
             // Check if the document is in focus (user is actively viewing the app),
             // and either there are no unread messages or the latest message is from the current user.
             // If either condition is met, trigger the markAsRead function to send a read receipt.
             requestAnimationFrame(() => markAsRead(mx, mEvt.getRoomId()!, hideActivity));
           }
 
-          if (!document.hasFocus() && !unreadInfo) {
+          if (!isUserActive() && !unreadInfo) {
             setUnreadInfo(getRoomUnreadInfo(room));
           }
 
@@ -779,7 +780,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (targetEntry?.isIntersecting && atLiveEndRef.current) {
           atBottomRef.current = true;
           setAtBottom(true);
-          if (document.hasFocus()) {
+          if (isUserActive()) {
             tryAutoMarkAsRead();
           }
         }

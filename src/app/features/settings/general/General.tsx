@@ -735,6 +735,7 @@ function Editor() {
   const [enterForNewline, setEnterForNewline] = useSetting(settingsAtom, 'enterForNewline');
   const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
   const [hideActivity, setHideActivity] = useSetting(settingsAtom, 'hideActivity');
+  const [idleDetection, setIdleDetection] = useSetting(settingsAtom, 'idleDetection');
 
   return (
     <Box direction="Column" gap="100">
@@ -759,6 +760,11 @@ function Editor() {
           title="Hide Typing & Read Receipts"
           description="Turn off both typing status and read receipts to keep your activity private."
           after={<Switch variant="Primary" value={hideActivity} onChange={setHideActivity} />}
+        />
+        <SettingTile
+          title="Away When Idle"
+          description="After 5 minutes without input, show as away and stop sending read receipts until you return."
+          after={<Switch variant="Primary" value={idleDetection} onChange={setIdleDetection} />}
         />
       </SequenceCard>
     </Box>
