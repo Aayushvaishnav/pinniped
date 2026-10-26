@@ -3,6 +3,8 @@ import { DefaultReset, config, toRem } from 'folds';
 
 export const MessageBase = style({
   position: 'relative',
+});
+export const MessageBody = style({
   transition: 'opacity 200ms ease-out',
 });
 export const MessageSending = style({

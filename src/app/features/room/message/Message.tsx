@@ -893,7 +893,9 @@ export const Message = as<'div', MessageProps>(
             onCancel={() => onEditId()}
           />
         ) : (
-          children
+          <div className={classNames(css.MessageBody, { [css.MessageSending]: isSending })}>
+            {children}
+          </div>
         )}
         {reactions}
         {isFailed && (
@@ -998,7 +1000,6 @@ export const Message = as<'div', MessageProps>(
       <MessageBase
         className={classNames(css.MessageBase, className, {
           [css.MessageBaseBubbleCollapsed]: messageLayout === MessageLayout.Bubble && collapse,
-          [css.MessageSending]: isSending,
         })}
         tabIndex={0}
         space={messageSpacing}
