@@ -14,6 +14,7 @@ import {
   MsgType,
   NotificationCountType,
   RelationType,
+  ReceiptType,
   Room,
   RoomMember,
 } from 'matrix-js-sdk';
@@ -226,13 +227,23 @@ export const roomHaveUnread = (mx: MatrixClient, room: Room) => {
     return false;
   }
 
+  // The SDK ignores a receipt whose event is not loaded, which is the usual
+  // case right after a restart (only the cached sync window is in memory). The
+  // receipt's own timestamp still says when we read, so use it to tell events
+  // we already read from newer ones.
+  const readTs = Math.max(
+    room.getReadReceiptForUserId(userId, false, ReceiptType.Read)?.data.ts ?? 0,
+    room.getReadReceiptForUserId(userId, false, ReceiptType.ReadPrivate)?.data.ts ?? 0
+  );
+
   for (let i = liveEvents.length - 1; i >= 0; i -= 1) {
     const event = liveEvents[i];
     if (!event) return false;
     if (event.getId() === readUpToId) return false;
-    if (isNotificationEvent(event)) return true;
+    if (isNotificationEvent(event)) return event.getTs() > readTs;
   }
-  return true;
+  // Nothing in the loaded window can notify, so there is nothing unread to show.
+  return false;
 };
 
 export const getUnreadInfo = (room: Room): UnreadInfo => {
