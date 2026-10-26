@@ -1,5 +1,5 @@
 /*
-Copyright 2026 Cinny fork contributors
+Copyright 2026 Pinniped contributors
 
 SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
 Please see LICENSE in the repository root for full details.
