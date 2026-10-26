@@ -5,7 +5,7 @@ This repository is a private fork of [cinnyapp/cinny](https://github.com/cinnyap
 ## Remotes
 
 ```
-origin    git@github.com:largelanguagemeowing/cinny.git   (the fork, push here)
+origin    git@github.com:largelanguagemeowing/pinniped.git   (the fork, push here)
 upstream  git@github.com:cinnyapp/cinny.git                (read-only source of truth)
 ```
 
