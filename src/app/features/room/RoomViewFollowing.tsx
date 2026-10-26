@@ -49,7 +49,7 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
     const selfFollowing = !hideActivity && latestEventReaders.includes(mx.getUserId() ?? '');
     const parts = names.slice(0, 3);
     if (names.length > 3) parts.push(`${names.length - 3} others`);
-    if (names.length > 0 && selfFollowing) parts.push('you');
+    if (selfFollowing) parts.push('you');
 
     const eventId = latestEvent?.getId();
 
@@ -74,16 +74,16 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
           </Overlay>
         )}
         <Box
-          as={names.length > 0 ? 'button' : 'div'}
-          onClick={names.length > 0 ? () => setOpen(true) : undefined}
-          className={classNames(css.RoomViewFollowing({ clickable: names.length > 0 }), className)}
+          as={parts.length > 0 ? 'button' : 'div'}
+          onClick={parts.length > 0 ? () => setOpen(true) : undefined}
+          className={classNames(css.RoomViewFollowing({ clickable: parts.length > 0 }), className)}
           alignItems="Center"
           justifyContent="End"
           gap="200"
           {...props}
           ref={ref}
         >
-          {names.length > 0 && (
+          {parts.length > 0 && (
             <>
               <Icon style={{ opacity: config.opacity.P300 }} size="100" src={Icons.CheckTwice} />
               <Text size="T300" truncate>

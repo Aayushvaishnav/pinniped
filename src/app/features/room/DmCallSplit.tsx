@@ -71,6 +71,8 @@ export function DmCallSplit({ call, chat }: DmCallSplitProps) {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={() => setDragging(false)}
+        onLostPointerCapture={() => setDragging(false)}
         style={{
           flexShrink: 0,
           height: toRem(6),
