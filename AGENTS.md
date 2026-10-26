@@ -80,6 +80,37 @@ branch.fork/dev.rebase        = true
 
 If one upstream commit conflicts with several of yours, squashing yours first usually makes the conflict trivial.
 
+## Element Call fork
+
+Calls run in an embedded Element Call widget (`element-call/`, vendored in the
+tree). It is NOT built by cinny's own build: `scripts/fork/element-call/build.mjs`
+runs `pnpm install && pnpm build:embedded` in `element-call/` and copies
+`dist/` to `node_modules/.cache/cinny-element-call-fork`, which
+`scripts/fork/element-call-activity.mjs` (called from vite.config.js) embeds
+under `public/element-call/`. The Dockerfile does the same in a first stage.
+Without a fork build, vite falls back to the published
+`@element-hq/element-call-embedded` package (used by the nix build, which does
+not build the vendored tree — its call widget has none of the fork's changes).
+
+The vendored tree is upstream `v0.20.1` with the former patch series
+(voice-call-layout, sound-overrides) applied plus fork changes made in place.
+There are no patch files anymore; edit `element-call/` directly. To upgrade:
+refresh the tree from a new upstream tag and re-do the fork changes (see
+`git log -- element-call/` for what they are).
+
+Fork changes on top of upstream + old patches:
+
+- **Audio pipeline** (`src/livekit/voiceClarity.ts` and its callers):
+  DeepFilterNet 3 denoising via `denoise-voice-clarity` (lazy 18 MB wasm
+  chunk), browser NS/AGC disabled while it runs (AEC stays on), 96 kbps Opus,
+  DTX off. Toggle: call settings → audio, on by default.
+- Note: `element-call/` has its own pnpm/eslint/vitest setup. Its
+  `.eslintrc.cjs` sets `root: true` so the outer repo's eslint does not
+  cascade in. Run `pnpm lint:types`/`pnpm test:unit` inside `element-call/`.
+  The voice-call-layout change (pre-dating the vendoring) breaks 35 of its
+  unit tests — `v0.20.1` unpatched passes them; treat the patched tree's
+  baseline as failing and only worry about *new* failures.
+
 ## Build and deployment
 
 The fork ships as a container image to a Kubernetes cluster. The app is a static Vite SPA served by nginx (see `Dockerfile`: `node:24.13.1-alpine` builds, `nginx:1.31.2-alpine` serves). Build and deploy from `fork/dev`, after committing and pushing.
@@ -165,6 +196,7 @@ Caveats:
 
 - `AGENTS.md` itself is fork-only. It does not exist upstream and must survive every rebase.
 - `flake.nix` and `package.nix` are fork-only (see the Nix flake section). Upstream has neither file.
+- `element-call/` is fork-only (see the Element Call fork section).
 - Any other fork-only files (scripts, configs) should be clearly named and kept in fork-specific paths so they do not collide with upstream files during rebase.
 
 ## Frontend form sizing
