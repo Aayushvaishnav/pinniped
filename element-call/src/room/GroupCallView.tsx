@@ -323,7 +323,9 @@ export const GroupCallView: FC<Props> = ({
       // wait for: closing right away is what makes the call disappear promptly.
       const soundHandedOff =
         widget !== null && !!getUrlParams().soundHandoff?.includes(reason);
-      if (!soundHandedOff) {
+      if (soundHandedOff) {
+        logger.info(`[sound] skip ${reason} end sound (the client plays it)`);
+      } else {
         switch (reason) {
           case "allOthersLeft":
             // When "allOthersLeft", the leaveSoundEffect$ in CallEventAudioRenderer

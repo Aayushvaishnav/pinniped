@@ -5,6 +5,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
+import { logSound } from '../../sound/log';
 import { downloadMedia, mxcUrlToHttp } from '../../utils/matrix';
 
 const MAX_RECENT = 12;
@@ -39,6 +40,7 @@ export const useSoundPlayer = (callEmbed: CallEmbed) => {
 
   const play = useCallback(
     async (sound: Sound) => {
+      logSound('play', `soundboard ${sound.key}`, sound.name);
       const url = await getBlobUrl(sound.url);
       await callEmbed.soundboard({ op: 'play', url });
       setRecent([sound.key, ...recent.filter((k) => k !== sound.key)].slice(0, MAX_RECENT));
@@ -46,7 +48,10 @@ export const useSoundPlayer = (callEmbed: CallEmbed) => {
     [callEmbed, getBlobUrl, recent, setRecent]
   );
 
-  const stop = useCallback(() => callEmbed.soundboard({ op: 'stop' }), [callEmbed]);
+  const stop = useCallback(() => {
+    logSound('stop', 'soundboard');
+    return callEmbed.soundboard({ op: 'stop' });
+  }, [callEmbed]);
 
   return { play, stop };
 };

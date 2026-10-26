@@ -1,4 +1,5 @@
 import { getSettings, Settings } from '../state/settings';
+import { logSound } from './log';
 import { isSoundEnabled } from './toggles';
 import { EventSoundKind, getSoundUrl } from './bundles';
 
@@ -9,9 +10,16 @@ const MAX_WAIT_MS = 2000;
 export const playEventSound = (kind: EventSoundKind): Promise<void> => {
   const settings = getSettings();
   const { isNotificationSounds, notificationSoundBundle, soundVolume } = settings;
-  if (!isNotificationSounds || !isSoundEnabled(settings, kind)) return Promise.resolve();
+  if (!isNotificationSounds || !isSoundEnabled(settings, kind)) {
+    logSound('skip', kind, isNotificationSounds ? 'switched off' : 'notification sounds off');
+    return Promise.resolve();
+  }
   const url = getSoundUrl(notificationSoundBundle, kind);
-  if (!url) return Promise.resolve();
+  if (!url) {
+    logSound('skip', kind, `bundle ${notificationSoundBundle} has none`);
+    return Promise.resolve();
+  }
+  logSound('play', kind, `bundle ${notificationSoundBundle}`);
 
   const audio = new Audio(url);
   audio.volume = soundVolume;
@@ -95,7 +103,11 @@ export const playCallEndSound = (reason: unknown): void => {
     getCallSoundOverrides()[
       CALL_END_SOUND_OVERRIDES[reason as keyof typeof CALL_END_SOUND_OVERRIDES]
     ];
-  if (!url) return;
+  if (!url) {
+    logSound('skip', `call end (${reason})`, 'switched off or no sound in the bundle');
+    return;
+  }
+  logSound('play', `call end (${reason})`);
   const audio = new Audio(url);
   audio.volume = getSettings().soundVolume;
   audio.play().catch(() => undefined);

@@ -197,11 +197,15 @@ export function useAudioContext<S extends string>(
 
   return {
     playSound: async (name, volumeOverwrite?: number): Promise<void> => {
-      if (mutedSoundsSetting.getValue().includes(name)) return;
+      if (mutedSoundsSetting.getValue().includes(name)) {
+        logger.info(`[sound] skip ${name} (switched off)`);
+        return;
+      }
       if (!audioBuffers[name]) {
         logger.debug(`Tried to play a sound that wasn't buffered (${name})`);
         return;
       }
+      logger.info(`[sound] play ${name}`);
       return playSound(
         audioContext,
         audioBuffers[name],
@@ -210,17 +214,25 @@ export function useAudioContext<S extends string>(
       );
     },
     playSoundLooping: (name, delayS: number): (() => Promise<void>) => {
-      if (mutedSoundsSetting.getValue().includes(name)) return async () => {};
+      if (mutedSoundsSetting.getValue().includes(name)) {
+        logger.info(`[sound] skip ${name} (switched off)`);
+        return async () => {};
+      }
       if (!audioBuffers[name]) {
         throw Error(`Tried to play a sound that wasn't buffered (${name})`);
       }
-      return playSoundLooping(
+      logger.info(`[sound] play ${name} (looping)`);
+      const stopLooping = playSoundLooping(
         audioContext,
         audioBuffers[name],
         soundEffectVolume * earpieceVolume,
         earpiecePan,
         delayS,
       );
+      return async (): Promise<void> => {
+        logger.info(`[sound] stop ${name} (looping)`);
+        await stopLooping();
+      };
     },
     soundDuration: Object.fromEntries(
       Object.entries(audioBuffers).map(([k, v]) => [

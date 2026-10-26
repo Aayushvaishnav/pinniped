@@ -2,6 +2,7 @@ import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MatrixEvent, MatrixEventEvent, Room, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { logSound } from '../../sound/log';
 import { useSoundToggle } from '../../hooks/useSoundToggle';
 import { useSoundVolume } from '../../hooks/useSoundVolume';
 import { isUserActive } from '../../state/idle';
@@ -167,6 +168,7 @@ function InviteNotifications() {
   );
 
   const playSound = useCallback(() => {
+    logSound('play', 'invite');
     const audioElement = audioRef.current;
     audioElement?.play();
   }, []);
@@ -179,6 +181,8 @@ function InviteNotifications() {
 
       if (notificationSound && inviteSound) {
         playSound();
+      } else {
+        logSound('skip', 'invite', notificationSound ? 'switched off' : 'notification sounds off');
       }
     }
   }, [
@@ -201,6 +205,12 @@ function InviteNotifications() {
     />
   );
 }
+
+const soundSkipReason = (notificationSound: boolean, messageSound: boolean) => {
+  if (!notificationSound) return 'notification sounds off';
+  if (!messageSound) return 'switched off';
+  return 'the push rule has no sound';
+};
 
 function MessageNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -258,6 +268,7 @@ function MessageNotifications() {
   );
 
   const playSound = useCallback(() => {
+    logSound('play', 'message');
     const audioElement = audioRef.current;
     audioElement?.play();
   }, []);
@@ -330,6 +341,8 @@ function MessageNotifications() {
 
       if (notificationSound && messageSound && actions.tweaks?.sound) {
         playSound();
+      } else {
+        logSound('skip', 'message', soundSkipReason(notificationSound, messageSound));
       }
     };
     const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (

@@ -17,6 +17,7 @@ import {
 import FocusTrap from 'focus-trap-react';
 import { IPusherRequest } from 'matrix-js-sdk';
 import { stopPropagation } from '../../../utils/keyboard';
+import { logSound } from '../../../sound/log';
 import { getCoreSoundUrl, soundBundles } from '../../../sound/bundles';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
@@ -110,6 +111,7 @@ function SelectSoundBundle() {
     setBundle(id);
     setMenuCords(undefined);
     // Preview, so the choice can be judged without waiting for a message.
+    logSound('play', 'message', `preview of bundle ${id}`);
     const preview = new Audio(getCoreSoundUrl(id, 'message'));
     preview.volume = getSettings().soundVolume;
     preview.play().catch(() => undefined);

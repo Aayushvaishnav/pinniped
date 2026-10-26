@@ -92,6 +92,7 @@ export class Soundboard {
   }
 
   public async play(url: string): Promise<void> {
+    this.logger.info(`[sound] play soundboard (${url})`);
     await this.ctx.resume();
     const [buffer] = await Promise.all([this.decode(url), this.publish()]);
 
@@ -117,6 +118,7 @@ export class Soundboard {
   }
 
   public stop(): void {
+    this.logger.info("[sound] stop soundboard");
     this.playing.forEach((source) => source.stop());
   }
 
