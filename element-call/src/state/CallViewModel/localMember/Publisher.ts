@@ -30,7 +30,7 @@ import {
   type ProcessorState,
   trackProcessorSync,
 } from "../../../livekit/TrackProcessorContext.tsx";
-import { voiceClaritySync } from "../../../livekit/voiceClarity.ts";
+import { denoiseSync } from "../../../livekit/denoise.ts";
 import { getUrlParams } from "../../../UrlParams.ts";
 import { observeTrackReference$ } from "../../observeTrackReference";
 import { type Connection } from "../remoteMembers/Connection.ts";
@@ -75,8 +75,8 @@ export class Publisher {
 
     // Setup track processor syncing (blur)
     this.observeTrackProcessors(this.scope, room, trackerProcessorState$);
-    // Setup neural noise suppression / voice clarity syncing
-    this.observeVoiceClarity(this.scope, room);
+    // Setup neural noise suppression syncing
+    this.observeDenoise(this.scope, room);
     // Observe media device changes and update LiveKit active devices accordingly
     this.observeMediaDevices(this.scope, devices, controlledAudioDevices);
 
@@ -453,7 +453,7 @@ export class Publisher {
     trackProcessorSync(scope, track$, trackerProcessorState$);
   }
 
-  private observeVoiceClarity(
+  private observeDenoise(
     scope: ObservableScope,
     room: LivekitRoom,
   ): void {
@@ -469,6 +469,6 @@ export class Publisher {
       ),
       null,
     );
-    voiceClaritySync(scope, track$, this.logger);
+    denoiseSync(scope, track$, this.logger);
   }
 }

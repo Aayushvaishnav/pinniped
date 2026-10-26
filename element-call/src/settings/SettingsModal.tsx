@@ -23,10 +23,10 @@ import {
   useSetting,
   soundEffectVolume as soundEffectVolumeSetting,
   backgroundBlur as backgroundBlurSetting,
-  voiceClarity as voiceClaritySetting,
+  denoiseMode as denoiseModeSetting,
   developerMode,
 } from "./settings";
-import { voiceClaritySupported } from "../livekit/voiceClarity";
+import { denoiseSupported } from "../livekit/denoise";
 import { PreferencesSettingsTab } from "./PreferencesSettingsTab";
 import { Slider } from "../Slider";
 import { DeviceSelection } from "./DeviceSelection";
@@ -74,24 +74,24 @@ export const SettingsModal: FC<Props> = ({
   const { t } = useTranslation();
 
   // Generate a `Checkbox` input to turn neural noise suppression on or off.
-  const VoiceClarityCheckbox: React.FC = (): ReactNode => {
-    const [active, setActive] = useSetting(voiceClaritySetting);
-    const supported = voiceClaritySupported();
+  const DenoiseCheckbox: React.FC = (): ReactNode => {
+    const [mode, setMode] = useSetting(denoiseModeSetting);
+    const supported = denoiseSupported();
 
     return (
       <>
-        <h4>{t("settings.voice_clarity_header")}</h4>
+        <h4>{t("settings.denoise_header")}</h4>
 
         <FieldRow>
           <InputField
-            id="activateVoiceClarity"
-            label={t("settings.voice_clarity_label")}
-            description={
-              supported ? "" : t("settings.voice_clarity_not_supported")
-            }
+          id="activateDenoise"
+          label={t("settings.denoise_label")}
+          description={supported ? "" : t("settings.denoise_not_supported")}
             type="checkbox"
-            checked={!!active}
-            onChange={(b): void => setActive(b.target.checked)}
+          checked={mode === "deepfilternet"}
+          onChange={(b): void =>
+            setMode(b.target.checked ? "deepfilternet" : "off")
+          }
             disabled={!supported}
           />
         </FieldRow>
@@ -194,7 +194,7 @@ export const SettingsModal: FC<Props> = ({
           </div>
         </Form>
         <Separator />
-        <VoiceClarityCheckbox />
+        <DenoiseCheckbox />
       </>
     ),
   };

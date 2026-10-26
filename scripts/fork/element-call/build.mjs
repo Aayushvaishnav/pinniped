@@ -24,6 +24,14 @@ export function buildElementCallFork(outDir) {
 
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.cpSync(path.join(ELEMENT_CALL_SRC, 'dist'), outDir, { recursive: true });
+  // The embedded vite build disables publicDir, so the self-hosted
+  // DeepFilterNet runtime assets (fetched by the widget at runtime) are
+  // copied here explicitly.
+  fs.cpSync(
+    path.join(ELEMENT_CALL_SRC, 'public/df3'),
+    path.join(outDir, 'df3'),
+    { recursive: true }
+  );
   return outDir;
 }
 

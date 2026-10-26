@@ -163,6 +163,6 @@
   },
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
-    "denoise-voice-clarity": "0.2.2"
+    "deepfilternet3-noise-filter": "1.3.0"
   }
 }

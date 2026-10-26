@@ -100,10 +100,15 @@ refresh the tree from a new upstream tag and re-do the fork changes (see
 
 Fork changes on top of upstream + old patches:
 
-- **Audio pipeline** (`src/livekit/voiceClarity.ts` and its callers):
-  DeepFilterNet 3 denoising via `denoise-voice-clarity` (lazy 18 MB wasm
-  chunk), browser NS/AGC disabled while it runs (AEC stays on), 96 kbps Opus,
-  DTX off. Toggle: call settings → audio, on by default.
+- **Audio pipeline** (`src/livekit/denoise.ts` and its callers): the mic is
+  always captured raw (browser noise suppression and AGC off; AEC stays with
+  the browser), DeepFilterNet 3 denoising via `deepfilternet3-noise-filter` as
+  an opt-in toggle (call settings → audio, off by default — no processing),
+  96 kbps Opus, DTX off. The DF3 runtime wasm + model (~24 MB) are vendored
+  under `element-call/public/df3/` and copied into the widget output by
+  `scripts/fork/element-call/build.mjs` (the embedded vite build disables
+  publicDir). A previous `denoise-voice-clarity` attempt bundled an AGC/EQ/
+  compressor "clarity chain" that sounded fried; it was replaced by pure DF3.
 - Note: `element-call/` has its own pnpm/eslint/vitest setup. Its
   `.eslintrc.cjs` sets `root: true` so the outer repo's eslint does not
   cascade in. Run `pnpm lint:types`/`pnpm test:unit` inside `element-call/`.

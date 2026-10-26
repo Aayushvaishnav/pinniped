@@ -18,9 +18,9 @@ importers:
 
   .:
     dependencies:
-      denoise-voice-clarity:
-        specifier: 0.2.2
-        version: 0.2.2(livekit-client@2.19.0(@types/dom-mediacapture-record@1.0.22))
+      deepfilternet3-noise-filter:
+        specifier: 1.3.0
+        version: 1.3.0(livekit-client@2.19.0(@types/dom-mediacapture-record@1.0.22))
     devDependencies:
       '@babel/core':
         specifier: ^7.16.5
@@ -4276,6 +4276,12 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
 
+  deepfilternet3-noise-filter@1.3.0:
+    resolution: {integrity: sha512-yYFUlPuvPguqcd/R6/OSsr0noGqlqOE50JkCWYHogk+PjLj9qrNgwTt5zKraVkKnw0l4+eXJagkz2SUWtUl4sQ==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      livekit-client: ^2.0.0
+
   default-browser-id@5.0.1:
     resolution: {integrity: sha512-x1VCxdX4t+8wVfd1so/9w+vQ4vx7lKd2Qp5tDRutErwmR85OgmfX7RlLRMWafRMY7hbEiXIbudNrjOAPa/hL8Q==}
     engines: {node: '>=18'}
@@ -4295,15 +4301,6 @@ packages:
   define-properties@1.2.1:
     resolution: {integrity: sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==}
     engines: {node: '>= 0.4'}
-
-  denoise-voice-clarity@0.2.2:
-    resolution: {integrity: sha512-vrCL6zchOqQ2L0pgxlG/EM43xrGXGh+mNYUKc4PZJHW66EczVVyrHrfoCXPbQ/+SuR6nnGPGgRv+fBr4j+J3EQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      livekit-client: ^2.17.0
-    peerDependenciesMeta:
-      livekit-client:
-        optional: true
 
   deprecation@2.3.1:
     resolution: {integrity: sha512-xmHIy4F3scKVwMsQ4WnVaS8bHOx0DmVwRywosKhaILI0ywMDWPtBSku2HNxRvF7jtwDRsoEwYQSfbxj8b7RlJQ==}
@@ -11368,6 +11365,10 @@ snapshots:
 
   deep-is@0.1.4: {}
 
+  deepfilternet3-noise-filter@1.3.0(livekit-client@2.19.0(@types/dom-mediacapture-record@1.0.22)):
+    dependencies:
+      livekit-client: 2.19.0(@types/dom-mediacapture-record@1.0.22)
+
   default-browser-id@5.0.1: {}
 
   default-browser@5.5.0:
@@ -11388,10 +11389,6 @@ snapshots:
       define-data-property: 1.1.4
       has-property-descriptors: 1.0.2
       object-keys: 1.1.1
-
-  denoise-voice-clarity@0.2.2(livekit-client@2.19.0(@types/dom-mediacapture-record@1.0.22)):
-    optionalDependencies:
-      livekit-client: 2.19.0(@types/dom-mediacapture-record@1.0.22)
 
   deprecation@2.3.1: {}
 

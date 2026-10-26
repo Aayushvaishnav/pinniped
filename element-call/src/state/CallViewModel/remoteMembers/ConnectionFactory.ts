@@ -28,11 +28,6 @@ import type { MediaDevices } from "../../MediaDevices.ts";
 import type { Behavior } from "../../Behavior.ts";
 import type { ProcessorState } from "../../../livekit/TrackProcessorContext.tsx";
 import { defaultLiveKitOptions } from "../../../livekit/options.ts";
-import {
-  voiceClarityCapture,
-  voiceClaritySupported,
-} from "../../../livekit/voiceClarity.ts";
-import { voiceClarity } from "../../../settings/settings";
 
 // TODO evaluate if this should be done like the Publisher Factory
 export interface ConnectionFactory {
@@ -59,7 +54,6 @@ export class ECConnectionFactory implements ConnectionFactory {
    * @param controlledAudioDevices - Option to indicate whether audio output device is controlled externally (native mobile app).
    * @param livekitRoomFactory - Optional factory function (for testing) to create LivekitRoom instances. If not provided, a default factory is used.
    * @param echoCancellation - Whether to enable echo cancellation for audio capture.
-   * @param noiseSuppression - Whether to enable noise suppression for audio capture.
    */
   public constructor(
     private client: OpenIDClientParts,
@@ -70,7 +64,6 @@ export class ECConnectionFactory implements ConnectionFactory {
     private controlledAudioDevices: boolean,
     livekitRoomFactory?: () => LivekitRoom,
     echoCancellation: boolean = true,
-    noiseSuppression: boolean = true,
   ) {
     const defaultFactory = (): LivekitRoom =>
       new LivekitRoom(
@@ -85,7 +78,6 @@ export class ECConnectionFactory implements ConnectionFactory {
           },
           controlledAudioDevices: this.controlledAudioDevices,
           echoCancellation,
-          noiseSuppression,
         }),
       );
     this.livekitRoomFactory = livekitRoomFactory ?? defaultFactory;
@@ -131,7 +123,6 @@ function generateRoomOption({
   e2eeLivekitOptions,
   controlledAudioDevices,
   echoCancellation,
-  noiseSuppression,
 }: {
   devices: MediaDevices;
   processorState: ProcessorState;
@@ -141,11 +132,11 @@ function generateRoomOption({
     | undefined;
   controlledAudioDevices: boolean;
   echoCancellation: boolean;
-  noiseSuppression: boolean;
 }): RoomOptions {
-  // While the DeepFilterNet denoiser owns the mic track, the browser's own
-  // noise suppression and AGC must be off (echo cancellation stays on).
-  const voiceClarityActive = voiceClaritySupported() && voiceClarity.getValue();
+  // The mic is always captured raw: the browser's noise suppression and AGC
+  // (both of which sound bad and gate noise on/off) are replaced by the fork's
+  // own pipeline. Echo cancellation stays with the browser, which has the
+  // far-end reference signal.
   return {
     ...defaultLiveKitOptions,
     videoCaptureDefaults: {
@@ -157,9 +148,8 @@ function generateRoomOption({
       ...defaultLiveKitOptions.audioCaptureDefaults,
       deviceId: devices.audioInput.selected$.value?.id,
       echoCancellation,
-      ...(voiceClarityActive
-        ? voiceClarityCapture
-        : { noiseSuppression }),
+      autoGainControl: false,
+      noiseSuppression: false,
     },
     audioOutput: {
       // When using controlled audio devices, we don't want to set the

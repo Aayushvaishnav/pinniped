@@ -52,14 +52,9 @@ beforeEach(() => {
 });
 
 describe("ECConnectionFactory - Audio inputs options", () => {
-  test.each([
-    { echo: true, noise: true },
-    { echo: true, noise: false },
-    { echo: false, noise: true },
-    { echo: false, noise: false },
-  ])(
-    "it sets echoCancellation=$echo and noiseSuppression=$noise based on constructor parameters",
-    ({ echo, noise }) => {
+  test.each([{ echo: true }, { echo: false }])(
+    "it sets echoCancellation=$echo and raw capture based on constructor parameters",
+    ({ echo }) => {
       // test("it sets echoCancellation and noiseSuppression based on constructor parameters", () => {
       const RoomConstructor = vi.mocked(LivekitRoom);
 
@@ -75,7 +70,6 @@ describe("ECConnectionFactory - Audio inputs options", () => {
         false,
         undefined,
         echo,
-        noise,
       );
       ecConnectionFactory.createConnection(
         testScope,
@@ -89,7 +83,9 @@ describe("ECConnectionFactory - Audio inputs options", () => {
         expect.objectContaining({
           audioCaptureDefaults: expect.objectContaining({
             echoCancellation: echo,
-            noiseSuppression: noise,
+            // The fork always captures raw and runs its own denoise pipeline
+            noiseSuppression: false,
+            autoGainControl: false,
           }),
         }),
       );
@@ -121,7 +117,6 @@ describe("ECConnectionFactory - ControlledAudioDevice", () => {
         undefined,
         controlled,
         undefined,
-        false,
         false,
       );
       ecConnectionFactory.createConnection(
