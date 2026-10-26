@@ -11,6 +11,7 @@ import { useObservableEagerState } from "observable-hooks";
 
 import {
   soundEffectVolume as soundEffectVolumeSetting,
+  mutedSounds as mutedSoundsSetting,
   useSetting,
 } from "./settings/settings";
 import { useEarpieceAudioConfig, useMediaDevices } from "./MediaDevicesContext";
@@ -196,6 +197,7 @@ export function useAudioContext<S extends string>(
 
   return {
     playSound: async (name, volumeOverwrite?: number): Promise<void> => {
+      if (mutedSoundsSetting.getValue().includes(name)) return;
       if (!audioBuffers[name]) {
         logger.debug(`Tried to play a sound that wasn't buffered (${name})`);
         return;
@@ -208,6 +210,7 @@ export function useAudioContext<S extends string>(
       );
     },
     playSoundLooping: (name, delayS: number): (() => Promise<void>) => {
+      if (mutedSoundsSetting.getValue().includes(name)) return async () => {};
       if (!audioBuffers[name]) {
         throw Error(`Tried to play a sound that wasn't buffered (${name})`);
       }

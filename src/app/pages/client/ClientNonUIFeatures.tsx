@@ -2,6 +2,7 @@ import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MatrixEvent, MatrixEventEvent, Room, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { useSoundToggle } from '../../hooks/useSoundToggle';
 import { useSoundVolume } from '../../hooks/useSoundVolume';
 import { isUserActive } from '../../state/idle';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
@@ -140,6 +141,7 @@ function InviteNotifications() {
   const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const inviteSound = useSoundToggle('invite');
   const [soundBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
 
   const notify = useCallback(
@@ -175,11 +177,20 @@ function InviteNotifications() {
         notify(invites.length - perviousInviteLen);
       }
 
-      if (notificationSound) {
+      if (notificationSound && inviteSound) {
         playSound();
       }
     }
-  }, [mx, invites, perviousInviteLen, showNotifications, notificationSound, notify, playSound]);
+  }, [
+    mx,
+    invites,
+    perviousInviteLen,
+    showNotifications,
+    notificationSound,
+    inviteSound,
+    notify,
+    playSound,
+  ]);
 
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -202,6 +213,7 @@ function MessageNotifications() {
   const mDirects = useAtomValue(mDirectAtom);
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const messageSound = useSoundToggle('message');
   const [soundBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
 
   const { navigateRoom } = useRoomNavigate();
@@ -316,7 +328,7 @@ function MessageNotifications() {
         });
       }
 
-      if (notificationSound && actions.tweaks?.sound) {
+      if (notificationSound && messageSound && actions.tweaks?.sound) {
         playSound();
       }
     };
@@ -348,6 +360,7 @@ function MessageNotifications() {
   }, [
     mx,
     notificationSound,
+    messageSound,
     notificationSelected,
     showNotifications,
     playSound,

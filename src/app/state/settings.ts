@@ -1,5 +1,6 @@
 import { atom } from 'jotai';
 import type { ScreenShareQuality } from '../plugins/call/types';
+import type { SoundKind } from '../sound/bundles';
 
 const STORAGE_KEY = 'settings';
 export type DateFormat =
@@ -64,7 +65,10 @@ export interface Settings {
   showNotifications: boolean;
   isNotificationSounds: boolean;
   notificationSoundBundle: string;
+  // Legacy group switch for the event sounds; now only the default of those without their own.
   eventSounds: boolean;
+  // Per-sound overrides (see SOUND_TOGGLES); a sound without one uses its default.
+  soundToggles: Partial<Record<SoundKind, boolean>>;
   // Volume of the bundle sounds (ringing, messages, invites, events) and the call's own, 0-1.
   soundVolume: number;
   // Soundboard: how loud sounds you play are (to the call and to you), and the last played.
@@ -128,6 +132,7 @@ const defaultSettings: Settings = {
   isNotificationSounds: true,
   notificationSoundBundle: 'default',
   eventSounds: false,
+  soundToggles: {},
   soundVolume: 0.6,
   soundboardVolume: 1,
   soundboardRecent: [],

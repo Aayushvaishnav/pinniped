@@ -56,6 +56,8 @@ export type ElementCallSettings = {
   soundVolume: number;
   /** How loud soundboard sounds are for this client, 0-1. */
   soundboardVolume: number;
+  /** Names of the call's own sounds that are switched off. */
+  mutedSounds: string[];
   audioInput: string;
   audioOutput: string;
 };

@@ -126,6 +126,12 @@ export const screenShareQuality = new Setting<string>(
  */
 export const soundboardVolume = new Setting<number>("soundboard-volume", 1);
 
+/**
+ * Names of the call's own sounds (waiting, waitingIntro, join, left, decline, timeout) the
+ * embedding client has switched off; they are not played at all.
+ */
+export const mutedSounds = new Setting<string[]>("muted-sounds", []);
+
 export const showHandRaisedTimer = new Setting<boolean>(
   "hand-raised-show-timer",
   false,

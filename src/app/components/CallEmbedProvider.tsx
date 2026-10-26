@@ -26,6 +26,7 @@ import {
 } from 'matrix-js-sdk';
 import { IRTCNotificationContent, RTCNotificationType } from 'matrix-js-sdk/lib/matrixrtc/types';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
+import { useSoundToggle } from '../hooks/useSoundToggle';
 import { useSoundVolume } from '../hooks/useSoundVolume';
 import {
   CallEmbedContextProvider,
@@ -90,6 +91,7 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const [soundBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
+  const ringSound = useSoundToggle('call');
 
   const roomName = useRoomName(room);
   const roomAvatar = useRoomAvatar(room, dm);
@@ -118,12 +120,12 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
   }, []);
 
   useEffect(() => {
-    if (info.notificationType !== 'ring') return undefined;
+    if (info.notificationType !== 'ring' || !ringSound) return undefined;
     playSound();
     const audioElement = audioRef.current;
     // A detached <audio> keeps playing, so the ring must be stopped explicitly.
     return () => audioElement?.pause();
-  }, [playSound, info.notificationType]);
+  }, [playSound, info.notificationType, ringSound]);
 
   return (
     <>

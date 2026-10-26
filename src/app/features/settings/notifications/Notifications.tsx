@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, IconButton, Icon, Icons, Scroll } from 'folds';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SystemNotification } from './SystemNotification';
+import { SoundToggles } from './SoundToggles';
 import { ResetNotification } from './ResetNotification';
 
 type NotificationsProps = {
@@ -29,6 +30,7 @@ export function Notifications({ requestClose }: NotificationsProps) {
           <PageContent>
             <Box direction="Column" gap="700">
               <SystemNotification />
+              <SoundToggles />
               <ResetNotification />
             </Box>
           </PageContent>

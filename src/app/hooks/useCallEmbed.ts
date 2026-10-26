@@ -19,7 +19,7 @@ import {
 import { CallControlEvent } from '../plugins/call/CallControl';
 import { useSetting } from '../state/hooks/settings';
 import { settingsAtom } from '../state/settings';
-import { playCallEndSound } from '../sound/play';
+import { getMutedCallSounds, playCallEndSound } from '../sound/play';
 import { useMatrixClient } from './useMatrixClient';
 import { ThemeKind, useTheme } from './useTheme';
 import { callEmbedAtom, callIdleAtom } from '../state/callEmbed';
@@ -192,6 +192,8 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
   const [screenShare] = useSetting(settingsAtom, 'callScreenShare');
   const [soundVolume] = useSetting(settingsAtom, 'soundVolume');
   const [soundboardVolume] = useSetting(settingsAtom, 'soundboardVolume');
+  const allSettings = useAtomValue(settingsAtom);
+  const mutedSounds = getMutedCallSounds(allSettings).join(',');
   const [audioInput] = useSetting(settingsAtom, 'callAudioInput');
   const [audioOutput] = useSetting(settingsAtom, 'callAudioOutput');
 
@@ -203,6 +205,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
         screenShare: `${screenShare.resolution}:${screenShare.fps}`,
         soundVolume,
         soundboardVolume,
+        mutedSounds: mutedSounds ? mutedSounds.split(',') : [],
         audioInput,
         audioOutput,
       })
@@ -215,6 +218,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
     screenShare,
     soundVolume,
     soundboardVolume,
+    mutedSounds,
     audioInput,
     audioOutput,
     embed,

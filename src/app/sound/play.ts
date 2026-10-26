@@ -1,13 +1,15 @@
-import { getSettings } from '../state/settings';
+import { getSettings, Settings } from '../state/settings';
+import { isSoundEnabled } from './toggles';
 import { EventSoundKind, getSoundUrl } from './bundles';
 
 // A sound that never ends (stalled load) must not hold up callers that await it, e.g. logout.
 const MAX_WAIT_MS = 2000;
 
-/** Plays the selected bundle's sound for an app event, if event sounds are enabled. */
+/** Plays the selected bundle's sound for an app event, if that sound is switched on. */
 export const playEventSound = (kind: EventSoundKind): Promise<void> => {
-  const { isNotificationSounds, eventSounds, notificationSoundBundle, soundVolume } = getSettings();
-  if (!isNotificationSounds || !eventSounds) return Promise.resolve();
+  const settings = getSettings();
+  const { isNotificationSounds, notificationSoundBundle, soundVolume } = settings;
+  if (!isNotificationSounds || !isSoundEnabled(settings, kind)) return Promise.resolve();
   const url = getSoundUrl(notificationSoundBundle, kind);
   if (!url) return Promise.resolve();
 
@@ -40,21 +42,31 @@ const CALL_WIDGET_SOUNDS = {
 /**
  * URLs for the sounds the embedded call plays itself, so a bundle replaces them instead of
  * the call playing its own next to the bundle's. Call sounds follow the bundle whenever
- * notification sounds are on, independent of the event sounds toggle (which is for app
- * events). Empty (the call's own sounds) when notification sounds are off; sounds the
- * bundle lacks keep the call's own.
+ * notification sounds are on, each unless its own switch is off. Empty (the call's own sounds)
+ * when notification sounds are off; sounds the bundle lacks keep the call's own.
  */
-export const getCallSoundOverrides = (): Record<string, string> => {
-  const { isNotificationSounds, notificationSoundBundle } = getSettings();
+export const getCallSoundOverrides = (
+  settings: Settings = getSettings()
+): Record<string, string> => {
+  const { isNotificationSounds, notificationSoundBundle } = settings;
   if (!isNotificationSounds) return {};
   const overrides: Record<string, string> = {};
   Object.entries(CALL_WIDGET_SOUNDS).forEach(([name, kind]) => {
+    if (!isSoundEnabled(settings, kind)) return;
     const url = getSoundUrl(notificationSoundBundle, kind);
     // The call runs in an iframe on another path, so relative URLs would not resolve.
     if (url) overrides[name] = new URL(url, window.location.href).href;
   });
   return overrides;
 };
+
+/** The call's own sounds (by name) that are switched off, so the call plays nothing for them. */
+export const getMutedCallSounds = (settings: Settings = getSettings()): string[] =>
+  settings.isNotificationSounds
+    ? Object.entries(CALL_WIDGET_SOUNDS)
+        .filter(([, kind]) => !isSoundEnabled(settings, kind))
+        .map(([name]) => name)
+    : [];
 
 // Why a call ended (as the call widget reports it) -> the override that carries its sound.
 const CALL_END_SOUND_OVERRIDES = {
@@ -69,8 +81,10 @@ const CALL_END_SOUND_OVERRIDES = {
  */
 export const getCallSoundHandoff = (): string[] => {
   const overrides = getCallSoundOverrides();
+  const muted = getMutedCallSounds();
+  // A muted end sound needs no waiting either; Cinny just plays nothing.
   return Object.entries(CALL_END_SOUND_OVERRIDES)
-    .filter(([, override]) => overrides[override])
+    .filter(([, override]) => overrides[override] || muted.includes(override))
     .map(([reason]) => reason);
 };
 

@@ -273,6 +273,8 @@ export interface UrlConfiguration {
   soundVolume?: number;
   /** Listener-side volume of soundboard sounds, 0-1. */
   soundboardVolume?: number;
+  /** Names of the call's own sounds the client has switched off, comma separated in the URL. */
+  mutedSounds?: string[];
   audioInput?: string;
   audioOutput?: string;
 }
@@ -540,6 +542,7 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     denoise: parser.getFlagParam("denoise", false),
     simulcast: parser.getFlagParam("simulcast", false),
     screenShare: parser.getParam("screenShare") || undefined,
+    mutedSounds: parser.getParam("mutedSounds")?.split(",").filter(Boolean),
     soundVolume: Number.isFinite(
       parseFloat(parser.getParam("soundVolume") ?? ""),
     )

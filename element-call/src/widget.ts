@@ -32,6 +32,7 @@ import {
   screenShareQuality,
   soundEffectVolume,
   soundboardVolume,
+  mutedSounds,
   videoSimulcast,
 } from "./settings/settings";
 import { Config } from "./config/Config";
@@ -43,7 +44,7 @@ export enum ElementWidgetActions {
   HangupCall = "im.vector.hangup",
   Close = "io.element.close",
   // toWidget (fork): the client sets the call audio preferences, data
-  // `{ denoise?, simulcast?, screenShare?, soundVolume?, soundboardVolume?, audioInput?, audioOutput? }`.
+  // `{ denoise?, simulcast?, screenShare?, soundVolume?, soundboardVolume?, mutedSounds?, audioInput?, audioOutput? }`.
   // An empty device ID means the system default.
   CallSettings = "io.cinny.call_settings",
   // toWidget (fork): play or stop a soundboard sound, see SoundboardCommand
@@ -109,6 +110,7 @@ export const initializeWidget = (
       screenShare,
       soundVolume,
       soundboardVolume: soundboardVolumeParam,
+      mutedSounds: mutedSoundsParam,
       audioInput: audioInputId,
       audioOutput: audioOutputId,
     } = getUrlParams();
@@ -146,6 +148,7 @@ export const initializeWidget = (
       denoiseMode.setValue(denoise ? "deepfilternet" : "off");
       videoSimulcast.setValue(simulcast ?? false);
       if (screenShare) screenShareQuality.setValue(screenShare);
+      mutedSounds.setValue(mutedSoundsParam ?? []);
       if (soundVolume !== undefined) soundEffectVolume.setValue(soundVolume);
       if (soundboardVolumeParam !== undefined)
         soundboardVolume.setValue(soundboardVolumeParam);
@@ -161,6 +164,7 @@ export const initializeWidget = (
             screenShare?: string;
             soundVolume?: number;
             soundboardVolume?: number;
+            mutedSounds?: string[];
             audioInput?: string;
             audioOutput?: string;
           };
@@ -173,6 +177,8 @@ export const initializeWidget = (
             soundEffectVolume.setValue(data.soundVolume);
           if (data.soundboardVolume !== undefined)
             soundboardVolume.setValue(data.soundboardVolume);
+          if (data.mutedSounds !== undefined)
+            mutedSounds.setValue(data.mutedSounds);
           if (data.audioInput !== undefined)
             audioInput.setValue(data.audioInput || undefined);
           if (data.audioOutput !== undefined)

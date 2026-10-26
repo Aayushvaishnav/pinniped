@@ -175,7 +175,6 @@ export function SystemNotification() {
     settingsAtom,
     'isNotificationSounds'
   );
-  const [eventSounds, setEventSounds] = useSetting(settingsAtom, 'eventSounds');
   const [soundVolume, setSoundVolume] = useSetting(settingsAtom, 'soundVolume');
 
   const requestNotificationPermission = () => {
@@ -246,11 +245,6 @@ export function SystemNotification() {
               </Text>
             </Box>
           }
-        />
-        <SettingTile
-          title="Event Sounds"
-          description="Also play bundle sounds for sent messages, sign in and out, contacts coming online or offline, and joining or leaving a call. Bundles without them stay silent."
-          after={<Switch value={eventSounds} onChange={setEventSounds} />}
         />
       </SequenceCard>
       <SequenceCard
