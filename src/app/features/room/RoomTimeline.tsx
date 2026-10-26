@@ -274,6 +274,19 @@ const useTimelinePagination = (
         recalibratePagination(lTimelines, timelinesEventsCount, backwards);
         return;
       }
+      if (!paginationToken) {
+        // Without a token the SDK requests the newest events again, which the
+        // timeline already holds, so it would loop forever without progress.
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[timeline] not paginating ${
+            backwards ? 'back' : 'forward'
+          } in ${timelineToPaginate.getRoomId()}: pagination token is ${JSON.stringify(
+            paginationToken
+          )}`
+        );
+        return;
+      }
 
       fetching = true;
       const [err] = await to(
@@ -505,8 +518,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const eventsLength = getTimelinesEventsCount(timeline.linkedTimelines);
   const liveTimelineLinked =
     timeline.linkedTimelines[timeline.linkedTimelines.length - 1] === getLiveTimeline(room);
-  const canPaginateBack =
-    typeof timeline.linkedTimelines[0]?.getPaginationToken(Direction.Backward) === 'string';
+  const canPaginateBack = Boolean(
+    timeline.linkedTimelines[0]?.getPaginationToken(Direction.Backward)
+  );
   const rangeAtStart = timeline.range.start === 0;
   const rangeAtEnd = timeline.range.end === eventsLength;
   const atLiveEndRef = useRef(liveTimelineLinked && rangeAtEnd);
