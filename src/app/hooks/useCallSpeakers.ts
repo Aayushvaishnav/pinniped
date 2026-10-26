@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { CallEmbed, emptyCallActivity, useCallActivity } from '../plugins/call';
 import { useCallJoined } from './useCallEmbed';
 
@@ -6,6 +7,10 @@ export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
   const joined = useCallJoined(callEmbed);
   const activity = useCallActivity(callEmbed);
   const { speakers, screenSharers, muted } = joined ? activity : emptyCallActivity;
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.info(`[activity] list joined=${joined} speaking=[${[...activity.speakers]}]`);
+  }, [joined, activity]);
   return { speakers, screenSharers, muted };
 };
 

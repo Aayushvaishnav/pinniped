@@ -1332,11 +1332,8 @@ export function createCallViewModel$(
             return l.spotlight.some((m) => m.type === "screen share");
           // In expanded spotlight layout, the active speaker is always shown in
           // the picture-in-picture tile so there is no need for speaking
-          // indicators. And in one-on-one layout there's no question as to who is
-          // speaking.
+          // indicators.
           case "spotlight-expanded":
-          case "one-on-one-landscape":
-          case "one-on-one-portrait":
             return false;
           default:
             return true;
