@@ -164,7 +164,6 @@ const CLEAR_CACHE_TIMEOUT_MS = 5000;
 export const clearCacheAndReload = async (mx: MatrixClient) => {
   mx.stopClient();
   clearNavToActivePathStore(mx.getSafeUserId());
-  clearPendingEvents();
   // js-sdk's clearDatabase only logs when another tab blocks the delete, so the
   // promise never settles; stop waiting and say so instead of hanging silently.
   const deleted = await Promise.race([
@@ -191,6 +190,7 @@ export const clearCacheAndReload = async (mx: MatrixClient) => {
       return;
     }
   }
+  clearPendingEvents();
   window.location.reload();
 };
 

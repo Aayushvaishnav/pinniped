@@ -67,7 +67,11 @@ export const useSpaceAutoJoinGlobal = () => {
   useEffect(() => {
     const handleMembership = (room: { roomId: string }, membership: string, prev?: string) => {
       const isMarked = leftRoomsRef.current.has(room.roomId);
-      if (prev === Membership.Join && membership === Membership.Leave && !isMarked) {
+      if (
+        prev === Membership.Join &&
+        (membership === Membership.Leave || membership === Membership.Ban) &&
+        !isMarked
+      ) {
         markRoomsLeft(mx, [room.roomId]).catch(() => undefined);
       } else if (membership === Membership.Join && prev !== Membership.Join && isMarked) {
         unmarkRoomsLeft(mx, [room.roomId]).catch(() => undefined);
