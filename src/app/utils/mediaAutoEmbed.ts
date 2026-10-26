@@ -1,6 +1,5 @@
-import { isDirectGifUrl } from './directGif';
+import { MEDIA_AUTO_EMBED_HOSTS, isDirectGifUrl } from './directGif';
 
-const MEDIA_AUTO_EMBED_HOSTS = new Set(['nyafiles.de', 'pissdichal.de']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'webm', 'ogv', 'mov', 'mkv', 'avi']);
 
 export const isMediaAutoEmbedUrl = (value: string): boolean => {
