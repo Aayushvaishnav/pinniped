@@ -34,6 +34,7 @@ import { type RemoteUserMediaViewModel } from "./RemoteUserMediaViewModel";
 import { type ObservableScope } from "../ObservableScope";
 import { showConnectionStats } from "../../settings/settings";
 import { observeRtpStreamStats$ } from "./observeRtpStreamStats";
+import { observeBroadcastTracks$ } from "../../livekit/broadcastTracks";
 import { observeVoiceActivity$ } from "../../livekit/voiceActivity";
 import { videoFit$, videoSizeFromParticipant$ } from "../../utils/videoFit.ts";
 
@@ -127,8 +128,11 @@ export function createBaseUserMedia(
               : of(false),
           ),
         ),
+        // Everything the participant broadcasts counts: voice, soundboard, shared audio.
         observeVoiceActivity$(
-          media$.pipe(map((m) => m?.microphoneTrack?.track?.mediaStreamTrack)),
+          participant$.pipe(
+            switchMap((p) => (p ? observeBroadcastTracks$(p) : of([]))),
+          ),
         ).pipe(startWith(false)),
       ]).pipe(map(([server, voice]) => server || voice)),
     ),

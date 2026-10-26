@@ -330,6 +330,7 @@ export function mockLocalParticipant(
   return {
     isLocal: true,
     trackPublications: new Map(),
+    audioTrackPublications: new Map(),
     publishTrack: vi.fn(),
     unpublishTracks: vi.fn().mockResolvedValue([]),
     createTracks: vi.fn(),
@@ -370,6 +371,7 @@ export function mockRemoteParticipant(
 ): RemoteParticipant {
   return {
     isLocal: false,
+    audioTrackPublications: new Map(),
     setVolume() {},
     getTrackPublication: () =>
       ({}) as Partial<RemoteTrackPublication> as RemoteTrackPublication,

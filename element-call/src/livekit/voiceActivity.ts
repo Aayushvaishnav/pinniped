@@ -5,9 +5,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
 Please see LICENSE in the repository root for full details.
 */
 
-import { Observable, distinctUntilChanged, of, switchMap } from "rxjs";
+import {
+  Observable,
+  combineLatest,
+  distinctUntilChanged,
+  map,
+  of,
+  switchMap,
+} from "rxjs";
 
 import { voiceTuning } from "../settings/settings";
+import { type BroadcastTrack } from "./broadcastTracks";
 
 /** Level (RMS, 0..1) above which someone starts being heard as speaking. */
 export const VOICE_OPEN_LEVEL = 0.008;
@@ -142,8 +150,18 @@ const context = (): AudioContext | undefined => {
   return sharedContext;
 };
 
-/** Emits whether the audio in `track` is currently loud enough to be speech. */
-function observeTrackVoice$(track: MediaStreamTrack): Observable<boolean> {
+/**
+ * On a track behind the voice gate, anything above digital silence is being sent
+ * (the gate leaves exact silence while closed), so this is the level that counts.
+ */
+const GATED_OPEN_LEVEL = 10 ** (-75 / 20);
+const GATED_CLOSE_LEVEL = 10 ** (-80 / 20);
+
+/** Emits whether the audio in `track` is currently loud enough to be speech, or, if gated, being sent. */
+function observeTrackVoice$({
+  track,
+  gated,
+}: BroadcastTrack): Observable<boolean> {
   return new Observable<boolean>((subscriber) => {
     const ctx = context();
     if (ctx === undefined) {
@@ -159,11 +177,14 @@ function observeTrackVoice$(track: MediaStreamTrack): Observable<boolean> {
     subscriber.next(false);
     const id = setInterval(() => {
       const tuning = voiceTuning.getValue();
-      const levels = voiceGateLevels(
-        tuning.indicatorSensitivity,
-        INDICATOR_HYSTERESIS_DB,
-      );
-      gate.setLevels(levels.open, levels.close);
+      if (gated) gate.setLevels(GATED_OPEN_LEVEL, GATED_CLOSE_LEVEL);
+      else {
+        const levels = voiceGateLevels(
+          tuning.indicatorSensitivity,
+          INDICATOR_HYSTERESIS_DB,
+        );
+        gate.setLevels(levels.open, levels.close);
+      }
       gate.holdMs = tuning.indicatorHoldMs;
       subscriber.next(gate.update(measureLevel(analyser, samples), Date.now()));
     }, POLL_MS);
@@ -178,14 +199,20 @@ function observeTrackVoice$(track: MediaStreamTrack): Observable<boolean> {
 /**
  * Measures speech from the audio itself, as it is sent or received, rather than
  * waiting for the server's speaker updates, which are coarse and delayed.
- * Emits false until a track is available.
+ * True while any of the tracks carries speech (or, behind the voice gate,
+ * anything at all); false until there is a track.
  */
 export function observeVoiceActivity$(
-  track$: Observable<MediaStreamTrack | undefined>,
+  tracks$: Observable<BroadcastTrack[]>,
 ): Observable<boolean> {
-  return track$.pipe(
-    distinctUntilChanged(),
-    switchMap((track) => (track ? observeTrackVoice$(track) : of(false))),
+  return tracks$.pipe(
+    switchMap((tracks) =>
+      tracks.length === 0
+        ? of(false)
+        : combineLatest(tracks.map(observeTrackVoice$)).pipe(
+            map((voices) => voices.some(Boolean)),
+          ),
+    ),
     distinctUntilChanged(),
   );
 }
