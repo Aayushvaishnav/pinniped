@@ -4,6 +4,7 @@ import Linkify from 'linkify-react';
 import { Opts } from 'linkifyjs';
 import { MessageEmptyContent } from './content';
 import { sanitizeCustomHtml } from '../../utils/sanitize';
+import { unwrapEmbedUrls, unwrapEmbedUrlsHtml } from '../../utils/regex';
 import { highlightText, scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
 
 type RenderBodyProps = {
@@ -24,13 +25,14 @@ export function RenderBody({
   if (body === '') <MessageEmptyContent />;
   if (customBody) {
     if (customBody === '') <MessageEmptyContent />;
-    return parse(sanitizeCustomHtml(customBody), htmlReactParserOptions);
+    return parse(sanitizeCustomHtml(unwrapEmbedUrlsHtml(customBody)), htmlReactParserOptions);
   }
+  const shown = unwrapEmbedUrls(body);
   return (
     <Linkify options={linkifyOpts}>
       {highlightRegex
-        ? highlightText(highlightRegex, scaleSystemEmoji(body))
-        : scaleSystemEmoji(body)}
+        ? highlightText(highlightRegex, scaleSystemEmoji(shown))
+        : scaleSystemEmoji(shown)}
     </Linkify>
   );
 }

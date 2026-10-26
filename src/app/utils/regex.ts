@@ -32,3 +32,13 @@ export const EMOJI_PATTERN = `[#*0-9]\uFE0F?\u20E3|[\xA9\xAE\u203C\u2049\u2122\u
 export const JUMBO_EMOJI_REG = new RegExp(
   `^(((${EMOJI_PATTERN})|(:.+?:))(${VARIATION_SELECTOR_PATTERN}|\\s)*){1,10}$`
 );
+
+const WRAPPED_URL_REG = /<(https?:\/\/[^\s<>]+)>/g;
+const WRAPPED_URL_HTML_REG = /&lt;((?:<a [^>]*>)?https?:\/\/[^\s<>]+(?:<\/a>)?)&gt;/g;
+
+/** Drops the `<>` around links that opted out of embeds, for display. */
+export const unwrapEmbedUrls = (body: string): string => body.replace(WRAPPED_URL_REG, '$1');
+
+/** Same as `unwrapEmbedUrls` for formatted (HTML) bodies, where the brackets are escaped. */
+export const unwrapEmbedUrlsHtml = (html: string): string =>
+  html.replace(WRAPPED_URL_HTML_REG, '$1');
