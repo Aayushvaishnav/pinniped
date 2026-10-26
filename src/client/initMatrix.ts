@@ -41,6 +41,25 @@ const createSyncStore = (): IndexedDBStore =>
     dbName: SYNC_STORE_DB_NAME,
   });
 
+// Diagnostic: a /messages request without a `from` token returns the newest
+// events again, which is how a timeline can loop without progress. Log who
+// asked so the caller can be found.
+const traceTokenlessMessagesRequests = (mx: MatrixClient) => {
+  const original = mx.createMessagesRequest.bind(mx);
+  // eslint-disable-next-line no-param-reassign
+  mx.createMessagesRequest = (roomId, fromToken, limit, dir, timelineFilter) => {
+    if (!fromToken) {
+      // eslint-disable-next-line no-console
+      console.trace(
+        `[messages without token] room=${roomId} dir=${dir} limit=${limit} from=${JSON.stringify(
+          fromToken
+        )}`
+      );
+    }
+    return original(roomId, fromToken, limit, dir, timelineFilter);
+  };
+};
+
 const createMatrixClient = (
   session: Session,
   store: IndexedDBStore | MemoryStore
@@ -49,7 +68,7 @@ const createMatrixClient = (
 
   if (store instanceof IndexedDBStore) store.on('degraded', reportClientStorageError);
 
-  return createClient({
+  const mx = createClient({
     baseUrl: session.baseUrl,
     accessToken: session.accessToken,
     userId: session.userId,
@@ -60,6 +79,9 @@ const createMatrixClient = (
     cryptoCallbacks: cryptoCallbacks as any,
     verificationMethods: ['m.sas.v1'],
   });
+
+  traceTokenlessMessagesRequests(mx);
+  return mx;
 };
 
 // The sync cache is disposable because the server can resend it. Delete only
