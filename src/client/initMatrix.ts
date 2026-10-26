@@ -28,6 +28,12 @@ const SYNC_STORE_DB_NAME = 'web-sync-store';
 // The SDK prefixes the name it is given, so this is the real IndexedDB name.
 const SYNC_STORE_IDB_NAME = `matrix-js-sdk:${SYNC_STORE_DB_NAME}`;
 
+const SYNC_STORE_BLOCKED_MESSAGE =
+  'Another Pinniped tab or window is still open. Close it, then try again.';
+
+// The SDK keeps unsent events here, per room, outside the sync store.
+const PENDING_EVENTS_KEY_PREFIX = 'mx_pending_events_';
+
 const createSyncStore = (): IndexedDBStore =>
   new IndexedDBStore({
     indexedDB: global.indexedDB,
@@ -63,6 +69,9 @@ const deleteSyncStoreDatabase = (): Promise<void> =>
     const req = global.indexedDB.deleteDatabase(SYNC_STORE_IDB_NAME);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
+    // Another tab still holds the database open. Without this the request
+    // waits forever and the caller never finishes.
+    req.onblocked = () => reject(new Error(SYNC_STORE_BLOCKED_MESSAGE));
   });
 
 const deleteSyncStore = async (store: IndexedDBStore): Promise<void> => {
@@ -141,13 +150,31 @@ export const startClient = async (mx: MatrixClient) => {
   });
 };
 
+const clearPendingEvents = () => {
+  const keys: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i += 1) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith(PENDING_EVENTS_KEY_PREFIX)) keys.push(key);
+  }
+  keys.forEach((key) => window.localStorage.removeItem(key));
+};
+
 export const clearCacheAndReload = async (mx: MatrixClient) => {
   mx.stopClient();
   clearNavToActivePathStore(mx.getSafeUserId());
-  await mx.store.deleteAllData();
+  clearPendingEvents();
+  await mx.store.deleteAllData().catch(() => undefined);
   // When startup fell back to a MemoryStore, deleteAllData() never touches
   // IndexedDB, so delete the sync cache database directly as well.
-  await deleteSyncStoreDatabase().catch(() => undefined);
+  try {
+    await deleteSyncStoreDatabase();
+  } catch (err) {
+    if (err instanceof Error && err.message === SYNC_STORE_BLOCKED_MESSAGE) {
+      // Reloading now would queue behind the blocked delete and hang startup.
+      window.alert(err.message);
+      return;
+    }
+  }
   window.location.reload();
 };
 
