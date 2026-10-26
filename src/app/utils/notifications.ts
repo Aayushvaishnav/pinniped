@@ -1,4 +1,5 @@
 import { MatrixClient, ReceiptType } from 'matrix-js-sdk';
+import { rememberLocalReadTs } from '../state/readMarkers';
 
 // The SDK adds a local echo receipt the moment a receipt is sent, so
 // getEventReadUpTo() claims "read" even if the POST failed, and that would make
@@ -39,6 +40,7 @@ export async function markAsRead(mx: MatrixClient, roomId: string, privateReceip
       privateReceipt ? ReceiptType.ReadPrivate : ReceiptType.Read
     );
     sentReceipts.set(roomId, eventId);
+    rememberLocalReadTs(roomId, latestEvent.getTs());
   } catch (err) {
     sentReceipts.delete(roomId);
     // eslint-disable-next-line no-console

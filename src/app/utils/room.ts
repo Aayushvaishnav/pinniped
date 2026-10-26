@@ -19,6 +19,7 @@ import {
   RoomMember,
 } from 'matrix-js-sdk';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
+import { getLocalReadTs } from '../state/readMarkers';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { MATRIX_GIF_PROPERTY_NAME } from '../../types/matrix/common';
 import { getPollQuestion, isPollStartType } from './poll';
@@ -233,7 +234,8 @@ export const roomHaveUnread = (mx: MatrixClient, room: Room) => {
   // we already read from newer ones.
   const readTs = Math.max(
     room.getReadReceiptForUserId(userId, false, ReceiptType.Read)?.data.ts ?? 0,
-    room.getReadReceiptForUserId(userId, false, ReceiptType.ReadPrivate)?.data.ts ?? 0
+    room.getReadReceiptForUserId(userId, false, ReceiptType.ReadPrivate)?.data.ts ?? 0,
+    getLocalReadTs(room.roomId)
   );
 
   for (let i = liveEvents.length - 1; i >= 0; i -= 1) {
