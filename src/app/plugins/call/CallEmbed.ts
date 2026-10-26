@@ -23,6 +23,7 @@ import {
   ElementMediaStateDetail,
   ElementWidgetActions,
 } from './types';
+import { getCallSoundOverrides } from '../../sound/play';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { protectFrameFromParentDrag } from './protectFrameFromParentDrag';
@@ -37,6 +38,9 @@ export class CallEmbed {
   public readonly room: Room;
 
   public joined = false;
+
+  /** An outgoing call that rings the other side; the call itself plays the start sound. */
+  public readonly ringing: boolean;
 
   public readonly control: CallControl;
 
@@ -113,6 +117,11 @@ export class CallEmbed {
       params.append('sendNotificationType', CallEmbed.dmCall(intent) ? 'ring' : 'notification');
     }
 
+    const soundOverrides = getCallSoundOverrides();
+    if (Object.keys(soundOverrides).length > 0) {
+      params.append('soundOverrides', JSON.stringify(soundOverrides));
+    }
+
     const widgetUrl = new URL(
       `${trimTrailingSlash(import.meta.env.BASE_URL)}/public/element-call/index.html`,
       window.location.origin
@@ -166,6 +175,7 @@ export class CallEmbed {
     const callWidgetDriver: WidgetDriver = new CallWidgetDriver(mx, room.roomId);
     const call: ClientWidgetApi = new ClientWidgetApi(widget, iframe, callWidgetDriver);
 
+    this.ringing = new URL(iframe.src).searchParams.get('sendNotificationType') === 'ring';
     this.mx = mx;
     this.call = call;
     this.room = room;

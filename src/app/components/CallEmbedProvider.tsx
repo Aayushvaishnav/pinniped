@@ -114,9 +114,11 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
   }, []);
 
   useEffect(() => {
-    if (info.notificationType === 'ring') {
-      playSound();
-    }
+    if (info.notificationType !== 'ring') return undefined;
+    playSound();
+    const audioElement = audioRef.current;
+    // A detached <audio> keeps playing, so the ring must be stopped explicitly.
+    return () => audioElement?.pause();
   }, [playSound, info.notificationType]);
 
   return (

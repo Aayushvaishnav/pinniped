@@ -4,25 +4,28 @@ import { EventType, MatrixEvent, RelationType, RoomEvent, User, UserEvent } from
 import { EventStatus } from 'matrix-js-sdk/lib/models/event-status';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { callEmbedAtom } from '../../state/callEmbed';
+import { useCallJoined } from '../../hooks/useCallEmbed';
 import { playEventSound } from '../../sound/play';
 
 /** Opt-in bundle sounds for events the app has no notification for. */
 export function EventSounds() {
   const mx = useMatrixClient();
   const callEmbed = useAtomValue(callEmbedAtom);
-  const hadCallRef = useRef(false);
+  const joined = useCallJoined(callEmbed);
+  const wasJoinedRef = useRef(false);
 
   useEffect(() => {
     playEventSound('signin');
   }, []);
 
+  // Joined, not merely embedded: the embed exists from the moment a call is requested.
   useEffect(() => {
-    const hasCall = callEmbed !== undefined;
-    if (hasCall !== hadCallRef.current) {
-      hadCallRef.current = hasCall;
-      playEventSound(hasCall ? 'callStart' : 'callEnd');
-    }
-  }, [callEmbed]);
+    if (joined === wasJoinedRef.current) return;
+    wasJoinedRef.current = joined;
+    // A ringing outgoing call plays the start sound itself, ahead of the ringback.
+    if (joined && callEmbed?.ringing) return;
+    playEventSound(joined ? 'callStart' : 'callEnd');
+  }, [joined, callEmbed]);
 
   useEffect(() => {
     const onLocalEcho = (mEvent: MatrixEvent) => {

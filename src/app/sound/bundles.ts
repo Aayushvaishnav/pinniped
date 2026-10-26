@@ -12,7 +12,14 @@ export type EventSoundKind =
   | 'online'
   | 'offline'
   | 'callStart'
-  | 'callEnd';
+  | 'callEnd'
+  // Sounds the embedded call plays itself: waiting for the other side to pick up, a
+  // participant joining/leaving, and the call being declined or timing out.
+  | 'ringback'
+  | 'callJoin'
+  | 'callLeave'
+  | 'callDeclined'
+  | 'callTimeout';
 export type SoundKind = CoreSoundKind | EventSoundKind;
 
 export const DEFAULT_SOUND_BUNDLE = 'default';
@@ -38,7 +45,7 @@ const bundles: Record<string, SoundUrls> = {
 
 Object.entries(files).forEach(([path, url]) => {
   const match = path.match(
-    /^\.\/bundles\/([^/]+)\/(message|invite|call|sent|signin|signout|online|offline|callStart|callEnd)\.[^.]+$/
+    /^\.\/bundles\/([^/]+)\/(message|invite|call|sent|signin|signout|online|offline|callStart|callEnd|ringback|callJoin|callLeave|callDeclined|callTimeout)\.[^.]+$/
   );
   if (!match) return;
   const [, bundle, kind] = match;
