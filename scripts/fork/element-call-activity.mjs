@@ -17,7 +17,7 @@ export function patchCallActivity(source) {
   );
 }
 
-// Prefer the Element Call fork (scripts/fork/element-call, built by
+// Prefer the Element Call fork (vendored in element-call/, built by
 // `npm run build:element-call` or the Dockerfile). Without a fork build, fall back to
 // the published embedded package plus the minified-bundle patch below.
 export function prepareElementCall() {

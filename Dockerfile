@@ -1,7 +1,8 @@
-## Element Call fork (upstream tag + scripts/fork/element-call patches)
+## Element Call fork (vendored in element-call/, built from the tree)
 FROM node:24.13.1-alpine AS element-call
-RUN apk add --no-cache git && npm install -g pnpm@10.33.0
+RUN npm install -g pnpm@10.33.0
 WORKDIR /src
+COPY element-call /src/element-call
 COPY scripts/fork/element-call /src/scripts/fork/element-call
 ENV NODE_OPTIONS=--max_old_space_size=8192
 RUN --mount=type=cache,target=/root/.local/share/pnpm \

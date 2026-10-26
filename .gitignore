@@ -29,3 +29,5 @@ AGENTS.md
 
 # Playwright browsers (sandboxed download)
 .pw-browsers/
+
+.pnpm-store/

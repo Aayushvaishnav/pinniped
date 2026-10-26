@@ -1,36 +1,29 @@
-// Builds the Element Call fork: upstream tag + the patch series in this directory.
+// Builds the Element Call fork vendored in element-call/ (repo root).
+// The vendored tree is upstream tag v0.20.1 with the former patch series
+// (voice-call-layout, sound-overrides) already applied; edit it in place.
 // Usage: node scripts/fork/element-call/build.mjs [outDir]
 // Output defaults to node_modules/.cache/cinny-element-call-fork.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const ELEMENT_CALL_REPO = 'https://github.com/element-hq/element-call.git';
+const here = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(here, '../../..');
+export const ELEMENT_CALL_SRC = path.join(repoRoot, 'element-call');
 export const ELEMENT_CALL_TAG = 'v0.20.1';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
 const run = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, stdio: 'inherit' });
 
 export function buildElementCallFork(outDir) {
-  // Must live outside node_modules: Vite skips tsconfig.json for files under it, which
-  // drops `useDefineForClassFields: false` and breaks Element Call's class initialisers.
-  const work = path.join(os.tmpdir(), 'cinny-element-call-src');
-  fs.rmSync(work, { recursive: true, force: true });
-  fs.mkdirSync(path.dirname(work), { recursive: true });
-  run('git', ['clone', '--depth', '1', '--branch', ELEMENT_CALL_TAG, ELEMENT_CALL_REPO, work]);
-
-  fs.readdirSync(here)
-    .filter((f) => f.endsWith('.patch'))
-    .sort()
-    .forEach((f) => run('git', ['apply', '--index', path.join(here, f)], work));
-
-  run('pnpm', ['install', '--frozen-lockfile'], work);
-  run('pnpm', ['build:embedded'], work);
+  if (!fs.existsSync(path.join(ELEMENT_CALL_SRC, 'package.json'))) {
+    throw new Error(`Element Call source not found at ${ELEMENT_CALL_SRC}`);
+  }
+  run('pnpm', ['install', '--frozen-lockfile'], ELEMENT_CALL_SRC);
+  run('pnpm', ['build:embedded'], ELEMENT_CALL_SRC);
 
   fs.rmSync(outDir, { recursive: true, force: true });
-  fs.cpSync(path.join(work, 'dist'), outDir, { recursive: true });
+  fs.cpSync(path.join(ELEMENT_CALL_SRC, 'dist'), outDir, { recursive: true });
   return outDir;
 }
 
