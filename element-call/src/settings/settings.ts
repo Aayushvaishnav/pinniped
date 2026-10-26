@@ -131,7 +131,7 @@ export const playReactionsSound = new Setting<boolean>(
 
 export const soundEffectVolume = new Setting<number>(
   "sound-effect-volume",
-  0.5
+  0.6
 );
 
 export const muteAllAudio = new Setting<boolean>("mute-all-audio", false);

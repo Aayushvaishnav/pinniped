@@ -38,12 +38,14 @@ const CALL_WIDGET_SOUNDS = {
 
 /**
  * URLs for the sounds the embedded call plays itself, so a bundle replaces them instead of
- * the call playing its own next to the bundle's. Empty (the call's own sounds) unless event
- * sounds are on; sounds the bundle lacks keep the call's own.
+ * the call playing its own next to the bundle's. Call sounds follow the bundle whenever
+ * notification sounds are on, independent of the event sounds toggle (which is for app
+ * events). Empty (the call's own sounds) when notification sounds are off; sounds the
+ * bundle lacks keep the call's own.
  */
 export const getCallSoundOverrides = (): Record<string, string> => {
-  const { isNotificationSounds, eventSounds, notificationSoundBundle } = getSettings();
-  if (!isNotificationSounds || !eventSounds) return {};
+  const { isNotificationSounds, notificationSoundBundle } = getSettings();
+  if (!isNotificationSounds) return {};
   const overrides: Record<string, string> = {};
   Object.entries(CALL_WIDGET_SOUNDS).forEach(([name, kind]) => {
     const url = getSoundUrl(notificationSoundBundle, kind);
