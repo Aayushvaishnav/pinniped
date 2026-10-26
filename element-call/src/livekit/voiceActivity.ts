@@ -67,6 +67,8 @@ const FLOOR_START_DB = -50;
 /** How fast the floor creeps up toward sustained sound, dB per second. */
 const FLOOR_RISE_DB_PER_S = 2;
 const AUTO_MIN_OPEN_DB = -60;
+/** Time constant of the smoothed level the floor and the close decision use; instant levels jitter several dB. */
+const SMOOTH_TAU_S = 0.15;
 
 /**
  * A gate with no fixed threshold: it follows the lower envelope of the signal
@@ -77,6 +79,7 @@ const AUTO_MIN_OPEN_DB = -60;
  */
 export class AdaptiveVoiceGate implements Gate {
   private floorDb: number | undefined;
+  private smoothDb: number | undefined;
   private lastNow: number | undefined;
   private open = false;
   private lastLoudAt = -Infinity;
@@ -97,14 +100,23 @@ export class AdaptiveVoiceGate implements Gate {
     const db = toDb(level);
     const dt = this.lastNow === undefined ? 0 : (now - this.lastNow) / 1000;
     this.lastNow = now;
-    this.floorDb ??= Math.min(db, FLOOR_START_DB);
+    // The raw RMS of a short window jitters by several dB even for steady
+    // noise. Tracking its dips would park the floor below the noise and let that
+    // jitter cross the close threshold, holding the gate open for ever.
+    this.smoothDb ??= db;
+    this.smoothDb += (db - this.smoothDb) * (1 - Math.exp(-dt / SMOOTH_TAU_S));
+    const smooth = this.smoothDb;
+    this.floorDb ??= Math.min(smooth, FLOOR_START_DB);
     this.floorDb =
-      db < this.floorDb
-        ? this.floorDb + (db - this.floorDb) * 0.2
-        : Math.min(db, this.floorDb + FLOOR_RISE_DB_PER_S * dt);
+      smooth < this.floorDb
+        ? this.floorDb + (smooth - this.floorDb) * 0.2
+        : Math.min(smooth, this.floorDb + FLOOR_RISE_DB_PER_S * dt);
     const openDb = Math.max(this.floorDb + this.marginDb, AUTO_MIN_OPEN_DB);
-    const threshold = this.open ? openDb - this.hysteresisDb : openDb;
-    if (db >= threshold) this.lastLoudAt = now;
+    // Opening reacts to the instant level; staying open needs the smoothed one.
+    const loud = this.open
+      ? smooth >= openDb - this.hysteresisDb
+      : db >= openDb;
+    if (loud) this.lastLoudAt = now;
     this.open = now - this.lastLoudAt <= this.holdMs;
     return this.open;
   }
