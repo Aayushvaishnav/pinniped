@@ -14,10 +14,29 @@ import {
 import {
   WidgetApi,
   MatrixCapabilities,
+  PostmessageTransport,
   WidgetApiToWidgetAction,
 } from "matrix-widget-api";
 
 import type { IWidgetApiRequest } from "matrix-widget-api";
+
+// matrix-widget-api console.logs every message it sends, which floods the
+// console (call stats alone are one per second). Send without the log.
+(
+  PostmessageTransport.prototype as unknown as {
+    sendInternal(message: IWidgetApiRequest): void;
+  }
+).sendInternal = function (this: PostmessageTransport, message): void {
+  (
+    this as unknown as {
+      transportWindow: Window;
+      targetOrigin: string;
+    }
+  ).transportWindow.postMessage(
+    message,
+    (this as unknown as { targetOrigin: string }).targetOrigin,
+  );
+};
 import { LazyEventEmitter } from "./LazyEventEmitter";
 import { getUrlParams } from "./UrlParams";
 import { installBitrateHints } from "./livekit/bitrateHints";
