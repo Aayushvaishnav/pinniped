@@ -19,6 +19,16 @@ export const getLeftRooms = (mx: MatrixClient): Record<string, number> =>
     mx.getAccountData(AccountDataEvent.PinnipedLeftRooms)?.getContent<LeftRoomsContent>()
   );
 
+// Bounds account data growth; the oldest marks are dropped first.
+const MAX_LEFT_ROOMS = 2000;
+
+const pruneLeftRooms = (rooms: Record<string, number>): Record<string, number> => {
+  const entries = Object.entries(rooms);
+  if (entries.length <= MAX_LEFT_ROOMS) return rooms;
+  entries.sort(([, a], [, b]) => b - a);
+  return Object.fromEntries(entries.slice(0, MAX_LEFT_ROOMS));
+};
+
 // Serialises read-modify-write so concurrent leaves (e.g. leaving a space and
 // all its rooms) don't clobber each other.
 let queue: Promise<unknown> = Promise.resolve();
@@ -32,7 +42,9 @@ const updateLeftRooms = (
     .then(() => {
       const rooms = update(getLeftRooms(mx));
       if (!rooms) return undefined;
-      return mx.setAccountData(AccountDataEvent.PinnipedLeftRooms, { rooms });
+      return mx.setAccountData(AccountDataEvent.PinnipedLeftRooms, {
+        rooms: pruneLeftRooms(rooms),
+      });
     });
   return queue;
 };
