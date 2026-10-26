@@ -108,7 +108,9 @@ The deployment uses `imagePullPolicy: Always` with the `:latest` tag, so a rollo
 SHA=$(git rev-parse --short HEAD)
 
 # 1. Build. Use --format docker; tag latest plus a sha tag for traceability.
+#    APP_COMMIT is shown in the app version and the Matrix device name (.git is not in the image).
 podman build --format docker \
+  --build-arg APP_COMMIT=$SHA \
   -t repo.k8s.mreow.de/githubshit/cinny:latest \
   -t repo.k8s.mreow.de/githubshit/cinny:sha-$SHA \
   -f Dockerfile .

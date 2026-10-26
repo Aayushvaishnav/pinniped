@@ -10,8 +10,22 @@ import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
 import buildConfig from './build.config';
 import { prepareElementCall } from './scripts/fork/element-call-activity.mjs';
+
+// Fork-only: short commit hash baked into the bundle. The container build has
+// no .git, so the Dockerfile passes it in as APP_COMMIT.
+const appCommit = (() => {
+  if (process.env.APP_COMMIT) return process.env.APP_COMMIT;
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'unknown';
+  }
+})();
 
 const elementCallPath = prepareElementCall();
 
@@ -81,6 +95,9 @@ function serverMatrixSdkCryptoWasm(wasmFilePath) {
 export default defineConfig({
   appType: 'spa',
   publicDir: false,
+  define: {
+    __APP_COMMIT__: JSON.stringify(appCommit),
+  },
   base: buildConfig.base,
   resolve: {
     // Fork-only: bare `folds` resolves to our shim (src/folds/index.ts) which

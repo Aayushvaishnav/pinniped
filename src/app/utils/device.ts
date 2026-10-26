@@ -43,4 +43,7 @@ export const isDesktop = (): boolean => typeof window.cinnyDesktop !== 'undefine
 
 // Matrix device display name shown in the account's sessions list
 export const getDeviceDisplayName = (): string =>
-  isDesktop() ? 'Pinniped Desktop' : 'Pinniped Web';
+  `${isDesktop() ? 'Pinniped Desktop' : 'Pinniped Web'} (${__APP_COMMIT__})`;
+
+// package.json version plus the commit this bundle was built from
+export const APP_VERSION = `v4.12.6 (${__APP_COMMIT__})`;

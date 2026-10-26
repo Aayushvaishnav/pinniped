@@ -6,6 +6,7 @@ import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import PinnipedSVG from '../../../../../public/res/svg/pinniped.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
+import { APP_VERSION } from '../../../utils/device';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 
 type AboutProps = {
@@ -46,7 +47,7 @@ export function About({ requestClose }: AboutProps) {
                   <Box direction="Column" gap="100">
                     <Box gap="100" alignItems="End">
                       <Text size="H3">Pinniped</Text>
-                      <Text size="T200">v4.12.6</Text>
+                      <Text size="T200">{APP_VERSION}</Text>
                     </Box>
                     <Text>Yet another matrix client.</Text>
                   </Box>
