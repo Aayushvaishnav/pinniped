@@ -22,6 +22,10 @@ files:
 extraMetadata:
   main: electron/main.cjs
 
+# unpacked app dir: `just sync` rsyncs a fresh dist into the installed app
+# without repacking an asar on every iteration
+asar: false
+
 # app ships no node_modules (main uses only node built-ins), skip native rebuild
 npmRebuild: false
 
@@ -32,6 +36,15 @@ linux:
   target:
     - AppImage
     - deb
+
+rpm:
+  # fpm defaults to single-threaded gzip -9 (w9.gzdio): ~65 s for the ~350 MB
+  # payload. Multithreaded xz gets the same size class in a fraction of the time.
+  fpm:
+    - --rpm-compression
+    - xzmt
+    - --rpm-compression-level
+    - '6'
   category: Network
   icon: electron/build/icon.png
   synopsis: Yet another Matrix client

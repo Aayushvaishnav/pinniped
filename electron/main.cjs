@@ -19,6 +19,10 @@ const { createRichPresenceServer } = require('./rich-presence.cjs');
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const APP_ICON = path.join(__dirname, 'build', 'icon.png');
 
+// Dev only (`just dev-electron`): load the vite dev server (HMR) instead of the
+// built bundle in dist/.
+const DEV_SERVER_URL = process.env.CINNY_DEV_SERVER_URL;
+
 // Dev only (`just dev-electron`): expose DevTools over CDP on localhost for layout debugging.
 if (process.env.CINNY_DEV_RELOAD) app.commandLine.appendSwitch('remote-debugging-port', '9333');
 
@@ -101,7 +105,7 @@ ipcMain.on('badge:set', (_event, payload) => {
 });
 
 function isInternalUrl(url) {
-  return url.startsWith(APP_ORIGIN);
+  return url.startsWith(APP_ORIGIN) || (DEV_SERVER_URL && url.startsWith(DEV_SERVER_URL));
 }
 
 // privileged scheme must be registered before the app is ready
@@ -192,7 +196,7 @@ function createWindow() {
     mainWindow = null;
   });
 
-  mainWindow.loadURL(`${APP_ORIGIN}/`);
+  mainWindow.loadURL(DEV_SERVER_URL || `${APP_ORIGIN}/`);
   if (process.env.CINNY_DEV_RELOAD) watchDistForReload();
 }
 

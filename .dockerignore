@@ -1,2 +1,18 @@
-node_modules/
-.git/
+# Never send local build output, deps and test artifacts to the image build.
+# Keep in sync with .gitignore; everything here is either regenerated locally
+# or not needed to build the web bundle.
+node_modules
+.git
+dist
+electron/out
+.pw-browsers
+.playwright-cli
+playwright-report
+test-results
+experiment
+devAssets
+room-view.png
+.playwright-cliroom-view.png
+.env.e2e
+AGENTS.md
+result

@@ -30,6 +30,10 @@ export function prepareElementCall() {
   if (pkg.version !== '0.20.1')
     throw new Error('Review the Element Call activity patch for the new version.');
   const output = path.resolve('node_modules/.cache/cinny-element-call');
+  // Copying the 42 MB embedded dist runs on every vite start and build; the result
+  // only changes when the embedded package version does.
+  const marker = `${output}.version`;
+  if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8') === pkg.version) return output;
   fs.rmSync(output, { recursive: true, force: true });
   fs.cpSync(path.join(root, 'dist'), output, { recursive: true });
   const asset = path.join(output, 'assets/index-Dul-9Slf.js');
@@ -43,5 +47,6 @@ export function prepareElementCall() {
       .readFileSync(html, 'utf8')
       .replaceAll('index-Dul-9Slf.js', 'index-Dul-9Slf-cinny-activity.js')
   );
+  fs.writeFileSync(marker, pkg.version);
   return output;
 }

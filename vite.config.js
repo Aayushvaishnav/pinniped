@@ -5,7 +5,6 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 import inject from '@rollup/plugin-inject';
-import topLevelAwait from 'vite-plugin-top-level-await';
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
@@ -92,6 +91,53 @@ function serverMatrixSdkCryptoWasm(wasmFilePath) {
   };
 }
 
+const MIME_TYPES = {
+  '.css': 'text/css',
+  '.html': 'text/html',
+  '.ico': 'image/x-icon',
+  '.js': 'text/javascript',
+  '.json': 'application/json',
+  '.mjs': 'text/javascript',
+  '.ogg': 'audio/ogg',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.txt': 'text/plain',
+  '.wasm': 'application/wasm',
+  '.webmanifest': 'application/manifest+json',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
+
+// viteStaticCopy only runs at build time, so dist serves config.json, public/ and
+// the Element Call bundle — but the dev server serves none of them and the app
+// fetches those paths at runtime. Serve them in dev from where they live.
+function serveRuntimeCopies(elementCallPath) {
+  const sources = [
+    ['/config.json', path.resolve('config.json')],
+    ['/public/element-call/', elementCallPath],
+    ['/public/', path.resolve('public')],
+  ];
+  return {
+    name: 'vite-plugin-serve-runtime-copies',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        // Vite answers asset imports itself (e.g. `foo.svg?import` becomes a JS
+        // module); only plain runtime fetches (no query) are ours to serve.
+        const url = req.url ?? '';
+        if (url.includes('?')) return next();
+        if (url.includes('..')) return next();
+        const [prefix, source] = sources.find(([p]) => url === p || url.startsWith(p)) ?? [];
+        if (prefix === undefined) return next();
+        const file = prefix.endsWith('/') ? path.join(source, url.slice(prefix.length)) : source;
+        if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return next();
+        res.setHeader('Content-Type', MIME_TYPES[path.extname(file)] ?? 'application/octet-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        fs.createReadStream(file).pipe(res);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   appType: 'spa',
   publicDir: false,
@@ -121,12 +167,7 @@ export default defineConfig({
   },
   plugins: [
     serverMatrixSdkCryptoWasm('/node_modules/.vite/deps/pkg/matrix_sdk_crypto_wasm_bg.wasm'),
-    topLevelAwait({
-      // The export name of top-level await promise for each chunk module
-      promiseExportName: '__tla',
-      // The function to generate import names of top-level await promise in each chunk module
-      promiseImportName: (i) => `__tla_${i}`,
-    }),
+    serveRuntimeCopies(elementCallPath),
     viteStaticCopy(copyFiles),
     vanillaExtractPlugin(),
     wasm(),
@@ -162,7 +203,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // Fork-only: prod maps only on demand (SOURCEMAP=1); they cost ~3.5 s per build.
+    sourcemap: process.env.SOURCEMAP === '1',
     copyPublicDir: false,
     rollupOptions: {
       plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
