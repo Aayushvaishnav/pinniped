@@ -15,6 +15,7 @@ import {
 } from "matrix-js-sdk/lib/matrixrtc";
 import { pickBy } from "lodash-es";
 
+import { normalizeVoiceTuning, type VoiceTuning } from "./livekit/voiceTuning";
 import { Config } from "./config/Config";
 import { type EncryptionSystem } from "./e2ee/sharedKeyManagement";
 import { E2eeType } from "./e2ee/e2eeType";
@@ -266,6 +267,8 @@ export interface UrlConfiguration {
   /** Voice activity gate on the microphone, and its threshold (0-1). */
   voiceGate?: boolean;
   voiceGateAuto?: boolean;
+  /** All voice gate and speaking indicator tuning, as one object (JSON in the URL). */
+  voiceTuning?: VoiceTuning;
   voiceGateThreshold?: number;
   /**
    * Preferred microphone / speaker device IDs. The embedding client owns them
@@ -546,6 +549,7 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     denoise: parser.getFlagParam("denoise", false),
     voiceGate: parser.getFlagParam("voiceGate", false),
     voiceGateAuto: parser.getFlagParam("voiceGateAuto", true),
+    voiceTuning: parseVoiceTuning(parser.getParam("voiceTuning")),
     voiceGateThreshold: Number.isFinite(
       parseFloat(parser.getParam("voiceGateThreshold") ?? ""),
     )
@@ -696,4 +700,15 @@ export function generateUrlSearchParams(
   viaServers?.forEach((s) => params.set("viaServers", s));
 
   return params;
+}
+
+function parseVoiceTuning(
+  raw: string | null | undefined,
+): VoiceTuning | undefined {
+  if (!raw) return undefined;
+  try {
+    return normalizeVoiceTuning(JSON.parse(raw));
+  } catch {
+    return undefined;
+  }
 }

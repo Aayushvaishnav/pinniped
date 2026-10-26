@@ -28,6 +28,7 @@ import { CallControlState } from '../plugins/call/CallControlState';
 import { useCallMembersChange, useCallSession } from './useCall';
 import { CallPreferences } from '../state/callPreferences';
 import { useCallPreferencesAtom } from '../state/hooks/callPreferences';
+import { withDefaultTuning } from '../plugins/call/voiceTuning';
 
 const CallEmbedContext = createContext<CallEmbed | undefined>(undefined);
 
@@ -191,6 +192,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
   const [voiceGate] = useSetting(settingsAtom, 'callVoiceGate');
   const [voiceGateAuto] = useSetting(settingsAtom, 'callVoiceGateAuto');
   const [voiceGateThreshold] = useSetting(settingsAtom, 'callVoiceGateThreshold');
+  const [voiceTuning] = useSetting(settingsAtom, 'callVoiceTuning');
   const [simulcast] = useSetting(settingsAtom, 'callSimulcast');
   const [screenShare] = useSetting(settingsAtom, 'callScreenShare');
   const [soundVolume] = useSetting(settingsAtom, 'soundVolume');
@@ -207,6 +209,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
         voiceGate,
         voiceGateAuto,
         voiceGateThreshold,
+        voiceTuning: withDefaultTuning(voiceTuning),
         simulcast,
         screenShare: `${screenShare.resolution}:${screenShare.fps}`,
         soundVolume,
@@ -223,6 +226,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
     voiceGate,
     voiceGateAuto,
     voiceGateThreshold,
+    voiceTuning,
     simulcast,
     screenShare,
     soundVolume,

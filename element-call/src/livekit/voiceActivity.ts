@@ -7,12 +7,16 @@ Please see LICENSE in the repository root for full details.
 
 import { Observable, distinctUntilChanged, of, switchMap } from "rxjs";
 
+import { voiceTuning } from "../settings/settings";
+
 /** Level (RMS, 0..1) above which someone starts being heard as speaking. */
 export const VOICE_OPEN_LEVEL = 0.008;
 /** Level below which the voice counts as quiet again; under OPEN so a steady voice does not flutter. */
 export const VOICE_CLOSE_LEVEL = 0.005;
 /** How long to keep showing speech after the last loud moment, bridging gaps between words. */
 export const VOICE_HOLD_MS = 250;
+/** The speaking indicator's own gap between its open and close levels. */
+const INDICATOR_HYSTERESIS_DB = 4;
 
 /**
  * Decides from a stream of audio levels whether someone is speaking: opens
@@ -30,7 +34,7 @@ export class VoiceGate implements Gate {
   public constructor(
     private openLevel = VOICE_OPEN_LEVEL,
     private closeLevel = VOICE_CLOSE_LEVEL,
-    private readonly holdMs = VOICE_HOLD_MS,
+    public holdMs = VOICE_HOLD_MS,
   ) {}
 
   public setLevels(openLevel: number, closeLevel: number): void {
@@ -50,20 +54,10 @@ export class VoiceGate implements Gate {
 const toDb = (level: number): number =>
   level > 0 ? 20 * Math.log10(level) : -100;
 
-/**
- * How far below its open level the voice gate may fall before it starts to close,
- * so a voice hovering around the threshold does not chatter the gate open and shut.
- */
-export const GATE_HYSTERESIS_DB = 6;
-
 /** The floor never starts above this, so speaking from the first moment still opens the gate. */
 const FLOOR_START_DB = -50;
 /** How fast the floor creeps up toward sustained sound, dB per second. */
 const FLOOR_RISE_DB_PER_S = 2;
-/** Speech has to be this far above the noise floor to open the gate... */
-const AUTO_OPEN_ABOVE_FLOOR_DB = 12;
-/** ...and may fall this far below that before it closes. */
-const AUTO_CLOSE_BELOW_OPEN_DB = GATE_HYSTERESIS_DB;
 const AUTO_MIN_OPEN_DB = -60;
 
 /**
@@ -79,7 +73,17 @@ export class AdaptiveVoiceGate implements Gate {
   private open = false;
   private lastLoudAt = -Infinity;
 
-  public constructor(private readonly holdMs = VOICE_HOLD_MS) {}
+  /**
+   * All three can be changed while the gate runs.
+   * @param holdMs - how long it stays open after the last loud moment
+   * @param marginDb - how far above the noise floor speech must be to open it
+   * @param hysteresisDb - how far below that open point it may fall before closing
+   */
+  public constructor(
+    public holdMs = VOICE_HOLD_MS,
+    public marginDb = 12,
+    public hysteresisDb = 6,
+  ) {}
 
   public update(level: number, now: number): boolean {
     const db = toDb(level);
@@ -90,11 +94,8 @@ export class AdaptiveVoiceGate implements Gate {
       db < this.floorDb
         ? this.floorDb + (db - this.floorDb) * 0.2
         : Math.min(db, this.floorDb + FLOOR_RISE_DB_PER_S * dt);
-    const openDb = Math.max(
-      this.floorDb + AUTO_OPEN_ABOVE_FLOOR_DB,
-      AUTO_MIN_OPEN_DB,
-    );
-    const threshold = this.open ? openDb - AUTO_CLOSE_BELOW_OPEN_DB : openDb;
+    const openDb = Math.max(this.floorDb + this.marginDb, AUTO_MIN_OPEN_DB);
+    const threshold = this.open ? openDb - this.hysteresisDb : openDb;
     if (db >= threshold) this.lastLoudAt = now;
     this.open = now - this.lastLoudAt <= this.holdMs;
     return this.open;
@@ -103,15 +104,19 @@ export class AdaptiveVoiceGate implements Gate {
 
 /**
  * The gate's open/close levels for the setting's 0-1 threshold, which spans
- * -70 dBFS (any sound opens it) to -20 dBFS (only loud speech does).
+ * -70 dBFS (any sound opens it) to -20 dBFS (only loud speech does); the close
+ * level is `hysteresisDb` below the open level.
  */
-export function voiceGateLevels(threshold: number): {
+export function voiceGateLevels(
+  threshold: number,
+  hysteresisDb = 6,
+): {
   open: number;
   close: number;
 } {
   const t = Math.min(1, Math.max(0, threshold));
   const open = 10 ** ((-70 + 50 * t) / 20);
-  return { open, close: open * 10 ** (-GATE_HYSTERESIS_DB / 20) };
+  return { open, close: open * 10 ** (-hysteresisDb / 20) };
 }
 
 /** RMS level (0..1) of the audio an analyser currently sees. */
@@ -153,6 +158,13 @@ function observeTrackVoice$(track: MediaStreamTrack): Observable<boolean> {
     const gate = new VoiceGate();
     subscriber.next(false);
     const id = setInterval(() => {
+      const tuning = voiceTuning.getValue();
+      const levels = voiceGateLevels(
+        tuning.indicatorSensitivity,
+        INDICATOR_HYSTERESIS_DB,
+      );
+      gate.setLevels(levels.open, levels.close);
+      gate.holdMs = tuning.indicatorHoldMs;
       subscriber.next(gate.update(measureLevel(analyser, samples), Date.now()));
     }, POLL_MS);
     return (): void => {

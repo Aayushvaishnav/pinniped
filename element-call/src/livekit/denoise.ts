@@ -15,6 +15,7 @@ import {
   voiceGate,
   voiceGateAuto,
   voiceGateThreshold,
+  voiceTuning,
 } from "../settings/settings";
 import { VoiceGateProcessor } from "./voiceGate";
 import { type Behavior } from "../state/Behavior";
@@ -85,6 +86,7 @@ async function applyProcessing(
       new VoiceGateProcessor(denoiser, () => ({
         auto: voiceGateAuto.getValue(),
         threshold: voiceGateThreshold.getValue(),
+        tuning: voiceTuning.getValue(),
       })),
     );
   } else if (denoiser) {

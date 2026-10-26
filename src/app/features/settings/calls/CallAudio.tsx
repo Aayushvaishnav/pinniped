@@ -25,6 +25,15 @@ import { SequenceCardStyle } from '../styles.css';
 import { UserSoundPack } from '../../soundboard/UserSoundPack';
 import { useMicLevel } from '../../../hooks/useMicLevel';
 import { VoiceGateMeter } from './VoiceGateMeter';
+import { VoiceTuningControls } from './VoiceTuningControls';
+import {
+  VoiceTuning,
+  autoTuningSpecs,
+  defaultVoiceTuning,
+  gateTuningSpecs,
+  indicatorTuningSpecs,
+  withDefaultTuning,
+} from '../../../plugins/call/voiceTuning';
 
 const denoiseSupported = () =>
   typeof AudioWorkletNode !== 'undefined' &&
@@ -162,6 +171,15 @@ function CallAudio() {
     settingsAtom,
     'callVoiceGateThreshold'
   );
+  const [storedTuning, setStoredTuning] = useSetting(settingsAtom, 'callVoiceTuning');
+  const tuning = withDefaultTuning(storedTuning);
+  const changeTuning = (key: keyof VoiceTuning, value: number) =>
+    setStoredTuning({ ...storedTuning, [key]: value });
+  const resetTuning = (keys: (keyof VoiceTuning)[]) =>
+    setStoredTuning({
+      ...storedTuning,
+      ...Object.fromEntries(keys.map((k) => [k, defaultVoiceTuning[k]])),
+    });
   const [audioInput, setAudioInput] = useSetting(settingsAtom, 'callAudioInput');
   const [audioOutput, setAudioOutput] = useSetting(settingsAtom, 'callAudioOutput');
   const [devices, requestAccess] = useAudioDevices();
@@ -259,6 +277,8 @@ function CallAudio() {
                 level={micLevel}
                 threshold={voiceGateAuto ? undefined : voiceGateThreshold}
                 onThreshold={voiceGateAuto ? undefined : setVoiceGateThreshold}
+                hysteresisDb={tuning.hysteresisDb}
+                holdMs={tuning.holdMs}
               />
               <Text size="T200" priority="300">
                 {devices.labelled
@@ -266,8 +286,33 @@ function CallAudio() {
                   : 'Allow microphone access above to see the live meter.'}
               </Text>
             </Box>
+            <VoiceTuningControls
+              label="Advanced"
+              specs={voiceGateAuto ? [...gateTuningSpecs, ...autoTuningSpecs] : gateTuningSpecs}
+              tuning={tuning}
+              onChange={changeTuning}
+              onReset={resetTuning}
+            />
           </>
         )}
+      </SequenceCard>
+      <SequenceCard
+        className={SequenceCardStyle}
+        variant="SurfaceVariant"
+        direction="Column"
+        gap="400"
+      >
+        <SettingTile
+          title="Speaking Indicator"
+          description="The ring and highlight that show who is talking. It reacts to the sound itself, so it is quick even on a bad connection."
+        />
+        <VoiceTuningControls
+          label="Adjust"
+          specs={indicatorTuningSpecs}
+          tuning={tuning}
+          onChange={changeTuning}
+          onReset={resetTuning}
+        />
       </SequenceCard>
     </Box>
   );

@@ -38,6 +38,7 @@ import {
   parseCallActivity,
 } from './activity';
 import { CallStatsSample, trimStats } from './stats';
+import { withDefaultTuning } from './voiceTuning';
 
 export class CallEmbed {
   private mx: MatrixClient;
@@ -146,6 +147,7 @@ export class CallEmbed {
     params.append('voiceGate', settings.callVoiceGate.toString());
     params.append('voiceGateAuto', settings.callVoiceGateAuto.toString());
     params.append('voiceGateThreshold', settings.callVoiceGateThreshold.toString());
+    params.append('voiceTuning', JSON.stringify(withDefaultTuning(settings.callVoiceTuning)));
     params.append('simulcast', settings.callSimulcast.toString());
     params.append(
       'screenShare',

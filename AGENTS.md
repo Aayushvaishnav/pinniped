@@ -123,7 +123,12 @@ Fork changes on top of upstream + old patches:
   a -70..-20 dBFS scale, the same scale as the live meter in Cinny's settings
   (`useMicLevel`, `VoiceGateMeter`). Settings reach the widget through the
   `voiceGate`, `voiceGateAuto` and `voiceGateThreshold` URL params and
-  `io.cinny.call_settings`.
+  `io.cinny.call_settings`. Fine tuning (stickiness/hysteresis, hold, fade in/out,
+  lookahead, automatic margin, speaking indicator sensitivity and hold) is one
+  `VoiceTuning` object, sent whole as the `voiceTuning` param/field; the ranges,
+  defaults and descriptions live in `src/app/plugins/call/voiceTuning.ts` (the widget
+  keeps a clamping copy of the defaults in `element-call/src/livekit/voiceTuning.ts`,
+  so add a knob in both).
 - **Speaking detection** also measures the audio itself (`voiceActivity.ts`), so the
   speaking ring and activity are not limited to the server's coarse speaker updates.
 - **Call stats**: the widget (`src/livekit/callStats.ts`, reported from

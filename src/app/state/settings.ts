@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { VoiceTuning } from '../plugins/call/voiceTuning';
 import type { ScreenShareQuality } from '../plugins/call/types';
 import type { SoundKind } from '../sound/bundles';
 
@@ -41,6 +42,8 @@ export interface Settings {
   callVoiceGate: boolean;
   callVoiceGateAuto: boolean;
   callVoiceGateThreshold: number;
+  // Fine tuning of the gate and the speaking indicator; stored partially, see withDefaultTuning.
+  callVoiceTuning: Partial<VoiceTuning>;
   // Publish video as several quality layers (off: one high-quality stream).
   callSimulcast: boolean;
   // Screen share preset, picked when a share starts; see ScreenShareQuality.
@@ -114,6 +117,7 @@ const defaultSettings: Settings = {
   callVoiceGate: false,
   callVoiceGateAuto: true,
   callVoiceGateThreshold: 0.45,
+  callVoiceTuning: {},
   callSimulcast: false,
   callScreenShare: { resolution: '720p', fps: 60 },
   callAudioInput: '',

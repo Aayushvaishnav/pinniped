@@ -8,6 +8,7 @@ Please see LICENSE in the repository root for full details.
 import { logger } from "matrix-js-sdk/lib/logger";
 import { BehaviorSubject } from "rxjs";
 
+import { defaultVoiceTuning, type VoiceTuning } from "../livekit/voiceTuning";
 import { PosthogAnalytics } from "../analytics/PosthogAnalytics";
 import { type Behavior } from "../state/Behavior";
 import { useBehavior } from "../useBehavior";
@@ -113,6 +114,12 @@ export const denoiseMode = new Setting<"off" | "deepfilternet">(
  * the denoiser, which keeps running either way so it keeps adapting to the room.
  */
 export const voiceGate = new Setting<boolean>("voice-gate", false);
+
+/** Fine tuning of the voice gate and speaking indicator, set as a whole by the client. */
+export const voiceTuning = new Setting<VoiceTuning>(
+  "voice-tuning",
+  defaultVoiceTuning,
+);
 
 /** Whether the voice gate follows the room's noise floor instead of using the fixed threshold. */
 export const voiceGateAuto = new Setting<boolean>("voice-gate-auto", true);

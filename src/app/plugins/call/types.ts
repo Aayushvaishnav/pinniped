@@ -1,3 +1,5 @@
+import { VoiceTuning } from './voiceTuning';
+
 export enum ElementCallIntent {
   StartCall = 'start_call',
   JoinExisting = 'join_existing',
@@ -55,6 +57,7 @@ export type ElementCallSettings = {
   voiceGateAuto: boolean;
   /** 0-1: how loud speech must be to open the gate when not automatic. */
   voiceGateThreshold: number;
+  voiceTuning: VoiceTuning;
   simulcast: boolean;
   /** `<resolution>:<fps>`, e.g. `720p:60`. */
   screenShare: string;
