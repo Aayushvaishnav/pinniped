@@ -1,0 +1,62 @@
+# Fork-only: refresh npmDepsHash in package.nix when package-lock.json changes
+# on fork/dev, verify the Nix build, and open a PR with the fix. The maintainer
+# only ever merges the PR; no local Nix tooling needed.
+name: npm-deps-hash
+on:
+  push:
+    branches: [fork/dev]
+    paths:
+      - package-lock.json
+      - package.nix
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Try build (captures the correct hash on failure)
+        id: build
+        run: |
+          set -o pipefail
+          if nix build .#pinniped 2>&1 | tee build.log; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            hash=$(grep -oE "got: +sha256-[A-Za-z0-9+/=]+" build.log | head -1 | awk '{print $2}')
+            if [[ -z "$hash" ]]; then
+              echo "build failed for a reason other than the npm deps hash" >&2
+              exit 1
+            fi
+            echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rewrite npmDepsHash
+        if: steps.build.outputs.hash
+        run: ./scripts/update-npm-deps.sh "${{ steps.build.outputs.hash }}"
+
+      - name: Verify build with new hash
+        if: steps.build.outputs.hash
+        run: nix build .#pinniped
+
+      - name: Open PR
+        if: steps.build.outputs.hash
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: fork/dev
+          branch: auto/npm-deps-hash
+          title: 'chore: refresh npmDepsHash for package-lock.json'
+          body: |
+            `package-lock.json` changed but `npmDepsHash` in `package.nix` was stale.
+            Hash refreshed and `nix build .#pinniped` verified on CI. Merge to keep
+            the Nix flake buildable.
+          commit-message: 'chore: refresh npmDepsHash in package.nix'
+          delete-branch: true

@@ -29,6 +29,10 @@ let isQuitting = false;
 // so notifications and sounds still arrive. Quit from the tray menu.
 const CLOSE_TO_TRAY = process.platform === 'win32';
 
+// Ties the running window's app-id / WM_CLASS to pinniped.desktop so GNOME
+// associates it with the launcher entry and applies the right icon and name.
+if (process.platform === 'linux') app.setDesktopName('pinniped');
+
 // Windows toasts are attributed to the AppUserModelID; it has to match the one
 // electron-builder writes into the Start menu shortcut (the appId), otherwise
 // toasts show under the wrong name or are dropped.
