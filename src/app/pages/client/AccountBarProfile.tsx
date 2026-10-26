@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Avatar, Box, Icon, IconButton, Icons, Text, Tooltip, TooltipProvider } from 'folds';
+import { PresenceStatus } from '../../components/presence/PresenceStatus';
 import { UserAvatar } from '../../components/user-avatar';
 import { Modal500 } from '../../components/Modal500';
 import { Settings } from '../../features/settings';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useUserPresence } from '../../hooks/useUserPresence';
+import { useUserRichPresence } from '../../hooks/useUserRichPresence';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { nameInitials } from '../../utils/common';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
@@ -17,6 +19,7 @@ export function AccountBarProfile() {
   const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
   const presence = useUserPresence(userId);
+  const richPresence = useUserRichPresence(userId);
   const [settings, setSettings] = useState(false);
 
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
@@ -45,10 +48,8 @@ export function AccountBarProfile() {
           <Text size="L400" truncate>
             {displayName}
           </Text>
-          {status && (
-            <Text size="T200" priority="300" truncate>
-              {status}
-            </Text>
+          {(status || richPresence) && (
+            <PresenceStatus status={status || undefined} richPresence={richPresence} />
           )}
         </Box>
         <TooltipProvider
