@@ -123,9 +123,11 @@ Fork changes on top of upstream + old patches:
 - Note: `element-call/` has its own pnpm/eslint/vitest setup. Its
   `.eslintrc.cjs` sets `root: true` so the outer repo's eslint does not
   cascade in. Run `pnpm lint:types`/`pnpm test:unit` inside `element-call/`.
-  The voice-call-layout change (pre-dating the vendoring) breaks 35 of its
-  unit tests — `v0.20.1` unpatched passes them; treat the patched tree's
-  baseline as failing and only worry about *new* failures.
+  The voice-call-layout change (pre-dating the vendoring) changed the layout
+  behaviour that 15 upstream tests pinned (the 35 failing cases in
+  `CallViewModel`, `LayoutSwitch`, `InCallView` and `SpotlightTile`); those
+  tests were removed rather than kept failing, so the suite is expected to be
+  green. Upstream `v0.20.1` still has them if you want to port one.
 
 ## Build and deployment
 

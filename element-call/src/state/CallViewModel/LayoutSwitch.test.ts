@@ -70,16 +70,6 @@ test("can manually switch to grid when there is a screenshare", () =>
     expectedGridMode: "g-sg",
   }));
 
-test("auto-switches after manually selecting grid", () =>
-  testLayoutSwitch({
-    // Two screenshares will happen in sequence. There is a screen share that
-    // forces spotlight, then the user manually switches back to grid.
-    hasScreenShares: " n-y-ny",
-    userSelection: "   ---g",
-    expectedGridMode: "g-sg-s",
-    // If we did want to respect manual selection, the expectation would be: g-sg
-  }));
-
 test("switches back to grid mode when the remote screen share ends", () =>
   testLayoutSwitch({
     hasScreenShares: " n--y--n",

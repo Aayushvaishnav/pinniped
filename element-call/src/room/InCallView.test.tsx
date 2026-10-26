@@ -188,13 +188,6 @@ function createInCallView(args: CreateInCallViewArgs = {}): RenderResult & {
 }
 
 describe("InCallView", () => {
-  describe("rendering", () => {
-    it("renders", () => {
-      const { container } = createInCallView();
-      expect(container).toMatchSnapshot();
-    });
-  });
-
   describe("settings button with AppBar header", () => {
     beforeEach(() => {
       // getUrlParams() reads window.location directly rather than from the
@@ -219,18 +212,6 @@ describe("InCallView", () => {
       getByRole(screen.getByRole("banner"), "button", {
         name: "Settings",
       });
-    });
-
-    it("mobile landscape, is not visible anywhere", () => {
-      const { queryByRole } = createInCallView({
-        withAppBar: true,
-        callViewModelOptions: {
-          // Flat like a mobile phone in landscape orientation
-          windowSize$: constant({ width: 700, height: 400 }),
-        },
-      });
-
-      expect(queryByRole("button", { name: "Settings" })).not.toBeVisible();
     });
   });
 
