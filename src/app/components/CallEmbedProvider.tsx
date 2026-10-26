@@ -42,7 +42,9 @@ import { CallEmbed } from '../plugins/call';
 import { useSelectedRoom } from '../hooks/router/useSelectedRoom';
 import { ScreenSize, useScreenSizeContext } from '../hooks/useScreenSize';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import CallSound from '../../../public/sound/call.ogg';
+import { getCoreSoundUrl } from '../sound/bundles';
+import { useSetting } from '../state/hooks/settings';
+import { settingsAtom } from '../state/settings';
 import { useCallMembersChange, useCallSession } from '../hooks/useCall';
 import { useRoomAvatar, useRoomName } from '../hooks/useRoomMeta';
 import { mDirectAtom } from '../state/mDirectList';
@@ -85,6 +87,7 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
   const { room } = info;
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [soundBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
 
   const roomName = useRoomName(room);
   const roomAvatar = useRoomAvatar(room, dm);
@@ -217,9 +220,12 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
           </FocusTrap>
         </OverlayCenter>
       </Overlay>
-      <audio ref={audioRef} loop style={{ display: 'none' }}>
-        <source src={CallSound} type="audio/ogg" />
-      </audio>
+      <audio
+        ref={audioRef}
+        src={getCoreSoundUrl(soundBundle, 'call')}
+        loop
+        style={{ display: 'none' }}
+      />
     </>
   );
 }

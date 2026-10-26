@@ -13,6 +13,7 @@ import {
 import { cryptoCallbacks } from './secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 import { getSettings } from '../app/state/settings';
+import { playEventSound } from '../app/sound/play';
 import { pushSessionToSW } from '../sw-session';
 import { USER_PROFILE_FIELDS } from '../types/matrix/profile';
 import { reportClientStorageError, resetClientStorageError } from './storageStatus';
@@ -197,12 +198,15 @@ export const clearCacheAndReload = async (mx: MatrixClient) => {
 export const logoutClient = async (mx: MatrixClient) => {
   pushSessionToSW();
   mx.stopClient();
+  // The reload below would cut the sound off.
+  const signedOut = playEventSound('signout');
   try {
     await mx.logout();
   } catch {
     // ignore if failed to logout
   }
   await mx.clearStores();
+  await signedOut;
   window.localStorage.clear();
   window.location.reload();
 };

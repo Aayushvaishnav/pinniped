@@ -7,8 +7,7 @@ import { roomToUnreadAtom } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/pinniped.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/pinniped-unread.svg';
 import LogoHighlightSVG from '../../../../public/res/svg/pinniped-highlight.svg';
-import NotificationSound from '../../../../public/sound/notification.ogg';
-import InviteSound from '../../../../public/sound/invite.ogg';
+import { getCoreSoundUrl } from '../../sound/bundles';
 import { notificationPermission, setFavicon } from '../../utils/dom';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -37,6 +36,7 @@ import { useSpaceAutoJoinGlobal } from '../../hooks/useSpaceAutoJoinGlobal';
 import { useRoomNavShortcuts } from '../../hooks/useRoomNavShortcuts';
 import { useRoomNavHistory } from '../../hooks/useRoomNavHistory';
 import { renderBadgeOverlay } from '../../utils/desktopBadge';
+import { EventSounds } from './EventSounds';
 
 function GifFavoritesMigration() {
   const mx = useMatrixClient();
@@ -138,6 +138,7 @@ function InviteNotifications() {
   const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [soundBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
 
   const notify = useCallback(
     (count: number) => {
@@ -180,9 +181,11 @@ function InviteNotifications() {
 
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption
-    <audio ref={audioRef} style={{ display: 'none' }}>
-      <source src={InviteSound} type="audio/ogg" />
-    </audio>
+    <audio
+      ref={audioRef}
+      src={getCoreSoundUrl(soundBundle, 'invite')}
+      style={{ display: 'none' }}
+    />
   );
 }
 
@@ -196,6 +199,7 @@ function MessageNotifications() {
   const mDirects = useAtomValue(mDirectAtom);
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [soundBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
 
   const { navigateRoom } = useRoomNavigate();
   const notificationSelected = useInboxNotificationsSelected();
@@ -353,9 +357,11 @@ function MessageNotifications() {
 
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption
-    <audio ref={audioRef} style={{ display: 'none' }}>
-      <source src={NotificationSound} type="audio/ogg" />
-    </audio>
+    <audio
+      ref={audioRef}
+      src={getCoreSoundUrl(soundBundle, 'message')}
+      style={{ display: 'none' }}
+    />
   );
 }
 
@@ -388,6 +394,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
       <DesktopBadgeFeature />
       <InviteNotifications />
       <MessageNotifications />
+      <EventSounds />
       <SpaceAutoJoinFeature />
       <RoomNavShortcutsFeature />
       <RoomNavHistoryFeature />

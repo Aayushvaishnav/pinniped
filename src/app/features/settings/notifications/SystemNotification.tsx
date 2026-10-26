@@ -1,6 +1,23 @@
-import React, { useCallback } from 'react';
-import { Box, Text, Switch, Button, color, Spinner } from 'folds';
+import React, { useCallback, useState } from 'react';
+import {
+  Box,
+  Text,
+  Switch,
+  Button,
+  color,
+  Spinner,
+  Icon,
+  Icons,
+  Menu,
+  MenuItem,
+  config,
+  PopOut,
+  RectCords,
+} from 'folds';
+import FocusTrap from 'focus-trap-react';
 import { IPusherRequest } from 'matrix-js-sdk';
+import { stopPropagation } from '../../../utils/keyboard';
+import { getCoreSoundUrl, soundBundles } from '../../../sound/bundles';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -84,6 +101,70 @@ function EmailNotification() {
   );
 }
 
+function SelectSoundBundle() {
+  const [menuCords, setMenuCords] = useState<RectCords>();
+  const [bundle, setBundle] = useSetting(settingsAtom, 'notificationSoundBundle');
+
+  const handleSelect = (id: string) => {
+    setBundle(id);
+    setMenuCords(undefined);
+    // Preview, so the choice can be judged without waiting for a message.
+    new Audio(getCoreSoundUrl(id, 'message')).play().catch(() => undefined);
+  };
+
+  return (
+    <>
+      <Button
+        size="300"
+        variant="Secondary"
+        outlined
+        fill="Soft"
+        radii="300"
+        after={<Icon size="300" src={Icons.ChevronBottom} />}
+        onClick={(evt) => setMenuCords(evt.currentTarget.getBoundingClientRect())}
+      >
+        <Text size="T300">{soundBundles.find((b) => b.id === bundle)?.name ?? 'Default'}</Text>
+      </Button>
+      <PopOut
+        anchor={menuCords}
+        offset={5}
+        position="Bottom"
+        align="End"
+        content={
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: () => setMenuCords(undefined),
+              clickOutsideDeactivates: true,
+              isKeyForward: (evt: KeyboardEvent) =>
+                evt.key === 'ArrowDown' || evt.key === 'ArrowRight',
+              isKeyBackward: (evt: KeyboardEvent) =>
+                evt.key === 'ArrowUp' || evt.key === 'ArrowLeft',
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Menu>
+              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+                {soundBundles.map((b) => (
+                  <MenuItem
+                    key={b.id}
+                    size="300"
+                    variant={bundle === b.id ? 'Primary' : 'Surface'}
+                    radii="300"
+                    onClick={() => handleSelect(b.id)}
+                  >
+                    <Text size="T300">{b.name}</Text>
+                  </MenuItem>
+                ))}
+              </Box>
+            </Menu>
+          </FocusTrap>
+        }
+      />
+    </>
+  );
+}
+
 export function SystemNotification() {
   const notifPermission = usePermissionState('notifications', getNotificationState());
   const [showNotifications, setShowNotifications] = useSetting(settingsAtom, 'showNotifications');
@@ -91,6 +172,7 @@ export function SystemNotification() {
     settingsAtom,
     'isNotificationSounds'
   );
+  const [eventSounds, setEventSounds] = useSetting(settingsAtom, 'eventSounds');
 
   const requestNotificationPermission = () => {
     window.Notification.requestPermission();
@@ -143,6 +225,16 @@ export function SystemNotification() {
           title="Notification Sound"
           description="Play sound when new message arrive."
           after={<Switch value={isNotificationSounds} onChange={setIsNotificationSounds} />}
+        />
+        <SettingTile
+          title="Sound Bundle"
+          description="Sounds used for messages, invitations and calls."
+          after={<SelectSoundBundle />}
+        />
+        <SettingTile
+          title="Event Sounds"
+          description="Also play bundle sounds for sent messages, sign in and out, contacts coming online or offline, and joining or leaving a call. Bundles without them stay silent."
+          after={<Switch value={eventSounds} onChange={setEventSounds} />}
         />
       </SequenceCard>
       <SequenceCard
