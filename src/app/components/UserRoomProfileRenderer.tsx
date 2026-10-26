@@ -1,5 +1,15 @@
 import React from 'react';
-import { Menu, Overlay, OverlayBackdrop, OverlayCenter, PopOut, toRem } from 'folds';
+import {
+  Align,
+  Menu,
+  Overlay,
+  OverlayBackdrop,
+  OverlayCenter,
+  PopOut,
+  Position,
+  RectCords,
+  toRem,
+} from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useCloseUserRoomProfile, useUserRoomProfileState } from '../state/hooks/userRoomProfile';
 import { UserRoomProfile } from './user-profile';
@@ -11,6 +21,29 @@ import { RoomProvider } from '../hooks/useRoom';
 
 // Tall enough for the card with a collapsed, maximum-length bio.
 const RESERVED_CARD_HEIGHT = 520;
+
+const getPlacement = (
+  cords: RectCords,
+  position: Position
+): { position: Position; align: Align } => {
+  const above = cords.y;
+  const below = window.innerHeight - (cords.y + cords.height);
+  const need = RESERVED_CARD_HEIGHT;
+
+  if (position === 'Left' || position === 'Right') {
+    // Card top at the anchor top grows downward; otherwise bottom-align to grow upward.
+    const fromTop = window.innerHeight - cords.y;
+    const fromBottom = cords.y + cords.height;
+    if (fromTop >= need) return { position, align: 'Start' };
+    return { position, align: fromBottom > fromTop ? 'End' : 'Start' };
+  }
+
+  // Top/Bottom: grows away from the anchor, so it needs `need` px on that side.
+  if (position === 'Top' && above >= need) return { position: 'Top', align: 'Start' };
+  if (below >= need) return { position: 'Bottom', align: 'Start' };
+  if (above >= need) return { position: 'Top', align: 'Start' };
+  return { position: above > below ? 'Top' : 'Bottom', align: 'Start' };
+};
 
 function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) {
   const { roomId, spaceId, userId, cords, position, centered } = state;
@@ -51,25 +84,14 @@ function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) 
   }
 
   // PopOut measures its content once, when it opens, but the profile (and its
-  // bio) loads afterwards and grows the card, so a card placed near the bottom
-  // edge would end up clipped. Reserve the height of a full card with an
-  // invisible, click-through spacer so placement always leaves enough room.
-  const popPosition = position ?? 'Top';
-  const reserved = (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: popPosition === 'Top' ? 'flex-end' : 'flex-start',
-        minHeight: `min(${toRem(RESERVED_CARD_HEIGHT)}, 100vh)`,
-        pointerEvents: 'none',
-      }}
-    >
-      <div style={{ pointerEvents: 'auto' }}>{card}</div>
-    </div>
-  );
+  // bio) loads afterwards and grows the card. So pick the side/alignment from
+  // the space a full card needs, so it grows away from the nearest screen edge
+  // instead of getting clipped, while staying attached to the anchor.
+  const placement = getPlacement(cords, position ?? 'Top');
 
-  return <PopOut anchor={cords} position={popPosition} align="Start" content={reserved} />;
+  return (
+    <PopOut anchor={cords} position={placement.position} align={placement.align} content={card} />
+  );
 }
 
 export function UserRoomProfileRenderer() {
