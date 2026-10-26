@@ -17,8 +17,12 @@ import App from './app/pages/App';
 import './app/i18n';
 import { pushSessionToSW } from './sw-session';
 import { getFallbackSession } from './app/state/sessions';
+import { APP_VERSION } from './app/utils/device';
 
 document.body.classList.add(configClass, varsClass);
+
+// eslint-disable-next-line no-console
+console.info(`Pinniped ${APP_VERSION}`);
 
 const mountApp = () => {
   const rootContainer = document.getElementById('root');
