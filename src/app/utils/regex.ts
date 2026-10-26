@@ -8,6 +8,14 @@ export const HTTP_URL_PATTERN = `https?:\\/\\/(?:www\\.)?(?:[^\\s)]*)(?<![.,:;!/
 
 export const URL_REG = new RegExp(HTTP_URL_PATTERN, 'g');
 
+/** Unique URLs in `body` that should get an embed or preview; a link wrapped in `<>` opts out. */
+export const getEmbedUrls = (body: string): string[] => {
+  const urls = Array.from(body.matchAll(URL_REG))
+    .filter((match) => body[match.index - 1] !== '<')
+    .map((match) => match[0]);
+  return [...new Set(urls)];
+};
+
 export const EMAIL_REGEX =
   /^(([^<>()[\]\\.,;:\s@\\"]+(\.[^<>()[\]\\.,;:\s@\\"]+)*)|(\\".+\\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
