@@ -1,8 +1,9 @@
-import React, { MouseEventHandler, useState } from 'react';
+import React, { MouseEventHandler, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import {
   Avatar,
   Box,
+  Button,
   config,
   Icon,
   IconButton,
@@ -39,10 +40,10 @@ import {
 } from '../../../types/matrix/profile';
 import * as css from './AccountBar.css';
 
-const PRESENCE_OPTIONS: { presence: Presence; label: string }[] = [
-  { presence: Presence.Online, label: 'Online' },
-  { presence: Presence.Unavailable, label: 'Away' },
-  { presence: Presence.Offline, label: 'Invisible' },
+const PRESENCE_OPTIONS: { presence: Presence; label: string; dot: string }[] = [
+  { presence: Presence.Online, label: 'Online', dot: '#50FA7B' },
+  { presence: Presence.Unavailable, label: 'Away', dot: '#F1C40F' },
+  { presence: Presence.Offline, label: 'Invisible', dot: '#80848E' },
 ];
 
 type AccountMenuProps = {
@@ -96,6 +97,38 @@ function AccountMenu({ requestClose, openSettings }: AccountMenuProps) {
           {richPresence && <UserRichPresence presence={richPresence} />}
         </Box>
       </Box>
+      <Box gap="100" style={{ padding: `${config.space.S200} ${config.space.S200} 0` }}>
+        {PRESENCE_OPTIONS.map(({ presence: option, label, dot }) => {
+          const selected = presence?.presence === option;
+          return (
+            <Button
+              key={option}
+              size="300"
+              radii="300"
+              variant={selected ? 'Primary' : 'Secondary'}
+              fill={selected ? 'Soft' : 'None'}
+              aria-pressed={selected}
+              style={{ flexGrow: 1, minWidth: 0 }}
+              before={
+                <span
+                  style={{
+                    width: toRem(8),
+                    height: toRem(8),
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    background: dot,
+                  }}
+                />
+              }
+              onClick={() => setPresence(option)}
+            >
+              <Text size="B300" truncate>
+                {label}
+              </Text>
+            </Button>
+          );
+        })}
+      </Box>
       <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
         <MenuItem
           size="300"
@@ -105,21 +138,6 @@ function AccountMenu({ requestClose, openSettings }: AccountMenuProps) {
         >
           <Text size="B400">Edit Profile</Text>
         </MenuItem>
-        {PRESENCE_OPTIONS.map(({ presence: option, label }) => (
-          <MenuItem
-            key={option}
-            size="300"
-            radii="300"
-            variant="Surface"
-            aria-pressed={presence?.presence === option}
-            after={
-              presence?.presence === option ? <Icon size="100" src={Icons.Check} /> : undefined
-            }
-            onClick={() => setPresence(option)}
-          >
-            <Text size="B400">{label}</Text>
-          </MenuItem>
-        ))}
         <MenuItem
           size="300"
           radii="300"
@@ -157,9 +175,16 @@ export function AccountBarProfile() {
     setSettings({ page });
   };
   const closeSettings = () => setSettings(undefined);
-  const closeMenu = () => setMenuCords(undefined);
+  const closedAtRef = useRef(0);
+  const closeMenu = () => {
+    closedAtRef.current = Date.now();
+    setMenuCords(undefined);
+  };
 
   const handleOpenMenu: MouseEventHandler<HTMLElement> = (evt) => {
+    // The focus trap closes the menu on the same press that lands here, so a
+    // click on the trigger while open would otherwise reopen it straight away.
+    if (Date.now() - closedAtRef.current < 300) return;
     setMenuCords(evt.currentTarget.getBoundingClientRect());
   };
 
