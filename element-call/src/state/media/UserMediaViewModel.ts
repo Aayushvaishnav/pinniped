@@ -12,6 +12,7 @@ import {
   map,
   type Observable,
   of,
+  startWith,
   Subject,
   switchMap,
 } from "rxjs";
@@ -33,6 +34,7 @@ import { type RemoteUserMediaViewModel } from "./RemoteUserMediaViewModel";
 import { type ObservableScope } from "../ObservableScope";
 import { showConnectionStats } from "../../settings/settings";
 import { observeRtpStreamStats$ } from "./observeRtpStreamStats";
+import { observeVoiceActivity$ } from "../../livekit/voiceActivity";
 import { videoFit$, videoSizeFromParticipant$ } from "../../utils/videoFit.ts";
 
 /**
@@ -111,17 +113,24 @@ export function createBaseUserMedia(
       videoSource: Track.Source.Camera,
     }),
     type: "user",
+    // Speaking if the server says so or the audio itself is loud: the server's
+    // updates are coarse and late, the audio is immediate (Discord-style).
     speaking$: scope.behavior(
-      participant$.pipe(
-        switchMap((p) =>
-          p
-            ? observeParticipantEvents(
-                p,
-                ParticipantEvent.IsSpeakingChanged,
-              ).pipe(map((p) => p.isSpeaking))
-            : of(false),
+      combineLatest([
+        participant$.pipe(
+          switchMap((p) =>
+            p
+              ? observeParticipantEvents(
+                  p,
+                  ParticipantEvent.IsSpeakingChanged,
+                ).pipe(map((p) => p.isSpeaking))
+              : of(false),
+          ),
         ),
-      ),
+        observeVoiceActivity$(
+          media$.pipe(map((m) => m?.microphoneTrack?.track?.mediaStreamTrack)),
+        ).pipe(startWith(false)),
+      ]).pipe(map(([server, voice]) => server || voice)),
     ),
     audioEnabled$: scope.behavior(
       media$.pipe(map((m) => m?.microphoneTrack?.isMuted === false)),
