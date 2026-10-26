@@ -123,7 +123,7 @@
     "buffer": "6.0.3",
     "cz-conventional-changelog": "3.3.0",
     "dotenv": "17.4.2",
-    "electron": "43.8.3",
+    "electron": "44.9.3",
     "electron-builder": "26.15.3",
     "eslint": "8.29.0",
     "eslint-config-airbnb": "19.0.4",
