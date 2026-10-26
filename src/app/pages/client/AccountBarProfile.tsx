@@ -1,17 +1,140 @@
-import React, { useState } from 'react';
-import { Avatar, Box, Icon, IconButton, Icons, Text, Tooltip, TooltipProvider } from 'folds';
-import { PresenceStatus } from '../../components/presence/PresenceStatus';
+import React, { MouseEventHandler, useState } from 'react';
+import FocusTrap from 'focus-trap-react';
+import {
+  Avatar,
+  Box,
+  config,
+  Icon,
+  IconButton,
+  Icons,
+  Menu,
+  MenuItem,
+  PopOut,
+  RectCords,
+  Text,
+  Tooltip,
+  TooltipProvider,
+  toRem,
+} from 'folds';
 import { UserAvatar } from '../../components/user-avatar';
 import { Modal500 } from '../../components/Modal500';
-import { Settings } from '../../features/settings';
+import { PresenceStatus } from '../../components/presence/PresenceStatus';
+import { UserHero, UserHeroName } from '../../components/user-profile/UserHero';
+import { UserBiography } from '../../components/user-profile/UserBiography';
+import { UserRichPresence } from '../../components/user-profile/UserRichPresence';
+import { Settings, SettingsPages } from '../../features/settings';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { useUserPresence } from '../../hooks/useUserPresence';
-import { useUserRichPresence } from '../../hooks/useUserRichPresence';
+import { Presence, useUserPresence } from '../../hooks/useUserPresence';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { useUserRichPresence } from '../../hooks/useUserRichPresence';
 import { nameInitials } from '../../utils/common';
+import { copyToClipboard } from '../../utils/dom';
+import { stopPropagation } from '../../utils/keyboard';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
+import {
+  getProfileBanner,
+  getProfileBiography,
+  getProfilePronouns,
+} from '../../../types/matrix/profile';
 import * as css from './AccountBar.css';
+
+const PRESENCE_OPTIONS: { presence: Presence; label: string }[] = [
+  { presence: Presence.Online, label: 'Online' },
+  { presence: Presence.Unavailable, label: 'Away' },
+  { presence: Presence.Offline, label: 'Invisible' },
+];
+
+type AccountMenuProps = {
+  requestClose: () => void;
+  openSettings: (page?: SettingsPages) => void;
+};
+function AccountMenu({ requestClose, openSettings }: AccountMenuProps) {
+  const mx = useMatrixClient();
+  const useAuthentication = useMediaAuthentication();
+  const userId = mx.getSafeUserId();
+  const profile = useUserProfile(userId);
+  const presence = useUserPresence(userId);
+  const richPresence = useUserRichPresence(userId);
+
+  const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
+  const avatarUrl = profile.avatarUrl
+    ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication) ?? undefined
+    : undefined;
+  const bannerMxc = getProfileBanner(profile.extended);
+  const bannerUrl = bannerMxc
+    ? mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined
+    : undefined;
+  const biography = getProfileBiography(profile.extended);
+  const pronouns = getProfilePronouns(profile.extended)
+    .map((pronoun) => pronoun.summary)
+    .join(', ');
+  const status = presence?.status?.trim();
+
+  const setPresence = (next: Presence) => {
+    // Keep the status message: presence updates replace the whole state.
+    mx.setPresence({ presence: next, status_msg: presence?.status }).catch(() => undefined);
+    requestClose();
+  };
+
+  return (
+    <Menu style={{ width: toRem(320) }}>
+      <Box direction="Column">
+        <UserHero
+          userId={userId}
+          avatarUrl={avatarUrl}
+          bannerUrl={bannerUrl}
+          profileLoaded={profile.loaded}
+          presence={presence && presence.lastActiveTs !== 0 ? presence : undefined}
+        />
+        <Box direction="Column" gap="300" style={{ padding: config.space.S400 }}>
+          <UserHeroName displayName={displayName} userId={userId} pronouns={pronouns} />
+          {(status || richPresence) && (
+            <PresenceStatus status={status || undefined} richPresence={richPresence} />
+          )}
+          {biography && <UserBiography biography={biography} />}
+          {richPresence && <UserRichPresence presence={richPresence} />}
+        </Box>
+      </Box>
+      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+        <MenuItem
+          size="300"
+          radii="300"
+          before={<Icon size="100" src={Icons.Pencil} />}
+          onClick={() => openSettings(SettingsPages.AccountPage)}
+        >
+          <Text size="B400">Edit Profile</Text>
+        </MenuItem>
+        {PRESENCE_OPTIONS.map(({ presence: option, label }) => (
+          <MenuItem
+            key={option}
+            size="300"
+            radii="300"
+            variant="Surface"
+            aria-pressed={presence?.presence === option}
+            after={
+              presence?.presence === option ? <Icon size="100" src={Icons.Check} /> : undefined
+            }
+            onClick={() => setPresence(option)}
+          >
+            <Text size="B400">{label}</Text>
+          </MenuItem>
+        ))}
+        <MenuItem
+          size="300"
+          radii="300"
+          before={<Icon size="100" src={Icons.User} />}
+          onClick={() => {
+            copyToClipboard(userId);
+            requestClose();
+          }}
+        >
+          <Text size="B400">Copy User ID</Text>
+        </MenuItem>
+      </Box>
+    </Menu>
+  );
+}
 
 export function AccountBarProfile() {
   const mx = useMatrixClient();
@@ -20,7 +143,8 @@ export function AccountBarProfile() {
   const profile = useUserProfile(userId);
   const presence = useUserPresence(userId);
   const richPresence = useUserRichPresence(userId);
-  const [settings, setSettings] = useState(false);
+  const [settings, setSettings] = useState<{ page?: SettingsPages } | undefined>();
+  const [menuCords, setMenuCords] = useState<RectCords>();
 
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
   const status = presence?.status?.trim();
@@ -28,30 +152,69 @@ export function AccountBarProfile() {
     ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 64, 64, 'crop') ?? undefined
     : undefined;
 
-  const openSettings = () => setSettings(true);
-  const closeSettings = () => setSettings(false);
+  const openSettings = (page?: SettingsPages) => {
+    setMenuCords(undefined);
+    setSettings({ page });
+  };
+  const closeSettings = () => setSettings(undefined);
+  const closeMenu = () => setMenuCords(undefined);
+
+  const handleOpenMenu: MouseEventHandler<HTMLElement> = (evt) => {
+    setMenuCords(evt.currentTarget.getBoundingClientRect());
+  };
 
   return (
     <>
       <Box className={css.Profile} alignItems="Center" gap="200" shrink="Yes">
-        <Box shrink="No">
-          <Avatar className={css.ProfileAvatar} size="300" radii="300">
-            <UserAvatar
-              userId={userId}
-              src={avatarUrl}
-              alt={displayName}
-              renderFallback={() => <Text size="H5">{nameInitials(displayName)}</Text>}
-            />
-          </Avatar>
-        </Box>
-        <Box className={css.ProfileText} direction="Column" gap="0">
-          <Text size="L400" truncate>
-            {displayName}
-          </Text>
-          {(status || richPresence) && (
-            <PresenceStatus status={status || undefined} richPresence={richPresence} />
-          )}
-        </Box>
+        <PopOut
+          anchor={menuCords}
+          position="Bottom"
+          align="Start"
+          offset={4}
+          content={
+            <FocusTrap
+              focusTrapOptions={{
+                initialFocus: false,
+                onDeactivate: closeMenu,
+                clickOutsideDeactivates: true,
+                escapeDeactivates: stopPropagation,
+              }}
+            >
+              <AccountMenu requestClose={closeMenu} openSettings={openSettings} />
+            </FocusTrap>
+          }
+        >
+          <Box
+            as="button"
+            type="button"
+            className={css.ProfileButton}
+            alignItems="Center"
+            gap="200"
+            grow="Yes"
+            aria-haspopup="menu"
+            aria-expanded={!!menuCords}
+            onClick={handleOpenMenu}
+          >
+            <Box shrink="No">
+              <Avatar className={css.ProfileAvatar} size="300" radii="300">
+                <UserAvatar
+                  userId={userId}
+                  src={avatarUrl}
+                  alt={displayName}
+                  renderFallback={() => <Text size="H5">{nameInitials(displayName)}</Text>}
+                />
+              </Avatar>
+            </Box>
+            <Box className={css.ProfileText} direction="Column" gap="0">
+              <Text size="L400" truncate>
+                {displayName}
+              </Text>
+              {(status || richPresence) && (
+                <PresenceStatus status={status || undefined} richPresence={richPresence} />
+              )}
+            </Box>
+          </Box>
+        </PopOut>
         <TooltipProvider
           position="Bottom"
           offset={4}
@@ -67,18 +230,18 @@ export function AccountBarProfile() {
               variant="Background"
               fill="None"
               size="300"
-              onClick={openSettings}
+              onClick={() => openSettings()}
               aria-label="User Settings"
-              aria-pressed={settings}
+              aria-pressed={!!settings}
             >
-              <Icon size="200" src={Icons.Setting} filled={settings} />
+              <Icon size="200" src={Icons.Setting} filled={!!settings} />
             </IconButton>
           )}
         </TooltipProvider>
       </Box>
       {settings && (
         <Modal500 requestClose={closeSettings}>
-          <Settings requestClose={closeSettings} />
+          <Settings initialPage={settings.page} requestClose={closeSettings} />
         </Modal500>
       )}
     </>
