@@ -120,6 +120,15 @@ Fork changes on top of upstream + old patches:
   widget action. `CallEmbed` keeps five minutes of history; clicking "Voice
   Connected" opens the ping popout and its Debug view
   (`src/app/features/call-status/stats/`).
+- **Soundboard**: sounds live in Matrix data (`club.stablecat.pinniped.user_sounds`
+  account data for the user, `club.stablecat.pinniped.room_sounds` state for a
+  room or space, `club.stablecat.pinniped.sound_favorites` for favourites;
+  `src/app/plugins/sound-pack/`). Cinny downloads a sound, hands the widget a
+  same-origin `blob:` URL via the `io.cinny.soundboard` action, and the widget
+  (`src/livekit/soundboard.ts`, owned by `Publisher`) decodes it and publishes it
+  on an audio track of its own (source `unknown`, which `MatrixAudioRenderer`
+  already plays) while also playing it locally. The mic track is untouched.
+  The picker is `src/app/features/soundboard/`.
 - Note: `element-call/` has its own pnpm/eslint/vitest setup. Its
   `.eslintrc.cjs` sets `root: true` so the outer repo's eslint does not
   cascade in. Run `pnpm lint:types`/`pnpm test:unit` inside `element-call/`.

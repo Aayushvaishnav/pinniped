@@ -32,6 +32,7 @@ import {
 } from "../../../livekit/TrackProcessorContext.tsx";
 import { denoiseSync } from "../../../livekit/denoise.ts";
 import { screenShareQuality, videoSimulcast } from "../../../settings/settings";
+import { Soundboard, soundboardCommand$ } from "../../../livekit/soundboard.ts";
 import { applyScreenShareQuality } from "../../../livekit/screenShareLive.ts";
 import { parseScreenShareQuality } from "../../../livekit/options.ts";
 import { getUrlParams } from "../../../UrlParams.ts";
@@ -80,6 +81,18 @@ export class Publisher {
     this.observeTrackProcessors(this.scope, room, trackerProcessorState$);
     // Setup neural noise suppression syncing
     this.observeDenoise(this.scope, room);
+    // Soundboard sounds from the embedding client go out on a track of their own.
+    const soundboard = new Soundboard(room, this.logger);
+    soundboardCommand$.pipe(this.scope.bind()).subscribe((command) => {
+      if (command.op === "stop") soundboard.stop();
+      else
+        soundboard
+          .play(command.url, command.volume)
+          .catch((e) =>
+            this.logger.error("Failed to play a soundboard sound", e),
+          );
+    });
+    this.scope.onEnd(() => void soundboard.dispose());
     // A quality change during a share applies to the running share.
     screenShareQuality.value$.pipe(this.scope.bind()).subscribe((value) => {
       applyScreenShareQuality(room, parseScreenShareQuality(value)).catch((e) =>

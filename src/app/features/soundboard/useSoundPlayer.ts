@@ -1,0 +1,53 @@
+import { useCallback } from 'react';
+import { CallEmbed } from '../../plugins/call';
+import { Sound } from '../../plugins/sound-pack';
+import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
+import { downloadMedia, mxcUrlToHttp } from '../../utils/matrix';
+
+const MAX_RECENT = 12;
+
+/** Downloaded sounds as blob: URLs, which the (same-origin) call widget can fetch. */
+const blobUrls = new Map<string, Promise<string>>();
+
+export const useSoundBlobUrl = () => {
+  const mx = useMatrixClient();
+  const useAuthentication = useMediaAuthentication();
+
+  return useCallback(
+    (mxc: string): Promise<string> => {
+      let blobUrl = blobUrls.get(mxc);
+      if (!blobUrl) {
+        const http = mxcUrlToHttp(mx, mxc, useAuthentication);
+        if (!http) return Promise.reject(new Error('Sound URL could not be resolved'));
+        blobUrl = downloadMedia(http).then((blob) => URL.createObjectURL(blob));
+        blobUrls.set(mxc, blobUrl);
+        blobUrl.catch(() => blobUrls.delete(mxc));
+      }
+      return blobUrl;
+    },
+    [mx, useAuthentication]
+  );
+};
+
+/** Plays soundboard sounds into the call: everyone in it hears them, and so do you. */
+export const useSoundPlayer = (callEmbed: CallEmbed) => {
+  const getBlobUrl = useSoundBlobUrl();
+  const [volume] = useSetting(settingsAtom, 'soundboardVolume');
+  const [recent, setRecent] = useSetting(settingsAtom, 'soundboardRecent');
+
+  const play = useCallback(
+    async (sound: Sound) => {
+      const url = await getBlobUrl(sound.url);
+      await callEmbed.soundboard({ op: 'play', url, volume });
+      setRecent([sound.key, ...recent.filter((k) => k !== sound.key)].slice(0, MAX_RECENT));
+    },
+    [callEmbed, getBlobUrl, volume, recent, setRecent]
+  );
+
+  const stop = useCallback(() => callEmbed.soundboard({ op: 'stop' }), [callEmbed]);
+
+  return { play, stop };
+};

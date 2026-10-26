@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { useSetAtom } from 'jotai';
 import { CallEmbed, useCallControlState } from '../../plugins/call';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
+import { SoundboardButton } from '../soundboard/SoundboardButton';
 import { useScreenShareQualityMenu } from '../call/ScreenShareQualityMenu';
 import { callEmbedAtom } from '../../state/callEmbed';
 
@@ -268,6 +269,9 @@ export function CallControl({
           disabled={!callJoined}
         />
         {qualityMenu}
+      </Box>
+      <Box grow="Yes">
+        <SoundboardButton callEmbed={callEmbed} variant="panel" disabled={!callJoined} />
       </Box>
     </Box>
   );

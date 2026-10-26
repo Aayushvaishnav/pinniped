@@ -22,6 +22,7 @@ import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SequenceCardStyle } from '../styles.css';
+import { UserSoundPack } from '../../soundboard/UserSoundPack';
 
 const denoiseSupported = () =>
   typeof AudioWorkletNode !== 'undefined' &&
@@ -272,6 +273,7 @@ export function Calls({ requestClose }: CallsProps) {
             <Box direction="Column" gap="700">
               <CallAudio />
               <CallVideo />
+              <UserSoundPack />
             </Box>
           </PageContent>
         </Scroll>

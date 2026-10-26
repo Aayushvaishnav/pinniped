@@ -26,6 +26,8 @@ export enum ElementWidgetActions {
   DeviceMute = 'io.element.device_mute',
   /** Fork: sets the call audio preferences, see {@link ElementCallSettings}. */
   CallSettings = 'io.cinny.call_settings',
+  /** Fork: play or stop a soundboard sound in the call, see {@link SoundboardCommand}. */
+  Soundboard = 'io.cinny.soundboard',
   /** Fork, from the widget: a CallStatsSample once a second. */
   CallStats = 'io.cinny.call_stats',
 }
@@ -55,3 +57,6 @@ export type ElementCallSettings = {
   audioInput: string;
   audioOutput: string;
 };
+
+/** `url` is a blob: URL of the audio, which the same-origin call widget can read. */
+export type SoundboardCommand = { op: 'play'; url: string; volume: number } | { op: 'stop' };

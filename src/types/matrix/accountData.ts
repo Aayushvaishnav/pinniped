@@ -11,6 +11,8 @@ export enum AccountDataEvent {
   PinnipedGifFavorites = 'club.stablecat.pinniped.gif_favorites',
   PinnipedLeftRooms = 'club.stablecat.pinniped.left_rooms',
   PinnipedStatusMessage = 'club.stablecat.pinniped.status_message',
+  PinnipedUserSounds = 'club.stablecat.pinniped.user_sounds',
+  PinnipedSoundFavorites = 'club.stablecat.pinniped.sound_favorites',
 
   ElementRecentEmoji = 'io.element.recent_emoji',
 

@@ -21,6 +21,7 @@ import { trimTrailingSlash } from '../../utils/common';
 import {
   ElementCallIntent,
   ElementCallSettings,
+  SoundboardCommand,
   ElementCallThemeKind,
   ElementMediaStateDetail,
   ElementWidgetActions,
@@ -258,6 +259,10 @@ export class CallEmbed {
 
   public setCallSettings(audio: Partial<ElementCallSettings>) {
     return this.call.transport.send(ElementWidgetActions.CallSettings, audio);
+  }
+
+  public soundboard(command: SoundboardCommand) {
+    return this.call.transport.send(ElementWidgetActions.Soundboard, command);
   }
 
   public onStats(callback: () => void) {

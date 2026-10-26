@@ -1,0 +1,35 @@
+/**
+ * Soundboard sound packs, modelled on emoji packs (im.ponies): the user's own pack is account
+ * data (`club.stablecat.pinniped.user_sounds`), a room's or space's pack is a state event
+ * (`club.stablecat.pinniped.room_sounds`, empty state key).
+ */
+export type SoundInfo = {
+  mimetype?: string;
+  /** Bytes. */
+  size?: number;
+  /** Milliseconds. */
+  duration?: number;
+};
+
+export type PackSound = {
+  /** mxc:// URL of the audio file. */
+  url: string;
+  name?: string;
+  /** A single emoji shown next to the name. */
+  emoji?: string;
+  info?: SoundInfo;
+};
+
+export type PackMeta = {
+  display_name?: string;
+  avatar_url?: string;
+};
+
+export type SoundPackContent = {
+  pack?: PackMeta;
+  sounds?: Record<string, PackSound>;
+};
+
+/** Limits for uploaded sounds: a soundboard clip, not a song. */
+export const MAX_SOUND_BYTES = 1024 * 1024;
+export const MAX_SOUND_MS = 10_000;

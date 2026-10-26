@@ -4,6 +4,7 @@ import { Page, PageContent, PageHeader } from '../../../components/page';
 import { ImagePack } from '../../../plugins/custom-emoji';
 import { ImagePackView } from '../../../components/image-pack-view';
 import { RoomPacks } from './RoomPacks';
+import { RoomSoundPack } from '../../soundboard/RoomSoundPack';
 
 type EmojisStickersProps = {
   requestClose: () => void;
@@ -40,6 +41,7 @@ export function EmojisStickers({ requestClose }: EmojisStickersProps) {
           <PageContent>
             <Box direction="Column" gap="700">
               <RoomPacks onViewPack={setImagePack} />
+              <RoomSoundPack />
             </Box>
           </PageContent>
         </Scroll>

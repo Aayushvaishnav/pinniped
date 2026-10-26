@@ -67,6 +67,9 @@ export interface Settings {
   eventSounds: boolean;
   // Volume of the bundle sounds (ringing, messages, invites, events) and the call's own, 0-1.
   soundVolume: number;
+  // Soundboard: how loud sounds you play are (to the call and to you), and the last played.
+  soundboardVolume: number;
+  soundboardRecent: string[];
 
   hour24Clock: boolean;
   dateFormatString: string;
@@ -126,6 +129,8 @@ const defaultSettings: Settings = {
   notificationSoundBundle: 'default',
   eventSounds: false,
   soundVolume: 0.6,
+  soundboardVolume: 1,
+  soundboardRecent: [],
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',

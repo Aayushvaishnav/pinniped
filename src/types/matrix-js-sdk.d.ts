@@ -5,6 +5,7 @@ import 'matrix-js-sdk/lib/@types/event';
 declare module 'matrix-js-sdk/lib/@types/event' {
   interface StateEvents {
     'im.ponies.room_emotes': Record<string, unknown>;
+    'club.stablecat.pinniped.room_sounds': Record<string, unknown>;
   }
 
   interface AccountDataEvents {
@@ -13,6 +14,8 @@ declare module 'matrix-js-sdk/lib/@types/event' {
     'club.stablecat.pinniped.gif_favorites': Record<string, unknown>;
     'club.stablecat.pinniped.left_rooms': Record<string, unknown>;
     'club.stablecat.pinniped.status_message': { status?: string };
+    'club.stablecat.pinniped.user_sounds': Record<string, unknown>;
+    'club.stablecat.pinniped.sound_favorites': Record<string, unknown>;
     'io.element.recent_emoji': Record<string, unknown>;
     'im.ponies.user_emotes': Record<string, unknown>;
     'im.ponies.emote_rooms': Record<string, unknown>;

@@ -22,6 +22,10 @@ import { LazyEventEmitter } from "./LazyEventEmitter";
 import { getUrlParams } from "./UrlParams";
 import { installBitrateHints } from "./livekit/bitrateHints";
 import {
+  type SoundboardCommand,
+  soundboardCommand$,
+} from "./livekit/soundboard";
+import {
   audioInput,
   audioOutput,
   denoiseMode,
@@ -41,6 +45,8 @@ export enum ElementWidgetActions {
   // `{ denoise?, simulcast?, screenShare?, soundVolume?, audioInput?, audioOutput? }`.
   // An empty device ID means the system default.
   CallSettings = "io.cinny.call_settings",
+  // toWidget (fork): play or stop a soundboard sound, see SoundboardCommand
+  Soundboard = "io.cinny.soundboard",
   // fromWidget (fork): a CallStatsSample once a second while in a call
   CallStats = "io.cinny.call_stats",
   // This can be sent as from or to widget
@@ -85,7 +91,7 @@ export let widget: WidgetHelpers | null = null;
 // execution.
 export const initializeWidget = (
   rtcApplication: string = "m.call",
-  sendRoomEvents = false
+  sendRoomEvents = false,
 ): void => {
   try {
     const {
@@ -165,7 +171,19 @@ export const initializeWidget = (
           if (data.audioOutput !== undefined)
             audioOutput.setValue(data.audioOutput || undefined);
           api.transport.reply(ev.detail, {});
-        }
+        },
+      );
+
+      // Soundboard sounds go to the Publisher of the call, which owns the track.
+      api.on(
+        `action:${ElementWidgetActions.Soundboard}`,
+        (ev: CustomEvent<IWidgetApiRequest>) => {
+          ev.preventDefault();
+          soundboardCommand$.next(
+            ev.detail.data as unknown as SoundboardCommand,
+          );
+          api.transport.reply(ev.detail, {});
+        },
       );
 
       // Now, initialize the matryoshka MatrixClient (so named because it routes
@@ -246,7 +264,7 @@ export const initializeWidget = (
           fallbackICEServerAllowed: allowIceFallback,
         },
         // ContentLoaded event will be sent as soon as the theme is set (see useTheme.ts)
-        false
+        false,
       );
 
       const clientPromise = async (): Promise<MatrixClient> => {

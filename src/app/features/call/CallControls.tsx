@@ -20,6 +20,7 @@ import FocusTrap from 'focus-trap-react';
 import { callFullscreenAtom, callIdleAtom } from '../../state/callEmbed';
 import * as css from './styles.css';
 import { MicrophoneButton, ScreenShareButton, SoundButton, VideoButton } from './Controls';
+import { SoundboardButton } from '../soundboard/SoundboardButton';
 import { useScreenShareQualityMenu } from './ScreenShareQualityMenu';
 import { CallEmbed, useCallControlState } from '../../plugins/call';
 import { stopPropagation } from '../../utils/keyboard';
@@ -175,6 +176,7 @@ export function CallControls({ callEmbed }: CallControlsProps) {
           onQuality={openQuality}
         />
         {qualityMenu}
+        <SoundboardButton callEmbed={callEmbed} variant="bar" />
         <PopOut
           anchor={cords}
           position="Top"

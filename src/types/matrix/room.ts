@@ -39,6 +39,7 @@ export enum StateEvent {
   SpaceParent = 'm.space.parent',
 
   PoniesRoomEmotes = 'im.ponies.room_emotes',
+  PinnipedRoomSounds = 'club.stablecat.pinniped.room_sounds',
   PowerLevelTags = 'in.cinny.room.power_level_tags',
   SpaceAutoJoin = 'club.stablecat.pinniped.space.auto_join',
   /** Pre-rename type; still read when no `SpaceAutoJoin` event exists. */
