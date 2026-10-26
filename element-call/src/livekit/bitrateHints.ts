@@ -1,5 +1,5 @@
 /*
-Copyright 2026 Cinny fork contributors
+Copyright 2026 Pinniped contributors
 
 SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
 Please see LICENSE in the repository root for full details.
@@ -67,6 +67,7 @@ export function addBitrateHints(sdp: string, maxKbps: number): string {
  * from the SFU are left alone: those hints would configure its receiving side.
  */
 export function installBitrateHints(): void {
+  if (typeof RTCPeerConnection === "undefined") return;
   const proto = RTCPeerConnection.prototype;
   const original = proto.setRemoteDescription;
   proto.setRemoteDescription = async function (
