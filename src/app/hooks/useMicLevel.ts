@@ -9,6 +9,9 @@ export const levelToGatePosition = (level: number): number => {
   return Math.min(1, Math.max(0, (db + 70) / 50));
 };
 
+/** The call widget's gate closes this far below its open level (6 dB of the -70..-20 dB scale). */
+export const GATE_HYSTERESIS_POSITION = 6 / 50;
+
 /**
  * The live loudness of a microphone on the gate scale (see levelToGatePosition), or 0 while
  * not `active`. Captures raw, the way the call does: no echo cancellation, noise suppression

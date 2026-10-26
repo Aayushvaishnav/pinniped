@@ -1,5 +1,13 @@
-import React, { CSSProperties, KeyboardEvent, PointerEvent, useRef } from 'react';
+import React, {
+  CSSProperties,
+  KeyboardEvent,
+  PointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { color, config } from 'folds';
+import { GATE_HYSTERESIS_POSITION } from '../../../hooks/useMicLevel';
 
 type VoiceGateMeterProps = {
   /** The live microphone level on the gate scale, 0-1. */
@@ -10,6 +18,8 @@ type VoiceGateMeterProps = {
 };
 
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
+/** Like the call's gate, the meter stays green this long after the last loud moment. */
+const HOLD_MS = 300;
 
 /**
  * A level meter for the voice gate. With a threshold it can be dragged: the meter is orange
@@ -17,7 +27,17 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
  */
 export function VoiceGateMeter({ level, threshold, onThreshold }: VoiceGateMeterProps) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const sending = threshold === undefined || level >= threshold;
+  const [gateOpen, setGateOpen] = useState(false);
+  const lastLoudAt = useRef(0);
+  useEffect(() => {
+    if (threshold === undefined) return;
+    // The same hysteresis as the call: once open, only a level below the close edge lets go.
+    const edge = gateOpen ? threshold - GATE_HYSTERESIS_POSITION : threshold;
+    const now = Date.now();
+    if (level >= edge) lastLoudAt.current = now;
+    setGateOpen(now - lastLoudAt.current <= HOLD_MS);
+  }, [level, threshold, gateOpen]);
+  const sending = threshold === undefined || gateOpen;
 
   const move = (evt: PointerEvent<HTMLDivElement>) => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -90,6 +110,18 @@ export function VoiceGateMeter({ level, threshold, onThreshold }: VoiceGateMeter
       style={{ ...trackStyle, cursor: 'pointer' }}
     >
       {fill}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: `${clamp(threshold - GATE_HYSTERESIS_POSITION) * 100}%`,
+          width: `${(threshold - clamp(threshold - GATE_HYSTERESIS_POSITION)) * 100}%`,
+          background: color.Surface.OnContainer,
+          opacity: 0.18,
+        }}
+      />
       <div
         style={{
           position: 'absolute',

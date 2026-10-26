@@ -91,3 +91,15 @@ test("the adaptive gate stays open through speech with its natural pauses", () =
   }
   expect(open).toBe(true);
 });
+
+test("the fixed gate closes 6 dB below its open level", () => {
+  const { open, close } = voiceGateLevels(0.5);
+  expect(20 * Math.log10(open / close)).toBeCloseTo(6, 5);
+  const g = new VoiceGate(open, close, 100);
+  expect(g.update(open * 1.01, 0)).toBe(true);
+  // Dips below the open level but not below the close level do not let go of it.
+  expect(g.update(open * 0.6, 500)).toBe(true);
+  expect(g.update(close * 0.9, 900)).toBe(false);
+  // And from closed, a level between close and open does not reopen it.
+  expect(g.update(open * 0.8, 1000)).toBe(false);
+});

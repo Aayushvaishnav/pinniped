@@ -50,6 +50,12 @@ export class VoiceGate implements Gate {
 const toDb = (level: number): number =>
   level > 0 ? 20 * Math.log10(level) : -100;
 
+/**
+ * How far below its open level the voice gate may fall before it starts to close,
+ * so a voice hovering around the threshold does not chatter the gate open and shut.
+ */
+export const GATE_HYSTERESIS_DB = 6;
+
 /** The floor never starts above this, so speaking from the first moment still opens the gate. */
 const FLOOR_START_DB = -50;
 /** How fast the floor creeps up toward sustained sound, dB per second. */
@@ -57,7 +63,7 @@ const FLOOR_RISE_DB_PER_S = 2;
 /** Speech has to be this far above the noise floor to open the gate... */
 const AUTO_OPEN_ABOVE_FLOOR_DB = 12;
 /** ...and may fall this far below that before it closes. */
-const AUTO_CLOSE_BELOW_OPEN_DB = 4;
+const AUTO_CLOSE_BELOW_OPEN_DB = GATE_HYSTERESIS_DB;
 const AUTO_MIN_OPEN_DB = -60;
 
 /**
@@ -105,7 +111,7 @@ export function voiceGateLevels(threshold: number): {
 } {
   const t = Math.min(1, Math.max(0, threshold));
   const open = 10 ** ((-70 + 50 * t) / 20);
-  return { open, close: open * 0.6 };
+  return { open, close: open * 10 ** (-GATE_HYSTERESIS_DB / 20) };
 }
 
 /** RMS level (0..1) of the audio an analyser currently sees. */
