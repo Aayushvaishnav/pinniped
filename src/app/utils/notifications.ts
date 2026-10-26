@@ -1,5 +1,11 @@
 import { MatrixClient, ReceiptType } from 'matrix-js-sdk';
 
+// The SDK adds a local echo receipt the moment a receipt is sent, so
+// getEventReadUpTo() claims "read" even if the POST failed, and that would make
+// every later call a no-op until a restart brought the real state back. Track
+// what actually reached the server instead.
+const sentReceipts = new Map<string, string>();
+
 export async function markAsRead(mx: MatrixClient, roomId: string, privateReceipt: boolean) {
   const room = mx.getRoom(roomId);
   if (!room) return;
@@ -10,7 +16,14 @@ export async function markAsRead(mx: MatrixClient, roomId: string, privateReceip
   const getLatestValidEvent = () => {
     for (let i = timeline.length - 1; i >= 0; i -= 1) {
       const latestEvent = timeline[i];
-      if (latestEvent.getId() === readEventId) return null;
+      const latestId = latestEvent.getId();
+      if (
+        latestId === readEventId &&
+        (sentReceipts.get(roomId) === latestId ||
+          latestId === room.getEventReadUpTo(mx.getUserId()!, true))
+      ) {
+        return null;
+      }
       if (!latestEvent.isSending()) return latestEvent;
     }
     return null;
@@ -19,8 +32,16 @@ export async function markAsRead(mx: MatrixClient, roomId: string, privateReceip
   const latestEvent = getLatestValidEvent();
   if (latestEvent === null) return;
 
-  await mx.sendReadReceipt(
-    latestEvent,
-    privateReceipt ? ReceiptType.ReadPrivate : ReceiptType.Read
-  );
+  const eventId = latestEvent.getId()!;
+  try {
+    await mx.sendReadReceipt(
+      latestEvent,
+      privateReceipt ? ReceiptType.ReadPrivate : ReceiptType.Read
+    );
+    sentReceipts.set(roomId, eventId);
+  } catch (err) {
+    sentReceipts.delete(roomId);
+    // eslint-disable-next-line no-console
+    console.warn('Failed to send read receipt', roomId, eventId, err);
+  }
 }

@@ -20,7 +20,9 @@ export function DebugHandle() {
         upTo: room.getEventReadUpTo(userId),
         upToServerOnly: room.getEventReadUpTo(userId, true),
         public: room.getReadReceiptForUserId(userId, false, 'm.read' as never),
+        publicServer: room.getReadReceiptForUserId(userId, true, 'm.read' as never),
         private: room.getReadReceiptForUserId(userId, false, 'm.read.private' as never),
+        privateServer: room.getReadReceiptForUserId(userId, true, 'm.read.private' as never),
         counts: [
           room.getUnreadNotificationCount('total' as never),
           room.getUnreadNotificationCount('highlight' as never),
