@@ -6,6 +6,8 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { CallControl, CallControlEvent } from './CallControl';
 import { CallControlState } from './CallControlState';
+import { CallEmbed } from './CallEmbed';
+import { CallStatsSample } from './stats';
 
 export const useClientWidgetApiEvent = <T>(
   api: ClientWidgetApi | undefined,
@@ -46,4 +48,16 @@ export const useCallControlState = (control: CallControl): CallControlState => {
   }, [control]);
 
   return state;
+};
+
+/** The embed's WebRTC sample history; re-renders on every new sample. */
+export const useCallStats = (embed: CallEmbed | undefined): CallStatsSample[] => {
+  const [history, setHistory] = useState<CallStatsSample[]>(embed?.statsHistory ?? []);
+
+  useEffect(() => {
+    setHistory(embed?.statsHistory ?? []);
+    return embed?.onStats(() => setHistory(embed.statsHistory));
+  }, [embed]);
+
+  return history;
 };

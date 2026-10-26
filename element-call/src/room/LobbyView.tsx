@@ -34,6 +34,7 @@ import { type MatrixInfo, VideoPreview } from "./VideoPreview";
 import { type MuteStates } from "../state/MuteStates";
 import { InviteButton } from "../button/InviteButton";
 import { SettingsModal, defaultSettingsTab } from "../settings/SettingsModal";
+import { widget } from "../widget";
 import { useMediaQuery } from "../useMediaQuery";
 import { E2eeType } from "../e2ee/e2eeType";
 import { Link } from "../button/Link";
@@ -198,7 +199,8 @@ export const LobbyView: FC<Props> = ({
         footerScope,
         muteStates,
         devices,
-        openSettings,
+        // Embedded clients (Cinny) own the call settings
+        widget === null ? openSettings : undefined,
         hangup,
         // Logo and header are connected: only show the logo in SPA with header.
         !hideHeader,

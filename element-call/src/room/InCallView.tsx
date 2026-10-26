@@ -28,7 +28,11 @@ import { useTranslation } from "react-i18next";
 import { Header, LeftNav, RightNav, RoomHeaderInfo } from "../Header";
 import { HeaderStyle, useUrlParams } from "../UrlParams";
 import { useCallViewKeyboardShortcuts } from "../useCallViewKeyboardShortcuts";
-import { widget } from "../widget";
+import { ElementWidgetActions, widget } from "../widget";
+import {
+  sampleConnection,
+  type CallStatsConnection,
+} from "../livekit/callStats";
 import styles from "./InCallView.module.css";
 import { GridTile } from "../tile/GridTile";
 import { SettingsModal, defaultSettingsTab } from "../settings/SettingsModal";
@@ -611,11 +615,16 @@ export const InCallView: FC<InCallViewProps> = ({
   );
 
   useAppBarSecondaryButton(
-    <SettingsIconButton
-      key="settings"
-      onClick={() => setSettingsOpen(true)}
-      data-testid="settings-app-bar"
-    />,
+    // Embedded clients (Cinny) own the call settings
+    widget === null ? (
+      <SettingsIconButton
+        key="settings"
+        onClick={() => setSettingsOpen(true)}
+        data-testid="settings-app-bar"
+      />
+    ) : (
+      ""
+    ),
   );
 
   // Only hide the settings button if we have an AppBar header and we are showing the header
@@ -623,6 +632,36 @@ export const InCallView: FC<InCallViewProps> = ({
     <CallFooter ref={footerRef} vm={footerVm} />
   );
   const allConnections = useBehavior(vm.allConnections$);
+
+  // Embedded clients (Cinny) show WebRTC stats; report raw counters to them.
+  useEffect(() => {
+    if (widget === null) return;
+    const api = widget.api;
+    const id = setInterval(() => {
+      void (async (): Promise<void> => {
+        const connections = (
+          await Promise.all(
+            allConnections
+              .getConnections()
+              .map(async (c) =>
+                sampleConnection(
+                  c.transport.livekit_service_url,
+                  c.livekitRoom,
+                ).catch(() => null),
+              ),
+          )
+        ).filter((c): c is CallStatsConnection => c !== null);
+        if (connections.length > 0)
+          await api.transport
+            .send(ElementWidgetActions.CallStats, {
+              time: Date.now(),
+              connections,
+            })
+            .catch(() => {});
+      })();
+    }, 1000);
+    return (): void => clearInterval(id);
+  }, [allConnections]);
 
   return (
     // The pointer handler here exists to control the visibility of the footer,

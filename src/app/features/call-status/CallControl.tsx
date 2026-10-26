@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { useSetAtom } from 'jotai';
 import { CallEmbed, useCallControlState } from '../../plugins/call';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
+import { useScreenShareQualityMenu } from '../call/ScreenShareQualityMenu';
 import { callEmbedAtom } from '../../state/callEmbed';
 
 type MicrophoneButtonProps = {
@@ -124,34 +125,49 @@ function VideoButton({ enabled, onToggle, disabled }: VideoButtonProps) {
 type ScreenShareButtonProps = {
   enabled: boolean;
   onToggle: () => void;
+  onQuality: (button: HTMLElement) => void;
   disabled?: boolean;
 };
-function ScreenShareButton({ enabled, onToggle, disabled }: ScreenShareButtonProps) {
+function ScreenShareButton({ enabled, onToggle, onQuality, disabled }: ScreenShareButtonProps) {
   return (
-    <TooltipProvider
-      position="Top"
-      tooltip={
-        <Tooltip>
-          <Text size="T200">{enabled ? 'Stop Screenshare' : 'Start Screenshare'}</Text>
-        </Tooltip>
-      }
-    >
-      {(anchorRef) => (
-        <IconButton
-          ref={anchorRef}
-          variant={enabled ? 'Success' : 'Surface'}
-          fill="Soft"
-          radii="300"
-          size="300"
-          style={{ width: '100%' }}
-          onClick={onToggle}
-          outlined
-          disabled={disabled}
-        >
-          <Icon size="100" src={Icons.ScreenShare} filled={enabled} />
-        </IconButton>
-      )}
-    </TooltipProvider>
+    <Box grow="Yes" gap="100">
+      <TooltipProvider
+        position="Top"
+        tooltip={
+          <Tooltip>
+            <Text size="T200">{enabled ? 'Stop Screenshare' : 'Start Screenshare'}</Text>
+          </Tooltip>
+        }
+      >
+        {(anchorRef) => (
+          <IconButton
+            ref={anchorRef}
+            variant={enabled ? 'Success' : 'Surface'}
+            fill="Soft"
+            radii="300"
+            size="300"
+            style={{ flexGrow: 1 }}
+            onClick={onToggle}
+            outlined
+            disabled={disabled}
+          >
+            <Icon size="100" src={Icons.ScreenShare} filled={enabled} />
+          </IconButton>
+        )}
+      </TooltipProvider>
+      <IconButton
+        variant={enabled ? 'Success' : 'Surface'}
+        fill="Soft"
+        radii="300"
+        size="300"
+        onClick={(evt) => onQuality(evt.currentTarget)}
+        aria-label="Stream quality"
+        outlined
+        disabled={disabled}
+      >
+        <Icon size="100" src={Icons.ChevronTop} />
+      </IconButton>
+    </Box>
   );
 }
 
@@ -223,6 +239,7 @@ export function CallControl({
     [callEmbed]
   );
   const handleVideoToggle = useCallback(() => callEmbed.control.toggleVideo(), [callEmbed]);
+  const [openQuality, qualityMenu] = useScreenShareQualityMenu(callEmbed, screenshare);
 
   return (
     <Box grow="Yes" gap="100">
@@ -247,8 +264,10 @@ export function CallControl({
         <ScreenShareButton
           enabled={screenshare}
           onToggle={() => callEmbed.control.toggleScreenshare()}
+          onQuality={openQuality}
           disabled={!callJoined}
         />
+        {qualityMenu}
       </Box>
     </Box>
   );

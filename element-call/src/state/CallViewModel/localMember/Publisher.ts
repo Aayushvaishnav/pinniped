@@ -31,6 +31,9 @@ import {
   trackProcessorSync,
 } from "../../../livekit/TrackProcessorContext.tsx";
 import { denoiseSync } from "../../../livekit/denoise.ts";
+import { screenShareQuality, videoSimulcast } from "../../../settings/settings";
+import { applyScreenShareQuality } from "../../../livekit/screenShareLive.ts";
+import { parseScreenShareQuality } from "../../../livekit/options.ts";
 import { getUrlParams } from "../../../UrlParams.ts";
 import { observeTrackReference$ } from "../../observeTrackReference";
 import { type Connection } from "../remoteMembers/Connection.ts";
@@ -77,6 +80,19 @@ export class Publisher {
     this.observeTrackProcessors(this.scope, room, trackerProcessorState$);
     // Setup neural noise suppression syncing
     this.observeDenoise(this.scope, room);
+    // A quality change during a share applies to the running share.
+    screenShareQuality.value$.pipe(this.scope.bind()).subscribe((value) => {
+      applyScreenShareQuality(room, parseScreenShareQuality(value)).catch((e) =>
+        this.logger.error("Failed to apply screen share quality", e),
+      );
+    });
+    // Video is published as one layer or several, per the client's preference.
+    // LiveKit copies its publish defaults at room creation, so apply the
+    // setting to the live room; it takes effect for video published afterwards.
+    videoSimulcast.value$.pipe(this.scope.bind()).subscribe((simulcast) => {
+      const defaults = room.options.publishDefaults;
+      if (defaults) defaults.simulcast = simulcast;
+    });
     // Observe media device changes and update LiveKit active devices accordingly
     this.observeMediaDevices(this.scope, devices, controlledAudioDevices);
 
@@ -98,9 +114,10 @@ export class Publisher {
     try {
       // Close the denoise engine's AudioContext before the tracks go away;
       // unpublishing alone would leave it open.
-      const micTrack = this.connection.livekitRoom.localParticipant.getTrackPublication(
-        Track.Source.Microphone,
-      )?.track;
+      const micTrack =
+        this.connection.livekitRoom.localParticipant.getTrackPublication(
+          Track.Source.Microphone,
+        )?.track;
       if (micTrack instanceof LocalAudioTrack) {
         await micTrack.stopProcessor();
       }
@@ -453,10 +470,7 @@ export class Publisher {
     trackProcessorSync(scope, track$, trackerProcessorState$);
   }
 
-  private observeDenoise(
-    scope: ObservableScope,
-    room: LivekitRoom,
-  ): void {
+  private observeDenoise(scope: ObservableScope, room: LivekitRoom): void {
     const track$ = scope.behavior(
       observeTrackReference$(
         room.localParticipant,

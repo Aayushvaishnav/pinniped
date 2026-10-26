@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import type { ScreenShareQuality } from '../plugins/call/types';
 
 const STORAGE_KEY = 'settings';
 export type DateFormat =
@@ -31,6 +32,16 @@ export interface Settings {
   // MSC4320: impersonate Discord's local RPC pipe and publish activity as the
   // user's rich presence (desktop only, off by default).
   publishRichPresence: boolean;
+
+  // Call microphone: DeepFilterNet 3 noise suppression, applied inside the call widget.
+  callDenoise: boolean;
+  // Publish video as several quality layers (off: one high-quality stream).
+  callSimulcast: boolean;
+  // Screen share preset, picked when a share starts; see ScreenShareQuality.
+  callScreenShare: ScreenShareQuality;
+  // Call devices, as enumerateDevices ids; '' = system default.
+  callAudioInput: string;
+  callAudioOutput: string;
 
   isPeopleDrawer: boolean;
   showPresenceInMemberList: boolean;
@@ -84,6 +95,12 @@ const defaultSettings: Settings = {
   hideActivity: false,
 
   publishRichPresence: false,
+
+  callDenoise: false,
+  callSimulcast: false,
+  callScreenShare: { resolution: '720p', fps: 60 },
+  callAudioInput: '',
+  callAudioOutput: '',
 
   isPeopleDrawer: true,
   showPresenceInMemberList: true,

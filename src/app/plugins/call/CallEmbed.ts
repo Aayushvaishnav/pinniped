@@ -10,6 +10,7 @@ import {
 import {
   ClientWidgetApi,
   IRoomEvent,
+  IWidgetApiRequest,
   IWidget,
   Widget,
   WidgetApiToWidgetAction,
@@ -19,14 +20,17 @@ import { CallWidgetDriver } from './CallWidgetDriver';
 import { trimTrailingSlash } from '../../utils/common';
 import {
   ElementCallIntent,
+  ElementCallSettings,
   ElementCallThemeKind,
   ElementMediaStateDetail,
   ElementWidgetActions,
 } from './types';
 import { getCallSoundOverrides } from '../../sound/play';
+import { getSettings } from '../../state/settings';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { protectFrameFromParentDrag } from './protectFrameFromParentDrag';
+import { CallStatsSample, trimStats } from './stats';
 
 export class CallEmbed {
   private mx: MatrixClient;
@@ -38,6 +42,11 @@ export class CallEmbed {
   public readonly room: Room;
 
   public joined = false;
+
+  /** Widget-reported WebRTC samples of the last few minutes, oldest first. */
+  public statsHistory: CallStatsSample[] = [];
+
+  private readonly statsListeners = new Set<() => void>();
 
   /** An outgoing call that rings the other side; the call itself plays the start sound. */
   public readonly ringing: boolean;
@@ -116,6 +125,16 @@ export class CallEmbed {
     if (!room.isCallRoom() && CallEmbed.startingCall(intent)) {
       params.append('sendNotificationType', CallEmbed.dmCall(intent) ? 'ring' : 'notification');
     }
+
+    const settings = getSettings();
+    params.append('denoise', settings.callDenoise.toString());
+    params.append('simulcast', settings.callSimulcast.toString());
+    params.append(
+      'screenShare',
+      `${settings.callScreenShare.resolution}:${settings.callScreenShare.fps}`
+    );
+    params.append('audioInput', settings.callAudioInput);
+    params.append('audioOutput', settings.callAudioOutput);
 
     const soundOverrides = getCallSoundOverrides();
     if (Object.keys(soundOverrides).length > 0) {
@@ -201,6 +220,18 @@ export class CallEmbed {
       })
     );
 
+    this.disposables.push(
+      this.listenAction<IWidgetApiRequest>(ElementWidgetActions.CallStats, (evt) => {
+        evt.preventDefault();
+        this.call.transport.reply(evt.detail, {});
+        this.statsHistory = trimStats([
+          ...this.statsHistory,
+          evt.detail.data as unknown as CallStatsSample,
+        ]);
+        this.statsListeners.forEach((listener) => listener());
+      })
+    );
+
     this.start();
   }
 
@@ -216,6 +247,17 @@ export class CallEmbed {
     return this.call.transport.send(WidgetApiToWidgetAction.ThemeChange, {
       name: theme,
     });
+  }
+
+  public setCallSettings(audio: Partial<ElementCallSettings>) {
+    return this.call.transport.send(ElementWidgetActions.CallSettings, audio);
+  }
+
+  public onStats(callback: () => void) {
+    this.statsListeners.add(callback);
+    return () => {
+      this.statsListeners.delete(callback);
+    };
   }
 
   public hangup() {

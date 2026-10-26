@@ -248,6 +248,21 @@ export interface UrlConfiguration {
    * client passes them as JSON so it can theme call sounds. Names not listed keep the default.
    */
   soundOverrides?: Record<string, string>;
+
+  /**
+   * Whether to run neural noise suppression (DeepFilterNet) on the microphone.
+   * The embedding client owns this preference; it can change it mid-call with
+   * the `io.cinny.denoise` widget action.
+   */
+  denoise?: boolean;
+  /**
+   * Preferred microphone / speaker device IDs. The embedding client owns them
+   * and can change them mid-call with the `io.cinny.call_settings` widget action.
+   */
+  simulcast?: boolean;
+  screenShare?: string;
+  audioInput?: string;
+  audioOutput?: string;
 }
 
 // If you need to add a new flag to this interface, prefer a name that describes
@@ -509,6 +524,11 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     noiseSuppression: parser.getFlagParam("noiseSuppression", true),
     echoCancellation: parser.getFlagParam("echoCancellation", true),
     soundOverrides: parseSoundOverrides(parser.getParam("soundOverrides")),
+    denoise: parser.getFlagParam("denoise", false),
+    simulcast: parser.getFlagParam("simulcast", false),
+    screenShare: parser.getParam("screenShare") || undefined,
+    audioInput: parser.getParam("audioInput") || undefined,
+    audioOutput: parser.getParam("audioOutput") || undefined,
   };
 
   // Log the final configuration for debugging purposes.

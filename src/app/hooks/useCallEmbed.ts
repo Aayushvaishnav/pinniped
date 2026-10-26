@@ -16,6 +16,8 @@ import {
   useClientWidgetApiEvent,
 } from '../plugins/call';
 import { CallControlEvent } from '../plugins/call/CallControl';
+import { useSetting } from '../state/hooks/settings';
+import { settingsAtom } from '../state/settings';
 import { useMatrixClient } from './useMatrixClient';
 import { ThemeKind, useTheme } from './useTheme';
 import { callEmbedAtom, callIdleAtom } from '../state/callEmbed';
@@ -173,6 +175,28 @@ export const useCallThemeSync = (embed: CallEmbed) => {
 
     embed.setTheme(name);
   }, [theme.kind, embed]);
+};
+
+export const useCallSettingsSync = (embed: CallEmbed) => {
+  const [denoise] = useSetting(settingsAtom, 'callDenoise');
+  const [simulcast] = useSetting(settingsAtom, 'callSimulcast');
+  const [screenShare] = useSetting(settingsAtom, 'callScreenShare');
+  const [audioInput] = useSetting(settingsAtom, 'callAudioInput');
+  const [audioOutput] = useSetting(settingsAtom, 'callAudioOutput');
+
+  useEffect(() => {
+    embed
+      .setCallSettings({
+        denoise,
+        simulcast,
+        screenShare: `${screenShare.resolution}:${screenShare.fps}`,
+        audioInput,
+        audioOutput,
+      })
+      .catch(() => {
+        // The widget is not ready yet; it was seeded from the same setting via its URL.
+      });
+  }, [denoise, simulcast, screenShare, audioInput, audioOutput, embed]);
 };
 
 export const useCallEmbedPlacementSync = (containerViewRef: RefObject<HTMLDivElement>): void => {

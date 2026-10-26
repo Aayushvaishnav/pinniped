@@ -21,6 +21,7 @@ import { type MuteStates } from "../state/MuteStates";
 import { createStaticViewModel, type ViewModel } from "../state/ViewModel";
 import { getUrlParams, HeaderStyle } from "../UrlParams";
 import { platform } from "../Platform";
+import { widget } from "../widget";
 import { type FooterSnapshot } from "./CallFooter";
 
 /**
@@ -173,6 +174,8 @@ export function createCallFooterViewModel(
         callModel.setSettingsOpen$,
       ]).pipe(
         map(([isPip, showHeader, setSettingsOpen]) =>
+          // Embedded clients (Cinny) own the call settings
+          widget === null &&
           !isPip &&
           !(headerStyle === HeaderStyle.AppBar && showHeader) &&
           showControls

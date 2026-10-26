@@ -20,6 +20,14 @@ import {
 import type { IWidgetApiRequest } from "matrix-widget-api";
 import { LazyEventEmitter } from "./LazyEventEmitter";
 import { getUrlParams } from "./UrlParams";
+import { installBitrateHints } from "./livekit/bitrateHints";
+import {
+  audioInput,
+  audioOutput,
+  denoiseMode,
+  screenShareQuality,
+  videoSimulcast,
+} from "./settings/settings";
 import { Config } from "./config/Config";
 import { ElementCallReactionEventType } from "./reactions";
 
@@ -28,6 +36,12 @@ export enum ElementWidgetActions {
   JoinCall = "io.element.join",
   HangupCall = "im.vector.hangup",
   Close = "io.element.close",
+  // toWidget (fork): the client sets the call audio preferences, data
+  // `{ denoise?, simulcast?, screenShare?, audioInput?, audioOutput? }`.
+  // An empty device ID means the system default.
+  CallSettings = "io.cinny.call_settings",
+  // fromWidget (fork): a CallStatsSample once a second while in a call
+  CallStats = "io.cinny.call_stats",
   // This can be sent as from or to widget
   // fromWidget: updates the client about the current device mute state
   // toWidget: the client requests a specific device mute configuration
@@ -82,6 +96,11 @@ export const initializeWidget = (
       baseUrl,
       e2eEnabled,
       allowIceFallback,
+      denoise,
+      simulcast,
+      screenShare,
+      audioInput: audioInputId,
+      audioOutput: audioOutputId,
     } = getUrlParams();
 
     if (!roomId) throw new Error("Room ID must be supplied");
@@ -91,6 +110,7 @@ export const initializeWidget = (
     if (widgetId && parentUrl) {
       const parentOrigin = new URL(parentUrl).origin;
       logger.info("Widget API is available");
+      installBitrateHints();
       const api = new WidgetApi(widgetId, parentOrigin);
       api.requestCapability(MatrixCapabilities.AlwaysOnScreen);
       api.requestCapability(MatrixCapabilities.MSC4039DownloadFile);
@@ -109,6 +129,38 @@ export const initializeWidget = (
           lazyActions.emit(action, ev);
         });
       });
+
+      // The embedding client owns the call audio preferences: the URL params
+      // seed them and the action updates them mid-call. They are applied right
+      // away, since nothing else consumes this action.
+      denoiseMode.setValue(denoise ? "deepfilternet" : "off");
+      videoSimulcast.setValue(simulcast ?? false);
+      if (screenShare) screenShareQuality.setValue(screenShare);
+      audioInput.setValue(audioInputId);
+      audioOutput.setValue(audioOutputId);
+      api.on(
+        `action:${ElementWidgetActions.CallSettings}`,
+        (ev: CustomEvent<IWidgetApiRequest>) => {
+          ev.preventDefault();
+          const data = ev.detail.data as {
+            denoise?: boolean;
+            simulcast?: boolean;
+            screenShare?: string;
+            audioInput?: string;
+            audioOutput?: string;
+          };
+          if (data.denoise !== undefined)
+            denoiseMode.setValue(data.denoise ? "deepfilternet" : "off");
+          if (data.simulcast !== undefined)
+            videoSimulcast.setValue(data.simulcast);
+          if (data.screenShare) screenShareQuality.setValue(data.screenShare);
+          if (data.audioInput !== undefined)
+            audioInput.setValue(data.audioInput || undefined);
+          if (data.audioOutput !== undefined)
+            audioOutput.setValue(data.audioOutput || undefined);
+          api.transport.reply(ev.detail, {});
+        },
+      );
 
       // Now, initialize the matryoshka MatrixClient (so named because it routes
       // all requests through the host client via the widget API)

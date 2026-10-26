@@ -20,6 +20,7 @@ import FocusTrap from 'focus-trap-react';
 import { callFullscreenAtom, callIdleAtom } from '../../state/callEmbed';
 import * as css from './styles.css';
 import { MicrophoneButton, ScreenShareButton, SoundButton, VideoButton } from './Controls';
+import { useScreenShareQualityMenu } from './ScreenShareQualityMenu';
 import { CallEmbed, useCallControlState } from '../../plugins/call';
 import { stopPropagation } from '../../utils/keyboard';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
@@ -52,6 +53,8 @@ export function CallControls({ callEmbed }: CallControlsProps) {
   const { microphone, video, sound, screenshare, spotlight } = useCallControlState(
     callEmbed.control
   );
+
+  const [openQuality, qualityMenu] = useScreenShareQualityMenu(callEmbed, screenshare);
 
   const [cords, setCords] = useState<RectCords>();
 
@@ -169,7 +172,9 @@ export function CallControls({ callEmbed }: CallControlsProps) {
         <ScreenShareButton
           enabled={screenshare}
           onToggle={() => callEmbed.control.toggleScreenshare()}
+          onQuality={openQuality}
         />
+        {qualityMenu}
         <PopOut
           anchor={cords}
           position="Top"

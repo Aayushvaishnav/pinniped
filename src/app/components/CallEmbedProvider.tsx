@@ -32,6 +32,7 @@ import {
   useCallHangupEvent,
   useCallJoined,
   useCallThemeSync,
+  useCallSettingsSync,
   useCallMemberSoundSync,
   useCallPreferenceSync,
   useCallStartPreferences,
@@ -368,6 +369,7 @@ function CallUtils({ embed }: { embed: CallEmbed }) {
   useCallMemberSoundSync(embed);
   useCallPreferenceSync(embed);
   useCallThemeSync(embed);
+  useCallSettingsSync(embed);
   useCallHangupEvent(
     embed,
     useCallback(() => {

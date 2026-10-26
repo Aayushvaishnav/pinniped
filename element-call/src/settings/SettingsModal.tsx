@@ -23,10 +23,8 @@ import {
   useSetting,
   soundEffectVolume as soundEffectVolumeSetting,
   backgroundBlur as backgroundBlurSetting,
-  denoiseMode as denoiseModeSetting,
   developerMode,
 } from "./settings";
-import { denoiseSupported } from "../livekit/denoise";
 import { PreferencesSettingsTab } from "./PreferencesSettingsTab";
 import { Slider } from "../Slider";
 import { DeviceSelection } from "./DeviceSelection";
@@ -72,32 +70,6 @@ export const SettingsModal: FC<Props> = ({
   livekitRooms,
 }) => {
   const { t } = useTranslation();
-
-  // Generate a `Checkbox` input to turn neural noise suppression on or off.
-  const DenoiseCheckbox: React.FC = (): ReactNode => {
-    const [mode, setMode] = useSetting(denoiseModeSetting);
-    const supported = denoiseSupported();
-
-    return (
-      <>
-        <h4>{t("settings.denoise_header")}</h4>
-
-        <FieldRow>
-          <InputField
-          id="activateDenoise"
-          label={t("settings.denoise_label")}
-          description={supported ? "" : t("settings.denoise_not_supported")}
-            type="checkbox"
-          checked={mode === "deepfilternet"}
-          onChange={(b): void =>
-            setMode(b.target.checked ? "deepfilternet" : "off")
-          }
-            disabled={!supported}
-          />
-        </FieldRow>
-      </>
-    );
-  };
 
   // Generate a `Checkbox` input to turn blur on or off.
   const BlurCheckbox: React.FC = (): ReactNode => {
@@ -152,15 +124,6 @@ export const SettingsModal: FC<Props> = ({
     content: (
       <>
         <Form>
-          {!controlledAudioDevices && (
-            <DeviceSelection
-              device={devices.audioInput}
-              title={t("settings.devices.microphone")}
-              numberedLabel={(n) =>
-                t("settings.devices.microphone_numbered", { n })
-              }
-            />
-          )}
           {iosDeviceMenu && controlledAudioDevices && (
             <Button
               onClick={(e): void => {
@@ -173,12 +136,6 @@ export const SettingsModal: FC<Props> = ({
               {t("settings.devices.change_device_button")}
             </Button>
           )}
-          <DeviceSelection
-            device={devices.audioOutput}
-            title={t("settings.devices.speaker")}
-            numberedLabel={(n) => t("settings.devices.speaker_numbered", { n })}
-          />
-
           <div className={styles.volumeSlider}>
             <label>{t("settings.audio_tab.effect_volume_label")}</label>
             <p>{t("settings.audio_tab.effect_volume_description")}</p>
@@ -193,8 +150,6 @@ export const SettingsModal: FC<Props> = ({
             />
           </div>
         </Form>
-        <Separator />
-        <DenoiseCheckbox />
       </>
     ),
   };

@@ -56,6 +56,11 @@ import { PosthogAnalytics } from "../../../analytics/PosthogAnalytics.ts";
 import { MatrixRTCMode } from "../../../settings/settings.ts";
 import { Config } from "../../../config/Config.ts";
 import {
+  parseScreenShareQuality,
+  screenShareBudget,
+} from "../../../livekit/options.ts";
+import { screenShareQuality as screenShareQualitySetting } from "../../../settings/settings.ts";
+import {
   ConnectionState,
   type Connection,
   type FailedToStartError,
@@ -705,6 +710,9 @@ export const createLocalMembership$ = ({
     !getUrlParams().hideScreensharing
   ) {
     toggleScreenSharing = (): void => {
+      const preset = screenShareBudget(
+        parseScreenShareQuality(screenShareQualitySetting.getValue()),
+      );
       const screenshareSettings: ScreenShareCaptureOptions = {
         // Screen share audio shouldn't have any filtering.
         // "echoCancellation" is purposely excluded, as setting it to
@@ -714,6 +722,14 @@ export const createLocalMembership$ = ({
           autoGainControl: false,
           noiseSuppression: false,
           voiceIsolation: false,
+        },
+        // Ask for a smooth picture over a sharp one: "detail" makes WebRTC
+        // shed frame rate first when the encoder or network falls behind.
+        contentHint: "motion",
+        resolution: {
+          width: preset.width,
+          height: preset.height,
+          frameRate: preset.frameRate,
         },
         selfBrowserSurface: "include",
         surfaceSwitching: "include",
@@ -734,7 +750,12 @@ export const createLocalMembership$ = ({
       // is still initializing or publishing tracks, because there's no
       // technical reason to disallow this. LiveKit will publish if it can.
       participant$.value
-        ?.setScreenShareEnabled(targetScreenshareState, screenshareSettings)
+        ?.setScreenShareEnabled(targetScreenshareState, screenshareSettings, {
+          screenShareEncoding: {
+            maxBitrate: preset.maxBitrate,
+            maxFramerate: preset.frameRate,
+          },
+        })
         .catch(logger.error);
     };
   }

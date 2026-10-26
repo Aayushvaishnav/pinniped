@@ -42,8 +42,14 @@ export function denoiseSupported(): boolean {
  */
 const DenoiseAttenuationLimitDb = 40;
 
-let module: Promise<{ DeepFilterNoiseFilterProcessor: typeof DeepFilterNoiseFilterProcessor }> | undefined;
-async function load(): Promise<{ DeepFilterNoiseFilterProcessor: typeof DeepFilterNoiseFilterProcessor }> {
+let module:
+  | Promise<{
+      DeepFilterNoiseFilterProcessor: typeof DeepFilterNoiseFilterProcessor;
+    }>
+  | undefined;
+async function load(): Promise<{
+  DeepFilterNoiseFilterProcessor: typeof DeepFilterNoiseFilterProcessor;
+}> {
   module ??= import("deepfilternet3-noise-filter");
   return module;
 }

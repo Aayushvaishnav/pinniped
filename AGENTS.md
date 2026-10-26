@@ -88,7 +88,7 @@ runs `pnpm install && pnpm build:embedded` in `element-call/` and copies
 `dist/` to `node_modules/.cache/cinny-element-call-fork`, which
 `scripts/fork/element-call-activity.mjs` (called from vite.config.js) embeds
 under `public/element-call/`. The Dockerfile does the same in a first stage.
-Without a fork build, vite falls back to the published
+`vite` and `vite build` rebuild it automatically when anything under `element-call/` is newer than the last build (the Dockerfile and nix set `ELEMENT_CALL_FORK_REBUILD=0`). Without a fork build, vite falls back to the published
 `@element-hq/element-call-embedded` package (used by the nix build, which does
 not build the vendored tree — its call widget has none of the fork's changes).
 
@@ -103,12 +103,23 @@ Fork changes on top of upstream + old patches:
 - **Audio pipeline** (`src/livekit/denoise.ts` and its callers): the mic is
   always captured raw (browser noise suppression and AGC off; AEC stays with
   the browser), DeepFilterNet 3 denoising via `deepfilternet3-noise-filter` as
-  an opt-in toggle (call settings → audio, off by default — no processing),
+  an opt-in toggle (Cinny settings → Calls, off by default; Cinny seeds
+  the widget via the `denoise`/`audioInput`/`audioOutput` URL params and updates
+  them mid-call with the `io.cinny.call_settings` widget action; the mic and
+  speaker pickers live there too, and the widget's settings modal is not reachable
+  when embedded (all its entry points are hidden when `widget !== null`; its
+  remaining tabs — effect volume, camera, background blur — are dead there),
   96 kbps Opus, DTX off. The DF3 runtime wasm + model (~24 MB) are vendored
   under `element-call/public/df3/` and copied into the widget output by
   `scripts/fork/element-call/build.mjs` (the embedded vite build disables
   publicDir). A previous `denoise-voice-clarity` attempt bundled an AGC/EQ/
   compressor "clarity chain" that sounded fried; it was replaced by pure DF3.
+- **Call stats**: the widget (`src/livekit/callStats.ts`, reported from
+  `InCallView`) samples each SFU connection's `RTCPeerConnection` stats once a
+  second and sends the raw counters to Cinny as the `io.cinny.call_stats`
+  widget action. `CallEmbed` keeps five minutes of history; clicking "Voice
+  Connected" opens the ping popout and its Debug view
+  (`src/app/features/call-status/stats/`).
 - Note: `element-call/` has its own pnpm/eslint/vitest setup. Its
   `.eslintrc.cjs` sets `root: true` so the outer repo's eslint does not
   cascade in. Run `pnpm lint:types`/`pnpm test:unit` inside `element-call/`.

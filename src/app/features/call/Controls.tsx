@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon, IconButton, Icons, Line, Text, Tooltip, TooltipProvider } from 'folds';
+import { Box, Icon, IconButton, Icons, Line, Text, Tooltip, TooltipProvider } from 'folds';
 import { useAtom } from 'jotai';
 import * as css from './styles.css';
 import { callChatAtom } from '../../state/callEmbed';
@@ -126,32 +126,46 @@ export function VideoButton({ enabled, onToggle }: VideoButtonProps) {
 type ScreenShareButtonProps = {
   enabled: boolean;
   onToggle: () => void;
+  onQuality: (button: HTMLElement) => void;
 };
-export function ScreenShareButton({ enabled, onToggle }: ScreenShareButtonProps) {
+export function ScreenShareButton({ enabled, onToggle, onQuality }: ScreenShareButtonProps) {
   return (
-    <TooltipProvider
-      position="Top"
-      delay={500}
-      tooltip={
-        <Tooltip>
-          <Text size="T200">{enabled ? 'Stop Screenshare' : 'Start Screenshare'}</Text>
-        </Tooltip>
-      }
-    >
-      {(anchorRef) => (
-        <IconButton
-          ref={anchorRef}
-          variant={enabled ? 'Success' : 'Surface'}
-          fill="Soft"
-          radii="400"
-          size="400"
-          onClick={() => onToggle()}
-          outlined
-        >
-          <Icon size="400" src={Icons.ScreenShare} filled={enabled} />
-        </IconButton>
-      )}
-    </TooltipProvider>
+    <Box gap="100" alignItems="Center">
+      <TooltipProvider
+        position="Top"
+        delay={500}
+        tooltip={
+          <Tooltip>
+            <Text size="T200">{enabled ? 'Stop Screenshare' : 'Start Screenshare'}</Text>
+          </Tooltip>
+        }
+      >
+        {(anchorRef) => (
+          <IconButton
+            ref={anchorRef}
+            variant={enabled ? 'Success' : 'Surface'}
+            fill="Soft"
+            radii="400"
+            size="400"
+            onClick={() => onToggle()}
+            outlined
+          >
+            <Icon size="400" src={Icons.ScreenShare} filled={enabled} />
+          </IconButton>
+        )}
+      </TooltipProvider>
+      <IconButton
+        variant={enabled ? 'Success' : 'Surface'}
+        fill="Soft"
+        radii="400"
+        size="300"
+        onClick={(evt) => onQuality(evt.currentTarget)}
+        aria-label="Stream quality"
+        outlined
+      >
+        <Icon size="200" src={Icons.ChevronTop} />
+      </IconButton>
+    </Box>
   );
 }
 
