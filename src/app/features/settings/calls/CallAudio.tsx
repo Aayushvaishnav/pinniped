@@ -23,6 +23,8 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SequenceCardStyle } from '../styles.css';
 import { UserSoundPack } from '../../soundboard/UserSoundPack';
+import { useMicLevel } from '../../../hooks/useMicLevel';
+import { VoiceGateMeter } from './VoiceGateMeter';
 
 const denoiseSupported = () =>
   typeof AudioWorkletNode !== 'undefined' &&
@@ -154,10 +156,18 @@ function DeviceSelect({ value, devices, fallbackName, onChange }: DeviceSelectPr
 
 function CallAudio() {
   const [callDenoise, setCallDenoise] = useSetting(settingsAtom, 'callDenoise');
+  const [voiceGate, setVoiceGate] = useSetting(settingsAtom, 'callVoiceGate');
+  const [voiceGateAuto, setVoiceGateAuto] = useSetting(settingsAtom, 'callVoiceGateAuto');
+  const [voiceGateThreshold, setVoiceGateThreshold] = useSetting(
+    settingsAtom,
+    'callVoiceGateThreshold'
+  );
   const [audioInput, setAudioInput] = useSetting(settingsAtom, 'callAudioInput');
   const [audioOutput, setAudioOutput] = useSetting(settingsAtom, 'callAudioOutput');
   const [devices, requestAccess] = useAudioDevices();
   const supported = denoiseSupported();
+  // Only listen to the microphone once access is granted, so opening settings never prompts.
+  const micLevel = useMicLevel(audioInput, voiceGate && devices.labelled);
 
   return (
     <Box direction="Column" gap="100">
@@ -225,6 +235,39 @@ function CallAudio() {
             />
           }
         />
+      </SequenceCard>
+      <SequenceCard
+        className={SequenceCardStyle}
+        variant="SurfaceVariant"
+        direction="Column"
+        gap="400"
+      >
+        <SettingTile
+          title="Voice Activity Gate"
+          description="Only send your microphone while it hears you. Noise suppression keeps running either way, so it stays adapted to your room."
+          after={<Switch variant="Primary" value={voiceGate} onChange={setVoiceGate} />}
+        />
+        {voiceGate && (
+          <>
+            <SettingTile
+              title="Automatically Adjust Input Sensitivity"
+              description="Follow the background noise in your room instead of a fixed level."
+              after={<Switch variant="Primary" value={voiceGateAuto} onChange={setVoiceGateAuto} />}
+            />
+            <Box direction="Column" gap="200">
+              <VoiceGateMeter
+                level={micLevel}
+                threshold={voiceGateAuto ? undefined : voiceGateThreshold}
+                onThreshold={voiceGateAuto ? undefined : setVoiceGateThreshold}
+              />
+              <Text size="T200" priority="300">
+                {devices.labelled
+                  ? 'Speak to test your mic. Green means it is being sent. The call listens after noise suppression, so it hears a little less than this meter.'
+                  : 'Allow microphone access above to see the live meter.'}
+              </Text>
+            </Box>
+          </>
+        )}
       </SequenceCard>
     </Box>
   );

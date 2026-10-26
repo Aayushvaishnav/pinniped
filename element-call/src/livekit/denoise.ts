@@ -10,7 +10,13 @@ import { type Logger } from "matrix-js-sdk/lib/logger";
 import { combineLatest } from "rxjs";
 
 import type { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
-import { denoiseMode as denoiseModeSetting } from "../settings/settings";
+import {
+  denoiseMode as denoiseModeSetting,
+  voiceGate,
+  voiceGateAuto,
+  voiceGateThreshold,
+} from "../settings/settings";
+import { VoiceGateProcessor } from "./voiceGate";
 import { type Behavior } from "../state/Behavior";
 import { type ObservableScope } from "../state/ObservableScope";
 
@@ -54,22 +60,35 @@ async function load(): Promise<{
   return module;
 }
 
-/** Tracks we already flipped, so repeat emissions stay no-ops. */
-const applied = new WeakMap<LocalAudioTrack, DenoiseMode>();
+/** What a track is currently processed with, so repeat emissions stay no-ops. */
+const applied = new WeakMap<LocalAudioTrack, string>();
 
-async function applyDenoise(
+const processingKey = (mode: DenoiseMode, gate: boolean): string =>
+  `${mode === "deepfilternet" && denoiseSupported() ? "dfn" : "off"}${gate ? "+gate" : ""}`;
+
+async function applyProcessing(
   track: LocalAudioTrack,
   mode: DenoiseMode,
+  gate: boolean,
 ): Promise<void> {
+  let denoiser: DeepFilterNoiseFilterProcessor | undefined;
   if (mode === "deepfilternet" && denoiseSupported()) {
     const { DeepFilterNoiseFilterProcessor } = await load();
+    denoiser = new DeepFilterNoiseFilterProcessor({
+      enabled: true,
+      noiseReductionLevel: DenoiseAttenuationLimitDb,
+      assetConfig: { cdnUrl: "df3" },
+    });
+  }
+  if (gate) {
     await track.setProcessor(
-      new DeepFilterNoiseFilterProcessor({
-        enabled: true,
-        noiseReductionLevel: DenoiseAttenuationLimitDb,
-        assetConfig: { cdnUrl: "df3" },
-      }),
+      new VoiceGateProcessor(denoiser, () => ({
+        auto: voiceGateAuto.getValue(),
+        threshold: voiceGateThreshold.getValue(),
+      })),
     );
+  } else if (denoiser) {
+    await track.setProcessor(denoiser);
   } else {
     await track.stopProcessor();
   }
@@ -85,24 +104,25 @@ export function denoiseSync(
   logger: Logger,
 ): void {
   let previous: LocalAudioTrack | null = null;
-  combineLatest([audioTrack$, denoiseModeSetting.value$])
+  combineLatest([audioTrack$, denoiseModeSetting.value$, voiceGate.value$])
     .pipe(scope.bind())
-    .subscribe(([track, mode]) => {
+    .subscribe(([track, mode, gate]) => {
       // A replaced track is stopped by LiveKit without destroying a processor
       // still attached to it; the processor's AudioContext must be closed.
       if (
         previous !== null &&
         previous !== track &&
-        applied.get(previous) === "deepfilternet"
+        (applied.get(previous) ?? "off") !== "off"
       ) {
         void previous.stopProcessor().catch(() => {});
       }
       previous = track;
       if (track === null) return;
-      if ((applied.get(track) ?? "off") === mode) return;
-      applied.set(track, mode);
-      applyDenoise(track, mode).catch((e) =>
-        logger.error("Failed to apply denoise mode", e),
+      const key = processingKey(mode, gate);
+      if ((applied.get(track) ?? "off") === key) return;
+      applied.set(track, key);
+      applyProcessing(track, mode, gate).catch((e) =>
+        logger.error("Failed to apply microphone processing", e),
       );
     });
 }

@@ -188,6 +188,9 @@ export const useCallThemeSync = (embed: CallEmbed) => {
 
 export const useCallSettingsSync = (embed: CallEmbed) => {
   const [denoise] = useSetting(settingsAtom, 'callDenoise');
+  const [voiceGate] = useSetting(settingsAtom, 'callVoiceGate');
+  const [voiceGateAuto] = useSetting(settingsAtom, 'callVoiceGateAuto');
+  const [voiceGateThreshold] = useSetting(settingsAtom, 'callVoiceGateThreshold');
   const [simulcast] = useSetting(settingsAtom, 'callSimulcast');
   const [screenShare] = useSetting(settingsAtom, 'callScreenShare');
   const [soundVolume] = useSetting(settingsAtom, 'soundVolume');
@@ -201,6 +204,9 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
     embed
       .setCallSettings({
         denoise,
+        voiceGate,
+        voiceGateAuto,
+        voiceGateThreshold,
         simulcast,
         screenShare: `${screenShare.resolution}:${screenShare.fps}`,
         soundVolume,
@@ -214,6 +220,9 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
       });
   }, [
     denoise,
+    voiceGate,
+    voiceGateAuto,
+    voiceGateThreshold,
     simulcast,
     screenShare,
     soundVolume,

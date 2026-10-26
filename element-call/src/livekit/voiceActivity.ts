@@ -19,15 +19,24 @@ export const VOICE_HOLD_MS = 250;
  * immediately on a loud sample, then stays open until the level has been below
  * the close threshold for the hold time.
  */
-export class VoiceGate {
+export interface Gate {
+  update(level: number, now: number): boolean;
+}
+
+export class VoiceGate implements Gate {
   private open = false;
   private lastLoudAt = -Infinity;
 
   public constructor(
-    private readonly openLevel = VOICE_OPEN_LEVEL,
-    private readonly closeLevel = VOICE_CLOSE_LEVEL,
+    private openLevel = VOICE_OPEN_LEVEL,
+    private closeLevel = VOICE_CLOSE_LEVEL,
     private readonly holdMs = VOICE_HOLD_MS,
   ) {}
+
+  public setLevels(openLevel: number, closeLevel: number): void {
+    this.openLevel = openLevel;
+    this.closeLevel = closeLevel;
+  }
 
   /** Feed one level measured at `now` (ms); returns whether speech is on. */
   public update(level: number, now: number): boolean {
@@ -36,6 +45,78 @@ export class VoiceGate {
     this.open = now - this.lastLoudAt <= this.holdMs;
     return this.open;
   }
+}
+
+const toDb = (level: number): number =>
+  level > 0 ? 20 * Math.log10(level) : -100;
+
+/** The floor never starts above this, so speaking from the first moment still opens the gate. */
+const FLOOR_START_DB = -50;
+/** How fast the floor creeps up toward sustained sound, dB per second. */
+const FLOOR_RISE_DB_PER_S = 2;
+/** Speech has to be this far above the noise floor to open the gate... */
+const AUTO_OPEN_ABOVE_FLOOR_DB = 12;
+/** ...and may fall this far below that before it closes. */
+const AUTO_CLOSE_BELOW_OPEN_DB = 4;
+const AUTO_MIN_OPEN_DB = -60;
+
+/**
+ * A gate with no fixed threshold: it follows the lower envelope of the signal
+ * as the room's noise floor (falling at once to any quieter sound, rising only
+ * slowly) and opens when something is well above it. Speech has pauses, which
+ * pull the floor back down; a steady noise that turns on (a fan) is learned as
+ * the new floor within seconds and stops opening the gate.
+ */
+export class AdaptiveVoiceGate implements Gate {
+  private floorDb: number | undefined;
+  private lastNow: number | undefined;
+  private open = false;
+  private lastLoudAt = -Infinity;
+
+  public constructor(private readonly holdMs = VOICE_HOLD_MS) {}
+
+  public update(level: number, now: number): boolean {
+    const db = toDb(level);
+    const dt = this.lastNow === undefined ? 0 : (now - this.lastNow) / 1000;
+    this.lastNow = now;
+    this.floorDb ??= Math.min(db, FLOOR_START_DB);
+    this.floorDb =
+      db < this.floorDb
+        ? this.floorDb + (db - this.floorDb) * 0.2
+        : Math.min(db, this.floorDb + FLOOR_RISE_DB_PER_S * dt);
+    const openDb = Math.max(
+      this.floorDb + AUTO_OPEN_ABOVE_FLOOR_DB,
+      AUTO_MIN_OPEN_DB,
+    );
+    const threshold = this.open ? openDb - AUTO_CLOSE_BELOW_OPEN_DB : openDb;
+    if (db >= threshold) this.lastLoudAt = now;
+    this.open = now - this.lastLoudAt <= this.holdMs;
+    return this.open;
+  }
+}
+
+/**
+ * The gate's open/close levels for the setting's 0-1 threshold, which spans
+ * -70 dBFS (any sound opens it) to -20 dBFS (only loud speech does).
+ */
+export function voiceGateLevels(threshold: number): {
+  open: number;
+  close: number;
+} {
+  const t = Math.min(1, Math.max(0, threshold));
+  const open = 10 ** ((-70 + 50 * t) / 20);
+  return { open, close: open * 0.6 };
+}
+
+/** RMS level (0..1) of the audio an analyser currently sees. */
+export function measureLevel(
+  analyser: AnalyserNode,
+  samples: Float32Array<ArrayBuffer>,
+): number {
+  analyser.getFloatTimeDomainData(samples);
+  let sum = 0;
+  for (const s of samples) sum += s * s;
+  return Math.sqrt(sum / samples.length);
 }
 
 const POLL_MS = 40;
@@ -66,10 +147,7 @@ function observeTrackVoice$(track: MediaStreamTrack): Observable<boolean> {
     const gate = new VoiceGate();
     subscriber.next(false);
     const id = setInterval(() => {
-      analyser.getFloatTimeDomainData(samples);
-      let sum = 0;
-      for (const s of samples) sum += s * s;
-      subscriber.next(gate.update(Math.sqrt(sum / samples.length), Date.now()));
+      subscriber.next(gate.update(measureLevel(analyser, samples), Date.now()));
     }, POLL_MS);
     return (): void => {
       clearInterval(id);

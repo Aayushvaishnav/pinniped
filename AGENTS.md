@@ -114,6 +114,18 @@ Fork changes on top of upstream + old patches:
   `scripts/fork/element-call/build.mjs` (the embedded vite build disables
   publicDir). A previous `denoise-voice-clarity` attempt bundled an AGC/EQ/
   compressor "clarity chain" that sounded fried; it was replaced by pure DF3.
+- **Voice activity gate** (Cinny settings → Calls → Call Audio): only sends the mic
+  while it hears speech (`src/livekit/voiceGate.ts`, a track processor in
+  `denoise.ts`'s `applyProcessing`). It sits after DeepFilterNet, which keeps
+  processing everything while the gate is closed so its noise model keeps adapting,
+  and listens to the denoised signal. Automatic mode (`AdaptiveVoiceGate` in
+  `voiceActivity.ts`) follows the noise floor; manual mode uses a 0-1 threshold on
+  a -70..-20 dBFS scale, the same scale as the live meter in Cinny's settings
+  (`useMicLevel`, `VoiceGateMeter`). Settings reach the widget through the
+  `voiceGate`, `voiceGateAuto` and `voiceGateThreshold` URL params and
+  `io.cinny.call_settings`.
+- **Speaking detection** also measures the audio itself (`voiceActivity.ts`), so the
+  speaking ring and activity are not limited to the server's coarse speaker updates.
 - **Call stats**: the widget (`src/livekit/callStats.ts`, reported from
   `InCallView`) samples each SFU connection's `RTCPeerConnection` stats once a
   second and sends the raw counters to Cinny as the `io.cinny.call_stats`

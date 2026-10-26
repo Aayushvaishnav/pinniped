@@ -51,6 +51,10 @@ export type ScreenShareQuality = { resolution: ScreenShareResolution; fps: Scree
 /** Call audio preferences; an empty device id is the system default. */
 export type ElementCallSettings = {
   denoise: boolean;
+  voiceGate: boolean;
+  voiceGateAuto: boolean;
+  /** 0-1: how loud speech must be to open the gate when not automatic. */
+  voiceGateThreshold: number;
   simulcast: boolean;
   /** `<resolution>:<fps>`, e.g. `720p:60`. */
   screenShare: string;

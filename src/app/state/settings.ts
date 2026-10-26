@@ -36,6 +36,11 @@ export interface Settings {
 
   // Call microphone: DeepFilterNet 3 noise suppression, applied inside the call widget.
   callDenoise: boolean;
+  // Only send the microphone while it hears speech (applied inside the call widget, after the
+  // denoiser). `Auto` follows the room's noise floor; otherwise `Threshold` (0-1) is the level.
+  callVoiceGate: boolean;
+  callVoiceGateAuto: boolean;
+  callVoiceGateThreshold: number;
   // Publish video as several quality layers (off: one high-quality stream).
   callSimulcast: boolean;
   // Screen share preset, picked when a share starts; see ScreenShareQuality.
@@ -106,6 +111,9 @@ const defaultSettings: Settings = {
   publishRichPresence: false,
 
   callDenoise: false,
+  callVoiceGate: false,
+  callVoiceGateAuto: true,
+  callVoiceGateThreshold: 0.45,
   callSimulcast: false,
   callScreenShare: { resolution: '720p', fps: 60 },
   callAudioInput: '',

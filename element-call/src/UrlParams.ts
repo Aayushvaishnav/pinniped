@@ -263,6 +263,10 @@ export interface UrlConfiguration {
    * the `io.cinny.denoise` widget action.
    */
   denoise?: boolean;
+  /** Voice activity gate on the microphone, and its threshold (0-1). */
+  voiceGate?: boolean;
+  voiceGateAuto?: boolean;
+  voiceGateThreshold?: number;
   /**
    * Preferred microphone / speaker device IDs. The embedding client owns them
    * and can change them mid-call with the `io.cinny.call_settings` widget action.
@@ -540,6 +544,13 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     soundOverrides: parseSoundOverrides(parser.getParam("soundOverrides")),
     soundHandoff: parser.getParam("soundHandoff")?.split(",").filter(Boolean),
     denoise: parser.getFlagParam("denoise", false),
+    voiceGate: parser.getFlagParam("voiceGate", false),
+    voiceGateAuto: parser.getFlagParam("voiceGateAuto", true),
+    voiceGateThreshold: Number.isFinite(
+      parseFloat(parser.getParam("voiceGateThreshold") ?? ""),
+    )
+      ? parseFloat(parser.getParam("voiceGateThreshold")!)
+      : undefined,
     simulcast: parser.getFlagParam("simulcast", false),
     screenShare: parser.getParam("screenShare") || undefined,
     mutedSounds: parser.getParam("mutedSounds")?.split(",").filter(Boolean),

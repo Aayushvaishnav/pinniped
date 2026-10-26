@@ -29,6 +29,9 @@ import {
   audioInput,
   audioOutput,
   denoiseMode,
+  voiceGate,
+  voiceGateAuto,
+  voiceGateThreshold,
   screenShareQuality,
   soundEffectVolume,
   soundboardVolume,
@@ -44,7 +47,7 @@ export enum ElementWidgetActions {
   HangupCall = "im.vector.hangup",
   Close = "io.element.close",
   // toWidget (fork): the client sets the call audio preferences, data
-  // `{ denoise?, simulcast?, screenShare?, soundVolume?, soundboardVolume?, mutedSounds?, audioInput?, audioOutput? }`.
+  // `{ denoise?, voiceGate?, voiceGateAuto?, voiceGateThreshold?, simulcast?, screenShare?, soundVolume?, soundboardVolume?, mutedSounds?, audioInput?, audioOutput? }`.
   // An empty device ID means the system default.
   CallSettings = "io.cinny.call_settings",
   // toWidget (fork): play or stop a soundboard sound, see SoundboardCommand
@@ -109,6 +112,9 @@ export const initializeWidget = (
       e2eEnabled,
       allowIceFallback,
       denoise,
+      voiceGate: voiceGateParam,
+      voiceGateAuto: voiceGateAutoParam,
+      voiceGateThreshold: voiceGateThresholdParam,
       simulcast,
       screenShare,
       soundVolume,
@@ -149,6 +155,10 @@ export const initializeWidget = (
       // seed them and the action updates them mid-call. They are applied right
       // away, since nothing else consumes this action.
       denoiseMode.setValue(denoise ? "deepfilternet" : "off");
+      voiceGate.setValue(voiceGateParam ?? false);
+      voiceGateAuto.setValue(voiceGateAutoParam ?? true);
+      if (voiceGateThresholdParam !== undefined)
+        voiceGateThreshold.setValue(voiceGateThresholdParam);
       videoSimulcast.setValue(simulcast ?? false);
       if (screenShare) screenShareQuality.setValue(screenShare);
       mutedSounds.setValue(mutedSoundsParam ?? []);
@@ -163,6 +173,9 @@ export const initializeWidget = (
           ev.preventDefault();
           const data = ev.detail.data as {
             denoise?: boolean;
+            voiceGate?: boolean;
+            voiceGateAuto?: boolean;
+            voiceGateThreshold?: number;
             simulcast?: boolean;
             screenShare?: string;
             soundVolume?: number;
@@ -173,6 +186,11 @@ export const initializeWidget = (
           };
           if (data.denoise !== undefined)
             denoiseMode.setValue(data.denoise ? "deepfilternet" : "off");
+          if (data.voiceGate !== undefined) voiceGate.setValue(data.voiceGate);
+          if (data.voiceGateAuto !== undefined)
+            voiceGateAuto.setValue(data.voiceGateAuto);
+          if (data.voiceGateThreshold !== undefined)
+            voiceGateThreshold.setValue(data.voiceGateThreshold);
           if (data.simulcast !== undefined)
             videoSimulcast.setValue(data.simulcast);
           if (data.screenShare) screenShareQuality.setValue(data.screenShare);

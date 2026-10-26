@@ -109,6 +109,21 @@ export const denoiseMode = new Setting<"off" | "deepfilternet">(
 );
 
 /**
+ * Only send the microphone while it is picking up speech. The gate sits after
+ * the denoiser, which keeps running either way so it keeps adapting to the room.
+ */
+export const voiceGate = new Setting<boolean>("voice-gate", false);
+
+/** Whether the voice gate follows the room's noise floor instead of using the fixed threshold. */
+export const voiceGateAuto = new Setting<boolean>("voice-gate-auto", true);
+
+/** How loud speech must be to open the voice gate, 0-1 (see voiceGateLevels); higher needs louder. */
+export const voiceGateThreshold = new Setting<number>(
+  "voice-gate-threshold",
+  0.45,
+);
+
+/**
  * Whether video is published as several quality layers. Off sends one
  * high-quality stream; applies to video published afterwards.
  */

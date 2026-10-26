@@ -7,7 +7,7 @@ Please see LICENSE in the repository root for full details.
 
 import { expect, test } from "vitest";
 
-import { VoiceGate } from "./voiceActivity";
+import { AdaptiveVoiceGate, VoiceGate, voiceGateLevels } from "./voiceActivity";
 
 const gate = (): VoiceGate => new VoiceGate(0.01, 0.005, 200);
 
@@ -32,4 +32,62 @@ test("a level between close and open keeps a speaker open but does not open the 
   expect(g.update(0.007, 200)).toBe(true);
   expect(g.update(0.007, 380)).toBe(true); // still refreshes the hold
   expect(g.update(0.001, 700)).toBe(false);
+});
+
+test("the gate threshold maps to a rising open level, with a lower close level", () => {
+  const low = voiceGateLevels(0);
+  const mid = voiceGateLevels(0.5);
+  const high = voiceGateLevels(1);
+  expect(low.open).toBeLessThan(mid.open);
+  expect(mid.open).toBeLessThan(high.open);
+  expect(high.open).toBeCloseTo(0.1, 3); // -20 dBFS
+  expect(mid.close).toBeLessThan(mid.open);
+  expect(voiceGateLevels(5).open).toBe(high.open);
+});
+
+test("levels can be retuned while the gate runs", () => {
+  const g = gate();
+  expect(g.update(0.02, 0)).toBe(true);
+  g.setLevels(0.5, 0.3);
+  expect(g.update(0.02, 1000)).toBe(false);
+});
+
+const feed = (
+  g: { update: (l: number, n: number) => boolean },
+  db: number,
+  fromMs: number,
+  toMs: number,
+): boolean => {
+  let on = false;
+  for (let t = fromMs; t <= toMs; t += 20) on = g.update(10 ** (db / 20), t);
+  return on;
+};
+
+test("the adaptive gate ignores steady room noise and opens for speech above it", () => {
+  const g = new AdaptiveVoiceGate(200);
+  expect(feed(g, -55, 0, 2000)).toBe(false);
+  expect(feed(g, -30, 2020, 2400)).toBe(true);
+  expect(feed(g, -55, 2420, 3000)).toBe(false);
+});
+
+test("the adaptive gate learns a louder room instead of staying open", () => {
+  const g = new AdaptiveVoiceGate(200);
+  feed(g, -55, 0, 2000);
+  // A fan comes on at -40 dB: it opens at first, then the floor catches up and it closes.
+  expect(feed(g, -40, 2020, 2200)).toBe(true);
+  expect(feed(g, -40, 2220, 30000)).toBe(false);
+});
+
+test("the adaptive gate stays open through speech with its natural pauses", () => {
+  const g = new AdaptiveVoiceGate(300);
+  feed(g, -60, 0, 2000);
+  let t = 2020;
+  let open = true;
+  for (let word = 0; word < 40; word += 1) {
+    open = feed(g, -25, t, t + 1500) && open; // a phrase
+    t += 1520;
+    open = feed(g, -58, t, t + 200) && open; // a short pause, bridged by the hold
+    t += 220;
+  }
+  expect(open).toBe(true);
 });
