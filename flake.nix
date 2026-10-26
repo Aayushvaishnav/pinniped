@@ -13,8 +13,18 @@
         "aarch64-linux"
       ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
+      forAllPkgs = nixpkgs.lib.genAttrs systems (system: nixpkgs.legacyPackages.${system});
     in
     {
+      apps = forAllSystems (system: {
+        update-npm-deps = {
+          type = "app";
+          program = toString (forAllPkgs.${system}.writeShellScript "update-npm-deps" ''
+            exec ${forAllPkgs.${system}.bash}/bin/bash ${./scripts/update-npm-deps.sh}
+          '');
+        };
+      });
+
       packages = forAllSystems (
         system:
         let

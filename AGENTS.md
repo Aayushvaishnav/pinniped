@@ -154,10 +154,12 @@ Caveats:
 
 - Flakes only see git-tracked files. Freshly created `flake.nix`/`package.nix` must be committed (or `git add -N`'d) before `nix build` works in the repo.
 - The package version is read from `package.json` at eval time, so it tracks upstream automatically on rebase.
-- When `package-lock.json` changes (upstream dependency updates), refresh `npmDepsHash` in `package.nix`:
+- When `package-lock.json` changes (upstream dependency updates), refresh `npmDepsHash` by running:
   ```bash
-  nix-shell -p prefetch-npm-deps --run 'prefetch-npm-deps package-lock.json'
+  nix run .#update-npm-deps
   ```
+  (fork-only script `scripts/update-npm-deps.sh`; prefetches and rewrites the hash in `package.nix` in place, no-op if already current)
+- CI covers this automatically: `.github/workflows/npm-deps-hash.yml` (fork-only) runs on pushes to `fork/dev` that touch `package-lock.json`, refreshes the hash, verifies `nix build .#pinniped`, and opens a PR (`auto/npm-deps-hash`) that only needs merging. So normally: push the rebase, merge the PR if it appears, done.
 
 ## Fork-only files
 
