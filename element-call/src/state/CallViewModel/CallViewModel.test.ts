@@ -871,7 +871,7 @@ describe.each([
           rtcMembers$: rtcMemberJoinLeave$(behavior),
         },
         (vm) => {
-          expectObservable(vm.autoLeave$).toBe("------a", {
+          expectObservable(vm.autoLeave$).toBe("------ 30s a", {
             a: "allOthersLeft",
           });
         },
@@ -937,7 +937,7 @@ describe.each([
           }),
         },
         (vm) => {
-          expectObservable(vm.autoLeave$).toBe("------a", {
+          expectObservable(vm.autoLeave$).toBe("------ 30s a", {
             a: "allOthersLeft",
           });
         },

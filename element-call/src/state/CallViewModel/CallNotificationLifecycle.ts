@@ -14,6 +14,8 @@ import {
 import {
   combineLatest,
   concat,
+  distinctUntilChanged,
+  EMPTY,
   endWith,
   filter,
   fromEvent,
@@ -38,6 +40,9 @@ import {
 
 import { type Behavior } from "../Behavior";
 import { type Epoch, mapEpoch, type ObservableScope } from "../ObservableScope";
+
+/** How long everyone else must stay gone before an auto-leave call ends. */
+export const ALL_OTHERS_LEFT_GRACE_MS = 30_000;
 
 export type AutoLeaveReason = "allOthersLeft" | "timeout" | "decline";
 export type CallPickupState =
@@ -112,12 +117,17 @@ export function createCallNotificationLifecycle$({
   callPickupState$: Behavior<CallPickupState>;
   autoLeave$: Observable<AutoLeaveReason>;
 } {
+  // Someone else's membership vanishing is not proof they left: an app that is
+  // closed without hanging up keeps its membership until the server fires its
+  // delayed leave event, and is usually reopened soon after. Only give up on the
+  // call once everyone else has stayed gone for a grace period.
   const allOthersLeft$ = memberships$.pipe(
+    map(({ value }) => value.some((m) => m.userId !== localUser.userId)),
+    distinctUntilChanged(),
     pairwise(),
-    filter(
-      ([{ value: prev }, { value: current }]) =>
-        current.every((m) => m.userId === localUser.userId) &&
-        prev.some((m) => m.userId !== localUser.userId),
+    // switchMap drops a pending timer as soon as someone else shows up again.
+    switchMap(([prev, current]) =>
+      prev && !current ? timer(ALL_OTHERS_LEFT_GRACE_MS) : EMPTY,
     ),
     map(() => {}),
   );
