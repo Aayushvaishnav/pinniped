@@ -1,4 +1,4 @@
-import React, { MouseEventHandler, useRef, useState } from 'react';
+import React, { MouseEventHandler, useEffect, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import {
   Avatar,
@@ -176,14 +176,39 @@ export function AccountBarProfile() {
   };
   const closeSettings = () => setSettings(undefined);
   const closedAtRef = useRef(0);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
   const closeMenu = () => {
     closedAtRef.current = Date.now();
     setMenuCords(undefined);
   };
 
+  // Close on any press outside the menu, independent of the focus trap.
+  useEffect(() => {
+    if (!menuCords) return undefined;
+    const handlePress = (evt: PointerEvent) => {
+      const target = evt.target as Node | null;
+      if (
+        target &&
+        (menuRef.current?.contains(target) || profileButtonRef.current?.contains(target))
+      ) {
+        return;
+      }
+      closeMenu();
+    };
+    document.addEventListener('pointerdown', handlePress, true);
+    return () => document.removeEventListener('pointerdown', handlePress, true);
+    // closeMenu only touches refs and a state setter
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuCords]);
+
   const handleOpenMenu: MouseEventHandler<HTMLElement> = (evt) => {
     // The focus trap closes the menu on the same press that lands here, so a
     // click on the trigger while open would otherwise reopen it straight away.
+    if (menuCords) {
+      closeMenu();
+      return;
+    }
     if (Date.now() - closedAtRef.current < 300) return;
     setMenuCords(evt.currentTarget.getBoundingClientRect());
   };
@@ -202,16 +227,20 @@ export function AccountBarProfile() {
                 initialFocus: false,
                 onDeactivate: closeMenu,
                 clickOutsideDeactivates: true,
+                returnFocusOnDeactivate: false,
                 escapeDeactivates: stopPropagation,
               }}
             >
-              <AccountMenu requestClose={closeMenu} openSettings={openSettings} />
+              <div ref={menuRef}>
+                <AccountMenu requestClose={closeMenu} openSettings={openSettings} />
+              </div>
             </FocusTrap>
           }
         >
           <Box
             as="button"
             type="button"
+            ref={profileButtonRef}
             className={css.ProfileButton}
             alignItems="Center"
             gap="200"
