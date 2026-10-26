@@ -1,7 +1,8 @@
 # Never send local build output, deps and test artifacts to the image build.
 # Keep in sync with .gitignore; everything here is either regenerated locally
 # or not needed to build the web bundle.
-node_modules
+**/node_modules
+element-call/dist
 .git
 dist
 electron/out
