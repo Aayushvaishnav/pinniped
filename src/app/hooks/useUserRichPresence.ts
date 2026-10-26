@@ -21,6 +21,54 @@ const MAX_SONG_END_DELAY = 6 * 60 * 60 * 1000;
 
 const REFRESH_INTERVAL = 3 * 60 * 1000;
 
+// Opening a big member list mounts hundreds of rows at once; cap the number of
+// profile requests in flight and back off when the server rate-limits us.
+const MAX_CONCURRENT_FETCHES = 4;
+const MAX_RATE_LIMIT_RETRIES = 3;
+let activeFetches = 0;
+const fetchWaiters: (() => void)[] = [];
+
+const acquireFetchSlot = async () => {
+  if (activeFetches < MAX_CONCURRENT_FETCHES) {
+    activeFetches += 1;
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    fetchWaiters.push(resolve);
+  });
+};
+
+const releaseFetchSlot = () => {
+  const next = fetchWaiters.shift();
+  if (next) next();
+  else activeFetches -= 1;
+};
+
+const fetchProfileThrottled = async (
+  mx: MatrixClient,
+  userId: string
+): Promise<Record<string, unknown>> => {
+  await acquireFetchSlot();
+  try {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        return await mx.getExtendedProfile(userId);
+      } catch (err) {
+        const { errcode, data } = err as { errcode?: string; data?: { retry_after_ms?: number } };
+        if (errcode !== 'M_LIMIT_EXCEEDED' || attempt >= MAX_RATE_LIMIT_RETRIES) throw err;
+        const wait = Math.min(data?.retry_after_ms ?? 2000, 30_000);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => {
+          setTimeout(resolve, wait);
+        });
+      }
+    }
+  } finally {
+    releaseFetchSlot();
+  }
+};
+
 type RichPresenceSetter = (value: RichPresence | undefined) => void;
 
 type Subscription = {
@@ -50,11 +98,13 @@ const startSubscription = (
     if (updatedUserId !== userId) return;
 
     updateVersion += 1;
-    if (profile === null) {
-      setRichPresence(undefined);
-    } else if (hasRichPresenceField(profile)) {
-      setRichPresence(getProfileRichPresence(profile));
-    }
+    // An update without the field is how a stopped publisher shows up (the
+    // property is deleted), so it clears rather than being ignored.
+    setRichPresence(
+      profile !== null && hasRichPresenceField(profile)
+        ? getProfileRichPresence(profile)
+        : undefined
+    );
   };
 
   mx.on(ClientEvent.UserProfileUpdate, handleProfileUpdate);
@@ -62,7 +112,7 @@ const startSubscription = (
   const loadProfile = async () => {
     const loadVersion = updateVersion;
     try {
-      const profile = await mx.getExtendedProfile(userId);
+      const profile = await fetchProfileThrottled(mx, userId);
       if (active && loadVersion === updateVersion) {
         setRichPresence(getProfileRichPresence(profile));
       }
