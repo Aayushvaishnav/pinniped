@@ -128,6 +128,9 @@ Fork changes on top of upstream + old patches:
   (`src/livekit/soundboard.ts`, owned by `Publisher`) decodes it and publishes it
   on an audio track of its own (source `unknown`, which `MatrixAudioRenderer`
   already plays) while also playing it locally. The mic track is untouched.
+  Sounds go out at full level; the volume is each listener's own
+  (`soundboardVolume`, sent to the widget with the other call settings): it
+  scales the local copy and the remote `soundboard` tracks.
   The picker is `src/app/features/soundboard/`.
 - Note: `element-call/` has its own pnpm/eslint/vitest setup. Its
   `.eslintrc.cjs` sets `root: true` so the outer repo's eslint does not
