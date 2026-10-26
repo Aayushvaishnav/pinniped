@@ -1,18 +1,8 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  Box,
-  Chip,
-  Icon,
-  IconButton,
-  Icons,
-  Scroll,
-  Spinner,
-  Text,
-  config,
-} from 'folds';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Chip, Icon, IconButton, Icons, Scroll, Spinner, Text, config } from 'folds';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Room, RoomMember, SearchOrderBy } from 'matrix-js-sdk';
+import { Room, RoomEvent, RoomMember, RoomStateEvent, SearchOrderBy } from 'matrix-js-sdk';
 import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import classNames from 'classnames';
@@ -423,6 +413,20 @@ export function RoomSearchDrawer({ room, members }: RoomSearchDrawerProps) {
     navigateRoom(roomId, eventId);
   };
 
+  // The member and room-name lookup reads non-reactive SDK state, so bump a
+  // version when either changes; otherwise someone who joins after the drawer
+  // opened would never resolve in `from:`.
+  const [lookupVersion, setLookupVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setLookupVersion((v) => v + 1);
+    mx.on(RoomStateEvent.Members, bump);
+    mx.on(RoomEvent.Name, bump);
+    return () => {
+      mx.removeListener(RoomStateEvent.Members, bump);
+      mx.removeListener(RoomEvent.Name, bump);
+    };
+  }, [mx]);
+
   const lookup = useMemo<SearchLookup>(() => {
     const users = new Map<string, string>();
     const rooms: SearchLookup['rooms'] = [];
@@ -438,7 +442,9 @@ export function RoomSearchDrawer({ room, members }: RoomSearchDrawerProps) {
       users: Array.from(users, ([userId, name]) => ({ userId, name })),
       rooms,
     };
-  }, [mx, searchRooms]);
+    // lookupVersion only forces a re-read of the SDK state above
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mx, searchRooms, lookupVersion]);
 
   const setLookup = useSetAtom(roomSearchLookupAtom);
   useEffect(() => {
