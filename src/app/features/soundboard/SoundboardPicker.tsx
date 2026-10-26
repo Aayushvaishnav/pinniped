@@ -30,6 +30,7 @@ import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { mxcUrlToHttp } from '../../utils/matrix';
 import { stopPropagation } from '../../utils/keyboard';
 import { Slider } from '../../components/slider';
+import * as css from './styles.css';
 import { useSoundPlayer } from './useSoundPlayer';
 
 type SoundTileProps = {
@@ -170,11 +171,49 @@ export function SoundboardPicker({ callEmbed, room, anchor, requestClose }: Soun
             escapeDeactivates: stopPropagation,
           }}
         >
-          <Menu style={{ width: 460, height: 400, display: 'flex', flexDirection: 'column' }}>
+          <Menu
+            style={{
+              position: 'relative',
+              width: 460,
+              height: 400,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {showVolume && (
+              <>
+                {/* Closes the card on a click anywhere else in the picker. */}
+                <Box
+                  style={{ position: 'absolute', inset: 0, zIndex: 1 }}
+                  onClick={() => setShowVolume(false)}
+                />
+                <Menu
+                  style={{
+                    position: 'absolute',
+                    zIndex: 2,
+                    top: 52,
+                    right: 8,
+                    width: 230,
+                    padding: config.space.S300,
+                  }}
+                >
+                  <Box direction="Column" gap="300">
+                    <Text size="H6">Soundboard Volume</Text>
+                    <Slider
+                      aria-label="Soundboard volume"
+                      value={volume}
+                      onChange={setVolume}
+                      className={css.FullWidth}
+                    />
+                  </Box>
+                </Menu>
+              </>
+            )}
             <Box direction="Column" gap="200" style={{ padding: config.space.S200 }} shrink="No">
               <Box gap="200" alignItems="Center">
-                <Box grow="Yes">
+                <Box grow="Yes" style={{ minWidth: 0 }}>
                   <Input
+                    style={{ width: '100%' }}
                     size="400"
                     variant="Background"
                     radii="300"
@@ -208,12 +247,6 @@ export function SoundboardPicker({ callEmbed, room, anchor, requestClose }: Soun
                   <Icon src={Icons.Pause} />
                 </IconButton>
               </Box>
-              {showVolume && (
-                <Box alignItems="Center" gap="200" style={{ padding: `0 ${config.space.S200}` }}>
-                  <Slider aria-label="Soundboard volume" value={volume} onChange={setVolume} />
-                  <Text size="T300">{Math.round(volume * 100)}%</Text>
-                </Box>
-              )}
             </Box>
             <Line variant="Surface" size="300" />
             <Box grow="Yes" style={{ minHeight: 0 }}>
