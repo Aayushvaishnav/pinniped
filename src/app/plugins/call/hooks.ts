@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CallControl, CallControlEvent } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { CallEmbed } from './CallEmbed';
+import { CallActivity, emptyCallActivity } from './activity';
 import { CallStatsSample } from './stats';
 
 export const useClientWidgetApiEvent = <T>(
@@ -60,4 +61,16 @@ export const useCallStats = (embed: CallEmbed | undefined): CallStatsSample[] =>
   }, [embed]);
 
   return history;
+};
+
+/** Who is speaking, muted or sharing in the call; re-renders when the widget reports a change. */
+export const useCallActivity = (embed: CallEmbed | undefined): CallActivity => {
+  const [activity, setActivity] = useState<CallActivity>(embed?.activity ?? emptyCallActivity);
+
+  useEffect(() => {
+    setActivity(embed?.activity ?? emptyCallActivity);
+    return embed?.onActivity(() => setActivity(embed.activity));
+  }, [embed]);
+
+  return activity;
 };

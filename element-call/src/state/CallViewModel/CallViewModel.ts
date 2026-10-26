@@ -100,6 +100,10 @@ import {
 } from "../layout-types.ts";
 import { ElementCallError, UnknownCallError } from "../../utils/errors.ts";
 import { type Epoch, type ObservableScope } from "../ObservableScope.ts";
+import {
+  observeParticipantActivity$,
+  type ParticipantActivity,
+} from "./participantActivity.ts";
 import { createHomeserverConnected$ } from "./localMember/HomeserverConnected.ts";
 import {
   createLocalMembership$,
@@ -359,6 +363,12 @@ export interface CallViewModel {
   showGrid: () => void;
   /** Cinny: every screen share in the call, for the strip's stream previews. */
   screenShares$: Behavior<ScreenShareViewModel[]>;
+  /**
+   * Cinny: who is speaking, muted or sharing their screen, whatever the layout
+   * shows. Reported to the embedding client, which shows it next to the
+   * participants.
+   */
+  participantActivity$: Behavior<ParticipantActivity>;
 
   // header/footer visibility
   showHeader$: Behavior<boolean>;
@@ -1790,6 +1800,9 @@ export function createCallViewModel$(
     focusMedia,
     showGrid,
     screenShares$,
+    participantActivity$: scope.behavior(
+      observeParticipantActivity$(userMedia$, screenShares$),
+    ),
     layout$: layout$,
     localMatrixLivekitMember$,
     matrixLivekitMembers$: scope.behavior(

@@ -30,6 +30,8 @@ export enum ElementWidgetActions {
   Soundboard = 'io.cinny.soundboard',
   /** Fork, from the widget: a CallStatsSample once a second. */
   CallStats = 'io.cinny.call_stats',
+  /** Fork, from the widget: who is speaking, muted or sharing, whenever that changes. */
+  CallActivity = 'io.cinny.call_activity',
 }
 
 export const screenShareResolutions = [

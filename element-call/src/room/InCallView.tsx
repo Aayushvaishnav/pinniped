@@ -633,6 +633,22 @@ export const InCallView: FC<InCallViewProps> = ({
   );
   const allConnections = useBehavior(vm.allConnections$);
 
+  // Embedded clients (Cinny) show who is speaking, muted or sharing their screen.
+  useEffect(() => {
+    if (widget === null) return;
+    const api = widget.api;
+    const subscription = vm.participantActivity$.subscribe((activity) => {
+      api.transport
+        .send(ElementWidgetActions.CallActivity, {
+          speaking: [...activity.speaking],
+          muted: [...activity.muted],
+          screenSharing: [...activity.screenSharing],
+        })
+        .catch(() => {});
+    });
+    return (): void => subscription.unsubscribe();
+  }, [vm]);
+
   // Embedded clients (Cinny) show WebRTC stats; report raw counters to them.
   useEffect(() => {
     if (widget === null) return;

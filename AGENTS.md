@@ -120,6 +120,13 @@ Fork changes on top of upstream + old patches:
   widget action. `CallEmbed` keeps five minutes of history; clicking "Voice
   Connected" opens the ping popout and its Debug view
   (`src/app/features/call-status/stats/`).
+- **Participant activity** (speaking, muted, sharing a screen): the widget derives
+  it from its view models (`CallViewModel.participantActivity$`, built in
+  `state/CallViewModel/participantActivity.ts`) and sends a snapshot of Matrix user
+  IDs as the `io.cinny.call_activity` action whenever it changes; `CallEmbed`
+  keeps the latest and `useCallParticipantActivity` reads it. It does not depend on
+  which tiles are mounted. (It used to scrape `data-cinny-*` attributes off tiles,
+  which only the grid tile set; those attributes remain only as styling hooks.)
 - **Soundboard**: sounds live in Matrix data (`club.stablecat.pinniped.user_sounds`
   account data for the user, `club.stablecat.pinniped.room_sounds` state for a
   room or space, `club.stablecat.pinniped.sound_favorites` for favourites;

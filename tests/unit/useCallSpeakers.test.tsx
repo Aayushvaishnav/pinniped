@@ -1,93 +1,93 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { afterEach, expect, it, vi } from 'vitest';
-import { useCallParticipantActivity } from '../../src/app/hooks/useCallSpeakers';
-import { CallEmbed } from '../../src/app/plugins/call';
+import { beforeAll, expect, it, vi } from 'vitest';
+import type { CallEmbed } from '../../src/app/plugins/call';
+import type { CallActivity } from '../../src/app/plugins/call/activity';
 
+vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined });
 vi.mock('../../src/app/hooks/useCallEmbed', () => ({
   useCallJoined: (embed?: CallEmbed) => !!embed,
 }));
 
-afterEach(() => vi.unstubAllGlobals());
+let useCallParticipantActivity: typeof import('../../src/app/hooks/useCallSpeakers').useCallParticipantActivity;
+beforeAll(async () => {
+  ({ useCallParticipantActivity } = await import('../../src/app/hooks/useCallSpeakers'));
+});
 
-it('keeps simultaneous speakers and updates for added or removed tiles', () => {
-  let update!: () => void;
-  const disconnect = vi.fn();
-  vi.stubGlobal(
-    'MutationObserver',
-    class {
-      constructor(callback: () => void) {
-        update = callback;
-      }
-      observe() {}
-      disconnect = disconnect;
-    }
-  );
-  const tile = (id: string, speaking: boolean, sharing = false) => ({
-    getAttribute(attribute: string) {
-      if (attribute === 'data-cinny-speaking') return String(this.speaking);
-      if (attribute === 'data-cinny-user-id') return sharing ? null : id;
-      return sharing ? `${id}:DEVICE:screen-share` : `${id}:DEVICE`;
-    },
-    speaking,
-    querySelectorAll: () => [{ getAttribute: () => 'Other label' }, { getAttribute: () => id }],
-  });
-  const alice = tile('@alice:example.org', true);
-  const bob = tile('@bob:example.org', true);
-  let tiles = [alice, bob];
+const activity = (
+  speaking: string[],
+  muted: string[] = [],
+  sharing: string[] = []
+): CallActivity => ({
+  speakers: new Set(speaking),
+  muted: new Set(muted),
+  screenSharers: new Set(sharing),
+});
+
+/** A call embed whose widget reports activity through `report`. */
+const fakeEmbed = () => {
+  const listeners = new Set<() => void>();
   const embed = {
-    document: { querySelectorAll: () => tiles },
-    iframe: {
-      contentWindow: {
-        getComputedStyle: (el: typeof alice) => ({
-          backgroundImage: 'none',
-        }),
-      },
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
+    activity: activity([]),
+    onActivity: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
-  } as unknown as CallEmbed;
-  let speakers = new Set<string>();
-  let screenSharers = new Set<string>();
+  };
+  return {
+    embed: embed as unknown as CallEmbed,
+    listeners,
+    report: (next: CallActivity) => {
+      embed.activity = next;
+      listeners.forEach((listener) => listener());
+    },
+  };
+};
+
+it('shows what the widget reports, updating as people start and stop speaking, mute and share', () => {
+  const { embed, report } = fakeEmbed();
+  let result!: ReturnType<typeof useCallParticipantActivity>;
   function Harness({ call }: { call?: CallEmbed }) {
-    ({ speakers, screenSharers } = useCallParticipantActivity(call));
+    result = useCallParticipantActivity(call);
     return null;
   }
   let renderer!: ReturnType<typeof create>;
   act(() => {
     renderer = create(<Harness call={embed} />);
   });
-  expect([...speakers]).toEqual(['@alice:example.org', '@bob:example.org']);
+  expect(result.speakers.size).toBe(0);
+
+  act(() => report(activity(['@alice:example.org', '@bob:example.org'])));
+  expect([...result.speakers]).toEqual(['@alice:example.org', '@bob:example.org']);
+
+  act(() => report(activity(['@alice:example.org'], ['@bob:example.org'])));
+  expect([...result.speakers]).toEqual(['@alice:example.org']);
+  expect([...result.muted]).toEqual(['@bob:example.org']);
+
+  act(() => report(activity([], [], ['@bob:example.org', '@carol:example.org'])));
+  expect([...result.screenSharers]).toEqual(['@bob:example.org', '@carol:example.org']);
+  expect(result.speakers.size).toBe(0);
+
+  act(() => renderer.unmount());
+});
+
+it('shows nothing without a call, and stops listening when the call goes away', () => {
+  const { embed, listeners, report } = fakeEmbed();
+  let result!: ReturnType<typeof useCallParticipantActivity>;
+  function Harness({ call }: { call?: CallEmbed }) {
+    result = useCallParticipantActivity(call);
+    return null;
+  }
+  let renderer!: ReturnType<typeof create>;
   act(() => {
-    bob.speaking = false;
-    update();
+    renderer = create(<Harness call={embed} />);
   });
-  expect([...speakers]).toEqual(['@alice:example.org']);
-  act(() => {
-    tiles = [alice, tile('@carol:example.org', true)];
-    update();
-  });
-  expect([...speakers]).toEqual(['@alice:example.org', '@carol:example.org']);
-  act(() => {
-    tiles = [alice, tile('@bob:example.org', false, true), tile('@carol:example.org', false, true)];
-    update();
-  });
-  expect([...screenSharers]).toEqual(['@bob:example.org', '@carol:example.org']);
-  expect([...speakers]).toEqual(['@alice:example.org']);
-  act(() => {
-    tiles = [alice];
-    update();
-  });
-  expect(screenSharers.size).toBe(0);
-  act(() => {
-    tiles = [];
-    update();
-  });
-  expect(speakers.size).toBe(0);
-  act(() => {
-    renderer.update(<Harness />);
-  });
-  expect(disconnect).toHaveBeenCalled();
-  expect(speakers.size).toBe(0);
+  act(() => report(activity(['@alice:example.org'])));
+  expect(result.speakers.size).toBe(1);
+  expect(listeners.size).toBe(1);
+
+  act(() => renderer.update(<Harness />));
+  expect(result.speakers.size).toBe(0);
+  expect(listeners.size).toBe(0);
   act(() => renderer.unmount());
 });

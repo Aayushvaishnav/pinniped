@@ -242,9 +242,9 @@ const UserMediaTile: FC<UserMediaTileProps> = ({
       rtcBackendIdentity={rtcBackendIdentity}
       targetWidth={targetWidth}
       targetHeight={targetHeight}
-      // Cinny reads these to mirror speaking state into its own UI
+      // Hooks for the fork's styling (speaking ring, hover); Cinny gets this data
+      // from CallViewModel.participantActivity$ instead.
       data-cinny-speaking={speaking}
-      data-cinny-muted={!audioEnabled}
       data-cinny-user-id={vm.userId}
       {...props}
     />

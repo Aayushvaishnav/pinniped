@@ -51,6 +51,9 @@ export enum ElementWidgetActions {
   Soundboard = "io.cinny.soundboard",
   // fromWidget (fork): a CallStatsSample once a second while in a call
   CallStats = "io.cinny.call_stats",
+  // fromWidget (fork): who is speaking, muted or sharing their screen, whenever that
+  // changes; data `{ speaking: string[], muted: string[], screenSharing: string[] }`
+  CallActivity = "io.cinny.call_activity",
   // This can be sent as from or to widget
   // fromWidget: updates the client about the current device mute state
   // toWidget: the client requests a specific device mute configuration

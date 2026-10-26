@@ -31,6 +31,7 @@ import { getSettings } from '../../state/settings';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { protectFrameFromParentDrag } from './protectFrameFromParentDrag';
+import { CallActivity, emptyCallActivity, parseCallActivity } from './activity';
 import { CallStatsSample, trimStats } from './stats';
 
 export class CallEmbed {
@@ -48,6 +49,11 @@ export class CallEmbed {
   public statsHistory: CallStatsSample[] = [];
 
   private readonly statsListeners = new Set<() => void>();
+
+  /** Who is speaking, muted or sharing their screen, as last reported by the widget. */
+  public activity: CallActivity = emptyCallActivity;
+
+  private readonly activityListeners = new Set<() => void>();
 
   /** An outgoing call that rings the other side; the call itself plays the start sound. */
   public readonly ringing: boolean;
@@ -242,6 +248,15 @@ export class CallEmbed {
       })
     );
 
+    this.disposables.push(
+      this.listenAction<IWidgetApiRequest>(ElementWidgetActions.CallActivity, (evt) => {
+        evt.preventDefault();
+        this.call.transport.reply(evt.detail, {});
+        this.activity = parseCallActivity(evt.detail.data);
+        this.activityListeners.forEach((listener) => listener());
+      })
+    );
+
     this.start();
   }
 
@@ -265,6 +280,13 @@ export class CallEmbed {
 
   public soundboard(command: SoundboardCommand) {
     return this.call.transport.send(ElementWidgetActions.Soundboard, command);
+  }
+
+  public onActivity(callback: () => void) {
+    this.activityListeners.add(callback);
+    return () => {
+      this.activityListeners.delete(callback);
+    };
   }
 
   public onStats(callback: () => void) {
