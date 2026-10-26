@@ -9,6 +9,7 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { SpaceAutoJoinContent, StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useStateEvent } from '../../../hooks/useStateEvent';
+import { getSpaceAutoJoin } from '../../../utils/spaceAutoJoin';
 import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 
 type SpaceAutoJoinProps = {
@@ -19,8 +20,10 @@ export function SpaceAutoJoin({ permissions }: SpaceAutoJoinProps) {
   const space = useRoom();
 
   const canEdit = permissions.stateEvent(StateEvent.SpaceAutoJoin, mx.getSafeUserId());
-  const autoJoinEvent = useStateEvent(space, StateEvent.SpaceAutoJoin);
-  const autoJoin = autoJoinEvent?.getContent<SpaceAutoJoinContent>().auto_join === true;
+  // Subscribe to both so the switch follows either event type.
+  useStateEvent(space, StateEvent.SpaceAutoJoin);
+  useStateEvent(space, StateEvent.LegacySpaceAutoJoin);
+  const autoJoin = getSpaceAutoJoin(space);
 
   const [toggleState, toggleAutoJoin] = useAsyncCallback(
     useCallback(

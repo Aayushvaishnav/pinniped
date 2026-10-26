@@ -1008,6 +1008,11 @@ function Spaces() {
     'autoJoinSpaceRooms'
   );
 
+  const [ignoreSpaceAutoJoin, setIgnoreSpaceAutoJoin] = useSetting(
+    settingsAtom,
+    'ignoreSpaceAutoJoin'
+  );
+
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Spaces</Text>
@@ -1017,6 +1022,17 @@ function Spaces() {
           description="Automatically join every room listed in a space, including rooms added later."
           after={
             <Switch variant="Primary" value={autoJoinSpaceRooms} onChange={setAutoJoinSpaceRooms} />
+          }
+        />
+        <SettingTile
+          title="Ignore Space Auto Join"
+          description="Don't let spaces join rooms for you. Spaces that ask for auto-join are ignored; only the setting above applies."
+          after={
+            <Switch
+              variant="Primary"
+              value={ignoreSpaceAutoJoin}
+              onChange={setIgnoreSpaceAutoJoin}
+            />
           }
         />
       </SequenceCard>

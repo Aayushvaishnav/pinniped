@@ -40,7 +40,9 @@ export enum StateEvent {
 
   PoniesRoomEmotes = 'im.ponies.room_emotes',
   PowerLevelTags = 'in.cinny.room.power_level_tags',
-  SpaceAutoJoin = 'im.kibby.space.auto_join',
+  SpaceAutoJoin = 'club.stablecat.pinniped.space.auto_join',
+  /** Pre-rename type; still read when no `SpaceAutoJoin` event exists. */
+  LegacySpaceAutoJoin = 'im.kibby.space.auto_join',
 }
 
 export enum MessageEvent {

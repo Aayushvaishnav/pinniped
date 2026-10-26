@@ -15,7 +15,9 @@ const parseLeftRooms = (content?: LeftRoomsContent): Record<string, number> => {
 };
 
 export const getLeftRooms = (mx: MatrixClient): Record<string, number> =>
-  parseLeftRooms(mx.getAccountData(AccountDataEvent.PinnipedLeftRooms)?.getContent<LeftRoomsContent>());
+  parseLeftRooms(
+    mx.getAccountData(AccountDataEvent.PinnipedLeftRooms)?.getContent<LeftRoomsContent>()
+  );
 
 // Serialises read-modify-write so concurrent leaves (e.g. leaving a space and
 // all its rooms) don't clobber each other.
@@ -56,7 +58,13 @@ export const unmarkRoomsLeft = (mx: MatrixClient, roomIds: string[]): Promise<un
 /** Leaves a room and remembers that the leave was explicit. */
 export const leaveRoomExplicitly = async (mx: MatrixClient, roomId: string): Promise<void> => {
   await markRoomsLeft(mx, [roomId]);
-  await mx.leave(roomId);
+  try {
+    await mx.leave(roomId);
+  } catch (err) {
+    // The leave didn't happen, so don't keep a mark that would block auto-join.
+    await unmarkRoomsLeft(mx, [roomId]).catch(() => undefined);
+    throw err;
+  }
 };
 
 export const useLeftRooms = (): Set<string> => {

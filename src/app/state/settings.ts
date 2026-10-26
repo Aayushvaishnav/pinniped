@@ -57,6 +57,7 @@ export interface Settings {
   dateFormatString: string;
 
   autoJoinSpaceRooms: boolean;
+  ignoreSpaceAutoJoin: boolean;
   spaceRoleMode: boolean;
 
   developerTools: boolean;
@@ -105,6 +106,7 @@ const defaultSettings: Settings = {
   dateFormatString: 'D MMM YYYY',
 
   autoJoinSpaceRooms: false,
+  ignoreSpaceAutoJoin: false,
   spaceRoleMode: false,
 
   developerTools: false,
