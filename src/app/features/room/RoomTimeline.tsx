@@ -266,6 +266,15 @@ const useTimelinePagination = (
 
       const timelineToPaginate = backwards ? lTimelines[0] : lTimelines[lTimelines.length - 1];
       if (!timelineToPaginate) return;
+      // A permalink or jump swaps in a different chain while we are awaiting
+      // the server or decryption; a result for the old chain must not replace it.
+      const isStale = () => {
+        const current = timelineRef.current.linkedTimelines;
+        return (
+          current[0] !== lTimelines[0] ||
+          current[current.length - 1] !== lTimelines[lTimelines.length - 1]
+        );
+      };
       if (stalledAt?.timeline === timelineToPaginate && stalledAt.backwards === backwards) return;
 
       const paginationToken = timelineToPaginate.getPaginationToken(
@@ -318,8 +327,9 @@ const useTimelinePagination = (
         console.warn(
           `[timeline] pagination made no progress in ${timelineToPaginate.getRoomId()}, giving up`
         );
-        stalledAt = { timeline: timelineToPaginate, backwards };
         fetching = false;
+        if (isStale()) return;
+        stalledAt = { timeline: timelineToPaginate, backwards };
         if (alive()) onStalled();
         return;
       }
@@ -336,7 +346,7 @@ const useTimelinePagination = (
       }
 
       fetching = false;
-      if (alive()) {
+      if (alive() && !isStale()) {
         recalibratePagination(lTimelines, timelinesEventsCount, backwards);
       }
     };
