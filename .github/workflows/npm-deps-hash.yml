@@ -28,10 +28,13 @@ jobs:
         id: build
         run: |
           set -o pipefail
-          if nix build .#pinniped 2>&1 | tee build.log; then
+          # --no-link: no result symlink; log lives outside the checkout so the
+          # PR only ever contains the package.nix hash change.
+          log="$RUNNER_TEMP/build.log"
+          if nix build .#pinniped --no-link 2>&1 | tee "$log"; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            hash=$(grep -oE "got: +sha256-[A-Za-z0-9+/=]+" build.log | head -1 | awk '{print $2}')
+            hash=$(grep -oE "got: +sha256-[A-Za-z0-9+/=]+" "$log" | head -1 | awk '{print $2}')
             if [[ -z "$hash" ]]; then
               echo "build failed for a reason other than the npm deps hash" >&2
               exit 1
@@ -45,7 +48,7 @@ jobs:
 
       - name: Verify build with new hash
         if: steps.build.outputs.hash
-        run: nix build .#pinniped
+        run: nix build .#pinniped --no-link
 
       - name: Open PR
         if: steps.build.outputs.hash
