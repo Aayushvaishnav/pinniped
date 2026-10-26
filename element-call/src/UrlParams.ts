@@ -261,6 +261,8 @@ export interface UrlConfiguration {
    */
   simulcast?: boolean;
   screenShare?: string;
+  /** Volume of the call's own sounds, 0-1. */
+  soundVolume?: number;
   audioInput?: string;
   audioOutput?: string;
 }
@@ -281,7 +283,7 @@ class ParamParser {
 
     const fragmentQueryStart = hash.indexOf("?");
     this.fragmentParams = new URLSearchParams(
-      fragmentQueryStart === -1 ? "" : hash.substring(fragmentQueryStart),
+      fragmentQueryStart === -1 ? "" : hash.substring(fragmentQueryStart)
     );
   }
 
@@ -294,7 +296,7 @@ class ParamParser {
 
   public getEnumParam<T extends string>(
     name: string,
-    type: { [s: string]: T } | ArrayLike<T>,
+    type: { [s: string]: T } | ArrayLike<T>
   ): T | undefined {
     const value = this.getParam(name);
     if (value !== null && Object.values(type).includes(value as T)) {
@@ -339,8 +341,8 @@ function parseSoundOverrides(raw: string | null): Record<string, string> {
     if (typeof parsed !== "object" || parsed === null) return {};
     return Object.fromEntries(
       Object.entries(parsed).filter(
-        (entry): entry is [string, string] => typeof entry[1] === "string",
-      ),
+        (entry): entry is [string, string] => typeof entry[1] === "string"
+      )
     );
   } catch {
     logger.warn("Ignoring malformed soundOverrides url param");
@@ -356,7 +358,7 @@ function parseSoundOverrides(raw: string | null): Record<string, string> {
  */
 export const getUrlParams = (
   search = window.location.search,
-  hash = window.location.hash,
+  hash = window.location.hash
 ): UrlParams => {
   if (
     urlParamCache.search === search &&
@@ -399,7 +401,7 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
    */
   const intent = !isWidget
     ? UserIntent.Unknown
-    : (parser.getEnumParam("intent", UserIntent) ?? UserIntent.Unknown);
+    : parser.getEnumParam("intent", UserIntent) ?? UserIntent.Unknown;
   // Here we only use constants and `platform` to determine the intent preset.
   let intentPreset: UrlConfiguration = {
     confineToRoom: true,
@@ -527,6 +529,11 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     denoise: parser.getFlagParam("denoise", false),
     simulcast: parser.getFlagParam("simulcast", false),
     screenShare: parser.getParam("screenShare") || undefined,
+    soundVolume: Number.isFinite(
+      parseFloat(parser.getParam("soundVolume") ?? "")
+    )
+      ? parseFloat(parser.getParam("soundVolume")!)
+      : undefined,
     audioInput: parser.getParam("audioInput") || undefined,
     audioOutput: parser.getParam("audioOutput") || undefined,
   };
@@ -540,7 +547,7 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
     "\nproperties:",
     properties,
     "configuration:",
-    configuration,
+    configuration
   );
 
   return {
@@ -562,7 +569,7 @@ export const useUrlParams = (): UrlParams => {
 export function getRoomIdentifierFromUrl(
   pathname: string,
   search: string,
-  hash: string,
+  hash: string
 ): RoomIdentifier {
   let roomAlias: string | null = null;
   pathname = pathname.substring(1); // Strip the "/"
@@ -628,14 +635,14 @@ export const useRoomIdentifier = (): RoomIdentifier => {
   const { pathname, search, hash } = useLocation();
   return useMemo(
     () => getRoomIdentifierFromUrl(pathname, search, hash),
-    [pathname, search, hash],
+    [pathname, search, hash]
   );
 };
 
 export function generateUrlSearchParams(
   roomId: string,
   encryptionSystem: EncryptionSystem,
-  viaServers?: string[],
+  viaServers?: string[]
 ): URLSearchParams {
   const params = new URLSearchParams();
   // The password shouldn't need URL encoding here (we generate URL-safe ones) but encode
@@ -645,7 +652,7 @@ export function generateUrlSearchParams(
       const encodedPassword = encodeURIComponent(encryptionSystem.secret);
       if (encodedPassword !== encryptionSystem.secret) {
         logger.info(
-          "Encoded call password used non URL-safe chars: buggy client?",
+          "Encoded call password used non URL-safe chars: buggy client?"
         );
       }
       params.set("password", encodedPassword);

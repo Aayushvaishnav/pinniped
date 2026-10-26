@@ -50,6 +50,8 @@ export type ElementCallSettings = {
   simulcast: boolean;
   /** `<resolution>:<fps>`, e.g. `720p:60`. */
   screenShare: string;
+  /** Volume of the call's own sounds, 0-1. */
+  soundVolume: number;
   audioInput: string;
   audioOutput: string;
 };

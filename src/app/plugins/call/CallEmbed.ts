@@ -136,6 +136,7 @@ export class CallEmbed {
       'screenShare',
       `${settings.callScreenShare.resolution}:${settings.callScreenShare.fps}`
     );
+    params.append('soundVolume', settings.soundVolume.toString());
     params.append('audioInput', settings.callAudioInput);
     params.append('audioOutput', settings.callAudioOutput);
 

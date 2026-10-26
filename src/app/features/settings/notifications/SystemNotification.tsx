@@ -22,7 +22,7 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
-import { settingsAtom } from '../../../state/settings';
+import { getSettings, settingsAtom } from '../../../state/settings';
 import { getNotificationState, usePermissionState } from '../../../hooks/usePermission';
 import { useEmailNotifications } from '../../../hooks/useEmailNotifications';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -109,7 +109,9 @@ function SelectSoundBundle() {
     setBundle(id);
     setMenuCords(undefined);
     // Preview, so the choice can be judged without waiting for a message.
-    new Audio(getCoreSoundUrl(id, 'message')).play().catch(() => undefined);
+    const preview = new Audio(getCoreSoundUrl(id, 'message'));
+    preview.volume = getSettings().soundVolume;
+    preview.play().catch(() => undefined);
   };
 
   return (
@@ -173,6 +175,7 @@ export function SystemNotification() {
     'isNotificationSounds'
   );
   const [eventSounds, setEventSounds] = useSetting(settingsAtom, 'eventSounds');
+  const [soundVolume, setSoundVolume] = useSetting(settingsAtom, 'soundVolume');
 
   const requestNotificationPermission = () => {
     window.Notification.requestPermission();
@@ -230,6 +233,27 @@ export function SystemNotification() {
           title="Sound Bundle"
           description="Sounds used for messages, invitations and calls."
           after={<SelectSoundBundle />}
+        />
+        <SettingTile
+          title="Sound Volume"
+          description="Volume of ringing, message, invitation and call sounds."
+          after={
+            <Box alignItems="Center" gap="200">
+              <input
+                aria-label="Sound volume"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={soundVolume}
+                onChange={(evt) => setSoundVolume(Number(evt.currentTarget.value))}
+                style={{ width: 140 }}
+              />
+              <Text size="T300" style={{ minWidth: '4ch', textAlign: 'right' }}>
+                {Math.round(soundVolume * 100)}%
+              </Text>
+            </Box>
+          }
         />
         <SettingTile
           title="Event Sounds"

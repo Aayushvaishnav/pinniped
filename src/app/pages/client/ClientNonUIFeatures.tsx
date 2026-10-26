@@ -2,6 +2,7 @@ import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MatrixEvent, MatrixEventEvent, Room, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { useSoundVolume } from '../../hooks/useSoundVolume';
 import { isUserActive } from '../../state/idle';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/pinniped.svg';
@@ -131,6 +132,7 @@ function DesktopBadgeFeature() {
 
 function InviteNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  useSoundVolume(audioRef);
   const invites = useAtomValue(allInvitesAtom);
   const perviousInviteLen = usePreviousValue(invites.length, 0);
   const mx = useMatrixClient();
@@ -191,6 +193,7 @@ function InviteNotifications() {
 
 function MessageNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  useSoundVolume(audioRef);
   const seenEventsRef = useRef<Set<string>>(new Set());
   const pendingEventsRef = useRef<Map<MatrixEvent, Room>>(new Map());
   const mx = useMatrixClient();

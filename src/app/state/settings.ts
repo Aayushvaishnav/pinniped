@@ -65,6 +65,8 @@ export interface Settings {
   isNotificationSounds: boolean;
   notificationSoundBundle: string;
   eventSounds: boolean;
+  // Volume of the bundle sounds (ringing, messages, invites, events) and the call's own, 0-1.
+  soundVolume: number;
 
   hour24Clock: boolean;
   dateFormatString: string;
@@ -123,6 +125,7 @@ const defaultSettings: Settings = {
   isNotificationSounds: true,
   notificationSoundBundle: 'default',
   eventSounds: false,
+  soundVolume: 0.6,
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',

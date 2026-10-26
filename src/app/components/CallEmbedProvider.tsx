@@ -26,6 +26,7 @@ import {
 } from 'matrix-js-sdk';
 import { IRTCNotificationContent, RTCNotificationType } from 'matrix-js-sdk/lib/matrixrtc/types';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
+import { useSoundVolume } from '../hooks/useSoundVolume';
 import {
   CallEmbedContextProvider,
   CallEmbedRefContextProvider,
@@ -108,6 +109,8 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
       [onIgnore]
     )
   );
+
+  useSoundVolume(audioRef);
 
   const playSound = useCallback(() => {
     const audioElement = audioRef.current;

@@ -26,6 +26,7 @@ import {
   audioOutput,
   denoiseMode,
   screenShareQuality,
+  soundEffectVolume,
   videoSimulcast,
 } from "./settings/settings";
 import { Config } from "./config/Config";
@@ -37,7 +38,7 @@ export enum ElementWidgetActions {
   HangupCall = "im.vector.hangup",
   Close = "io.element.close",
   // toWidget (fork): the client sets the call audio preferences, data
-  // `{ denoise?, simulcast?, screenShare?, audioInput?, audioOutput? }`.
+  // `{ denoise?, simulcast?, screenShare?, soundVolume?, audioInput?, audioOutput? }`.
   // An empty device ID means the system default.
   CallSettings = "io.cinny.call_settings",
   // fromWidget (fork): a CallStatsSample once a second while in a call
@@ -84,7 +85,7 @@ export let widget: WidgetHelpers | null = null;
 // execution.
 export const initializeWidget = (
   rtcApplication: string = "m.call",
-  sendRoomEvents = false,
+  sendRoomEvents = false
 ): void => {
   try {
     const {
@@ -99,6 +100,7 @@ export const initializeWidget = (
       denoise,
       simulcast,
       screenShare,
+      soundVolume,
       audioInput: audioInputId,
       audioOutput: audioOutputId,
     } = getUrlParams();
@@ -136,6 +138,7 @@ export const initializeWidget = (
       denoiseMode.setValue(denoise ? "deepfilternet" : "off");
       videoSimulcast.setValue(simulcast ?? false);
       if (screenShare) screenShareQuality.setValue(screenShare);
+      if (soundVolume !== undefined) soundEffectVolume.setValue(soundVolume);
       audioInput.setValue(audioInputId);
       audioOutput.setValue(audioOutputId);
       api.on(
@@ -146,6 +149,7 @@ export const initializeWidget = (
             denoise?: boolean;
             simulcast?: boolean;
             screenShare?: string;
+            soundVolume?: number;
             audioInput?: string;
             audioOutput?: string;
           };
@@ -154,12 +158,14 @@ export const initializeWidget = (
           if (data.simulcast !== undefined)
             videoSimulcast.setValue(data.simulcast);
           if (data.screenShare) screenShareQuality.setValue(data.screenShare);
+          if (data.soundVolume !== undefined)
+            soundEffectVolume.setValue(data.soundVolume);
           if (data.audioInput !== undefined)
             audioInput.setValue(data.audioInput || undefined);
           if (data.audioOutput !== undefined)
             audioOutput.setValue(data.audioOutput || undefined);
           api.transport.reply(ev.detail, {});
-        },
+        }
       );
 
       // Now, initialize the matryoshka MatrixClient (so named because it routes
@@ -240,7 +246,7 @@ export const initializeWidget = (
           fallbackICEServerAllowed: allowIceFallback,
         },
         // ContentLoaded event will be sent as soon as the theme is set (see useTheme.ts)
-        false,
+        false
       );
 
       const clientPromise = async (): Promise<MatrixClient> => {

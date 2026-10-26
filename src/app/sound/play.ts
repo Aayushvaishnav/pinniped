@@ -6,12 +6,13 @@ const MAX_WAIT_MS = 2000;
 
 /** Plays the selected bundle's sound for an app event, if event sounds are enabled. */
 export const playEventSound = (kind: EventSoundKind): Promise<void> => {
-  const { isNotificationSounds, eventSounds, notificationSoundBundle } = getSettings();
+  const { isNotificationSounds, eventSounds, notificationSoundBundle, soundVolume } = getSettings();
   if (!isNotificationSounds || !eventSounds) return Promise.resolve();
   const url = getSoundUrl(notificationSoundBundle, kind);
   if (!url) return Promise.resolve();
 
   const audio = new Audio(url);
+  audio.volume = soundVolume;
   return new Promise((resolve) => {
     const timer = window.setTimeout(resolve, MAX_WAIT_MS);
     audio.onended = () => {

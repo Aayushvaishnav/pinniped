@@ -9,9 +9,7 @@ import { useRelevantImagePacks } from './useImagePacks';
  * emoji shortcodes with room-specific custom emoji shortcodes from image
  * packs. Used by the editor for live `:shortcode:` auto-replacement.
  */
-export const useEmojiShortcodeMap = (
-  imagePackRooms: Room[]
-): Map<string, EmojiReplacement> => {
+export const useEmojiShortcodeMap = (imagePackRooms: Room[]): Map<string, EmojiReplacement> => {
   const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
 
   return useMemo(() => {
