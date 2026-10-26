@@ -84,8 +84,15 @@ export const useReorderRoom = (
   const mx = useMatrixClient();
   return useCallback(
     (parentSpaceId: string, orderedRoomIds: string[]) => {
-      setRoomOrder(mx, parentSpaceId, orderedRoomIds);
-      setRoomSortMode(mx, spaceId, 'custom');
+      // One PUT: two back-to-back writes would each be composed from content
+      // that hasn't seen the other yet, and whichever lands last would win.
+      mx.setAccountData(
+        AccountDataEvent.PinnipedRoomOrder,
+        makeRoomOrderContent(mx, {
+          orders: { [parentSpaceId]: orderedRoomIds },
+          sortModes: { [spaceId]: 'custom' },
+        })
+      );
     },
     [mx, spaceId]
   );
