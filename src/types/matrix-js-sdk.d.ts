@@ -12,6 +12,7 @@ declare module 'matrix-js-sdk/lib/@types/event' {
     'club.stablecat.pinniped.room_order': Record<string, unknown>;
     'club.stablecat.pinniped.gif_favorites': Record<string, unknown>;
     'club.stablecat.pinniped.left_rooms': Record<string, unknown>;
+    'club.stablecat.pinniped.status_message': { status?: string };
     'io.element.recent_emoji': Record<string, unknown>;
     'im.ponies.user_emotes': Record<string, unknown>;
     'im.ponies.emote_rooms': Record<string, unknown>;

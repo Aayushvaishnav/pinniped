@@ -10,6 +10,7 @@ export enum AccountDataEvent {
   PinnipedRoomOrder = 'club.stablecat.pinniped.room_order',
   PinnipedGifFavorites = 'club.stablecat.pinniped.gif_favorites',
   PinnipedLeftRooms = 'club.stablecat.pinniped.left_rooms',
+  PinnipedStatusMessage = 'club.stablecat.pinniped.status_message',
 
   ElementRecentEmoji = 'io.element.recent_emoji',
 

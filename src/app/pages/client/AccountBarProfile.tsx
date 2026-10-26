@@ -30,6 +30,7 @@ import { Presence, useUserPresence } from '../../hooks/useUserPresence';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useUserRichPresence } from '../../hooks/useUserRichPresence';
 import { nameInitials } from '../../utils/common';
+import { sendPresence, useOwnStatus } from '../../state/statusMessage';
 import { copyToClipboard } from '../../utils/dom';
 import { stopPropagation } from '../../utils/keyboard';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
@@ -70,11 +71,10 @@ function AccountMenu({ requestClose, openSettings }: AccountMenuProps) {
   const pronouns = getProfilePronouns(profile.extended)
     .map((pronoun) => pronoun.summary)
     .join(', ');
-  const status = presence?.status?.trim();
+  const status = useOwnStatus(userId);
 
   const setPresence = (next: Presence) => {
-    // Keep the status message: presence updates replace the whole state.
-    mx.setPresence({ presence: next, status_msg: presence?.status }).catch(() => undefined);
+    sendPresence(mx, next).catch(() => undefined);
     requestClose();
   };
 
@@ -159,13 +159,12 @@ export function AccountBarProfile() {
   const useAuthentication = useMediaAuthentication();
   const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
-  const presence = useUserPresence(userId);
   const richPresence = useUserRichPresence(userId);
   const [settings, setSettings] = useState<{ page?: SettingsPages } | undefined>();
   const [menuCords, setMenuCords] = useState<RectCords>();
 
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
-  const status = presence?.status?.trim();
+  const status = useOwnStatus(userId);
   const avatarUrl = profile.avatarUrl
     ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 64, 64, 'crop') ?? undefined
     : undefined;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { setUserIdle } from '../state/idle';
+import { sendPresence } from '../state/statusMessage';
 import { useSetting } from '../state/hooks/settings';
 import { settingsAtom } from '../state/settings';
 import { useMatrixClient } from './useMatrixClient';
@@ -28,12 +29,12 @@ export function IdleDetector() {
       if (idle) {
         if (mx.getUser(userId)?.presence !== 'online') return;
         ownedAway = true;
-        mx.setPresence({ presence: 'unavailable' }).catch(() => {
+        sendPresence(mx, 'unavailable').catch(() => {
           ownedAway = false;
         });
       } else if (ownedAway) {
         ownedAway = false;
-        mx.setPresence({ presence: 'online' }).catch(() => undefined);
+        sendPresence(mx, 'online').catch(() => undefined);
       }
     };
 
