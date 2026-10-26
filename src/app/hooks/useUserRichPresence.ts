@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAtom } from 'jotai';
-import { ClientEvent } from 'matrix-js-sdk';
+import { ClientEvent, MatrixClient } from 'matrix-js-sdk';
 import {
   getProfileRichPresence,
   MSC4320_RPC,
@@ -16,64 +16,116 @@ const hasRichPresenceField = (profile: Record<string, unknown>): boolean =>
 
 // Re-fetch the profile at least this often so the displayed presence stays
 // fresh even when push (UserProfileUpdate) events aren't arriving.
+// Longest song-end timer worth scheduling; anything beyond is treated as bogus.
+const MAX_SONG_END_DELAY = 6 * 60 * 60 * 1000;
+
 const REFRESH_INTERVAL = 3 * 60 * 1000;
+
+type RichPresenceSetter = (value: RichPresence | undefined) => void;
+
+type Subscription = {
+  count: number;
+  stop: () => void;
+  teardown?: ReturnType<typeof setTimeout>;
+};
+
+// Keyed by client first so a new session never reuses another client's fetches.
+const subscriptions = new WeakMap<MatrixClient, Map<string, Subscription>>();
+
+// Keep a subscription alive briefly after its last consumer unmounts, so rows
+// that remount while a list reorders reuse it instead of refetching.
+const TEARDOWN_GRACE = 10_000;
+
+// One profile fetch, update listener and heartbeat per user, shared by every
+// component that shows that user's rich presence.
+const startSubscription = (
+  mx: MatrixClient,
+  userId: string,
+  setRichPresence: RichPresenceSetter
+): (() => void) => {
+  let active = true;
+  let updateVersion = 0;
+
+  const handleProfileUpdate = (updatedUserId: string, profile: Record<string, unknown> | null) => {
+    if (updatedUserId !== userId) return;
+
+    updateVersion += 1;
+    if (profile === null) {
+      setRichPresence(undefined);
+    } else if (hasRichPresenceField(profile)) {
+      setRichPresence(getProfileRichPresence(profile));
+    }
+  };
+
+  mx.on(ClientEvent.UserProfileUpdate, handleProfileUpdate);
+
+  const loadProfile = async () => {
+    const loadVersion = updateVersion;
+    try {
+      const profile = await mx.getExtendedProfile(userId);
+      if (active && loadVersion === updateVersion) {
+        setRichPresence(getProfileRichPresence(profile));
+      }
+    } catch {
+      // Keep the last known state on a failed refresh; only the expiry timer
+      // or a profile update clears it.
+    }
+  };
+
+  loadProfile();
+
+  // Heartbeat: re-fetch periodically so a stale "Listening to ..." card
+  // doesn't linger when the publisher stops emitting push updates.
+  const heartbeat = setInterval(loadProfile, REFRESH_INTERVAL);
+
+  return () => {
+    active = false;
+    clearInterval(heartbeat);
+    mx.removeListener(ClientEvent.UserProfileUpdate, handleProfileUpdate);
+  };
+};
+
+const subscribe = (
+  mx: MatrixClient,
+  userId: string,
+  setRichPresence: RichPresenceSetter
+): (() => void) => {
+  let clientSubs = subscriptions.get(mx);
+  if (!clientSubs) {
+    clientSubs = new Map();
+    subscriptions.set(mx, clientSubs);
+  }
+  const subs = clientSubs;
+  let sub = subs.get(userId);
+  if (!sub) {
+    sub = { count: 0, stop: startSubscription(mx, userId, setRichPresence) };
+    subs.set(userId, sub);
+  }
+  clearTimeout(sub.teardown);
+  sub.count += 1;
+
+  const current = sub;
+  return () => {
+    current.count -= 1;
+    if (current.count > 0) return;
+    current.teardown = setTimeout(() => {
+      if (current.count > 0) return;
+      current.stop();
+      if (subs.get(userId) === current) subs.delete(userId);
+    }, TEARDOWN_GRACE);
+  };
+};
 
 export const useUserRichPresence = (userId: string): RichPresence | undefined => {
   const mx = useMatrixClient();
   const [richPresence, setRichPresence] = useAtom(userRichPresenceAtomFamily(userId));
 
   useEffect(() => {
-    let active = true;
-    let updateVersion = 0;
-
     if (!userId) {
       setRichPresence(undefined);
-      return () => {
-        active = false;
-      };
+      return undefined;
     }
-
-    const handleProfileUpdate = (
-      updatedUserId: string,
-      profile: Record<string, unknown> | null
-    ) => {
-      if (updatedUserId !== userId) return;
-
-      updateVersion += 1;
-      if (profile === null) {
-        setRichPresence(undefined);
-      } else if (hasRichPresenceField(profile)) {
-        setRichPresence(getProfileRichPresence(profile));
-      }
-    };
-
-    mx.on(ClientEvent.UserProfileUpdate, handleProfileUpdate);
-
-    const loadProfile = async () => {
-      const loadVersion = updateVersion;
-      try {
-        const profile = await mx.getExtendedProfile(userId);
-        if (active && loadVersion === updateVersion) {
-          setRichPresence(getProfileRichPresence(profile));
-        }
-      } catch {
-        if (active && loadVersion === updateVersion) {
-          setRichPresence(undefined);
-        }
-      }
-    };
-
-    loadProfile();
-
-    // Heartbeat: re-fetch periodically so a stale "Listening to ..." card
-    // doesn't linger when the publisher stops emitting push updates.
-    const heartbeat = setInterval(loadProfile, REFRESH_INTERVAL);
-
-    return () => {
-      active = false;
-      clearInterval(heartbeat);
-      mx.removeListener(ClientEvent.UserProfileUpdate, handleProfileUpdate);
-    };
+    return subscribe(mx, userId, setRichPresence);
   }, [mx, userId, setRichPresence]);
 
   // Expire cached activity even if the publisher crashed and no profile update arrives.
@@ -104,7 +156,9 @@ export const useUserRichPresence = (userId: string): RichPresence | undefined =>
     if (endTs === undefined || !Number.isFinite(endTs) || endTs < 1_000_000_000) return undefined;
     const endMs = endTs > 1_000_000_000_000 ? endTs : endTs * 1000;
     const delay = endMs - Date.now();
-    if (delay <= 0) return undefined;
+    // setTimeout fires immediately for delays past 2^31-1, which a bogus
+    // timestamp would turn into a refetch loop; the heartbeat covers those.
+    if (delay <= 0 || delay > MAX_SONG_END_DELAY) return undefined;
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled) return;
