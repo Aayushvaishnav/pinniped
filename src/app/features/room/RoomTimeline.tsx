@@ -227,7 +227,9 @@ const useTimelinePagination = (
 
   const handleTimelinePagination = useMemo(() => {
     let fetching = false;
-    let stalled = false;
+    // The timeline/direction that stalled, so jumping to another timeline
+    // (permalink, jump to latest) is not blocked by an earlier stall.
+    let stalledAt: { timeline: EventTimeline; backwards: boolean } | undefined;
 
     const recalibratePagination = (
       linkedTimelines: EventTimeline[],
@@ -258,12 +260,13 @@ const useTimelinePagination = (
     };
 
     return async (backwards: boolean) => {
-      if (fetching || stalled) return;
+      if (fetching) return;
       const { linkedTimelines: lTimelines } = timelineRef.current;
       const timelinesEventsCount = lTimelines.map(timelineToEventsCount);
 
       const timelineToPaginate = backwards ? lTimelines[0] : lTimelines[lTimelines.length - 1];
       if (!timelineToPaginate) return;
+      if (stalledAt?.timeline === timelineToPaginate && stalledAt.backwards === backwards) return;
 
       const paginationToken = timelineToPaginate.getPaginationToken(
         backwards ? Direction.Backward : Direction.Forward
@@ -315,7 +318,7 @@ const useTimelinePagination = (
         console.warn(
           `[timeline] pagination made no progress in ${timelineToPaginate.getRoomId()}, giving up`
         );
-        stalled = true;
+        stalledAt = { timeline: timelineToPaginate, backwards };
         fetching = false;
         if (alive()) onStalled();
         return;
@@ -596,6 +599,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     useCallback(
       (evtId, lTimelines, evtAbsIndex) => {
         if (!alive()) return;
+        setPaginationStalled(false);
         const evLength = getTimelinesEventsCount(lTimelines);
 
         setFocusItem({
@@ -917,6 +921,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     if (eventId) {
       navigateRoom(room.roomId, undefined, { replace: true });
     }
+    setPaginationStalled(false);
     setTimeline(getInitialTimeline(room));
     scrollToBottomRef.current.count += 1;
     scrollToBottomRef.current.smooth = false;
