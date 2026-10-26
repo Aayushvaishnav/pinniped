@@ -19,3 +19,9 @@ export const parseCallActivity = (data: unknown): CallActivity => {
   const { speaking, muted, screenSharing } = (data ?? {}) as Record<string, unknown>;
   return { speakers: idSet(speaking), muted: idSet(muted), screenSharers: idSet(screenSharing) };
 };
+
+/** One line saying who is speaking, muted or sharing, for the console. */
+export const describeCallActivity = (activity: CallActivity): string =>
+  `speaking=[${[...activity.speakers]}] muted=[${[...activity.muted]}] sharing=[${[
+    ...activity.screenSharers,
+  ]}]`;

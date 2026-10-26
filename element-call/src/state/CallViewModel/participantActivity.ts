@@ -30,6 +30,13 @@ export interface ParticipantActivity {
   screenSharing: ReadonlySet<string>;
 }
 
+/** Nobody speaking, muted or sharing: what to show until participants report. */
+export const emptyParticipantActivity: ParticipantActivity = {
+  speaking: new Set(),
+  muted: new Set(),
+  screenSharing: new Set(),
+};
+
 /** The part of a participant's media this needs. */
 export interface ActivityUserMedia {
   userId: string;

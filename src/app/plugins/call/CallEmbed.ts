@@ -31,7 +31,12 @@ import { getSettings } from '../../state/settings';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { protectFrameFromParentDrag } from './protectFrameFromParentDrag';
-import { CallActivity, emptyCallActivity, parseCallActivity } from './activity';
+import {
+  CallActivity,
+  describeCallActivity,
+  emptyCallActivity,
+  parseCallActivity,
+} from './activity';
 import { CallStatsSample, trimStats } from './stats';
 
 export class CallEmbed {
@@ -253,6 +258,8 @@ export class CallEmbed {
         evt.preventDefault();
         this.call.transport.reply(evt.detail, {});
         this.activity = parseCallActivity(evt.detail.data);
+        // eslint-disable-next-line no-console
+        console.info(`[activity] received ${describeCallActivity(this.activity)}`);
         this.activityListeners.forEach((listener) => listener());
       })
     );

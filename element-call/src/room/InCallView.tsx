@@ -638,6 +638,9 @@ export const InCallView: FC<InCallViewProps> = ({
     if (widget === null) return;
     const api = widget.api;
     const subscription = vm.participantActivity$.subscribe((activity) => {
+      logger.info(
+        `[activity] send speaking=[${[...activity.speaking]}] muted=[${[...activity.muted]}] sharing=[${[...activity.screenSharing]}]`,
+      );
       api.transport
         .send(ElementWidgetActions.CallActivity, {
           speaking: [...activity.speaking],

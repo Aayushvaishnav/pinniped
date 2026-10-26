@@ -248,6 +248,37 @@ describe.each([
 ])("CallViewModel (%s mode)", (mode) => {
   const withCallViewModel = withCallViewModelInMode(mode);
 
+  test("participantActivity$ reports who is speaking from the participants themselves", () => {
+    withTestScheduler(({ behavior, expectObservable }) => {
+      // Alice speaks on frame 1 and stops on frame 2; Bob speaks from frame 3
+      const aliceSpeakingInputMarbles = "nyn-";
+      const bobSpeakingInputMarbles = "   nnny";
+      const expectedMarbles = "          abac";
+
+      withCallViewModel(
+        {
+          remoteParticipants$: constant([aliceParticipant, bobParticipant]),
+          rtcMembers$: constant([localRtcMember, aliceRtcMember, bobRtcMember]),
+          speaking: new Map([
+            [aliceParticipant, behavior(aliceSpeakingInputMarbles, yesNo)],
+            [bobParticipant, behavior(bobSpeakingInputMarbles, yesNo)],
+          ]),
+        },
+        (vm) => {
+          expectObservable(
+            vm.participantActivity$.pipe(
+              map((activity) => [...activity.speaking].sort()),
+            ),
+          ).toBe(expectedMarbles, {
+            a: [],
+            b: [alice.userId],
+            c: [bob.userId],
+          });
+        },
+      );
+    });
+  });
+
   test("participants are retained during a focus switch", () => {
     withTestScheduler(({ behavior, expectObservable }) => {
       // Participants disappear on frame 2 and come back on frame 3

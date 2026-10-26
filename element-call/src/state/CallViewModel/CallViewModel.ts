@@ -101,6 +101,7 @@ import {
 import { ElementCallError, UnknownCallError } from "../../utils/errors.ts";
 import { type Epoch, type ObservableScope } from "../ObservableScope.ts";
 import {
+  emptyParticipantActivity,
   observeParticipantActivity$,
   type ParticipantActivity,
 } from "./participantActivity.ts";
@@ -1802,6 +1803,7 @@ export function createCallViewModel$(
     screenShares$,
     participantActivity$: scope.behavior(
       observeParticipantActivity$(userMedia$, screenShares$),
+      emptyParticipantActivity,
     ),
     layout$: layout$,
     localMatrixLivekitMember$,
