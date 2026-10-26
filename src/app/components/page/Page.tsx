@@ -19,7 +19,13 @@ export function PageRoot({ nav, children }: PageRootProps) {
 
   return (
     <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
-      <Box shrink="No" style={{ display: callFullscreen ? 'none' : undefined }}>
+      <Box
+        // On mobile the nav is the whole page, so its wrapper has to take the width too.
+        className={css.PageNavWrapper}
+        grow={screenSize === ScreenSize.Mobile ? 'Yes' : undefined}
+        shrink="No"
+        style={{ display: callFullscreen ? 'none' : undefined }}
+      >
         {nav}
       </Box>
       {screenSize !== ScreenSize.Mobile && !callFullscreen && (

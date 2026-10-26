@@ -2,6 +2,14 @@ import { style } from '@vanilla-extract/css';
 import { recipe, RecipeVariants } from '@vanilla-extract/recipes';
 import { DefaultReset, color, config, toRem } from 'folds';
 
+// Mobile: the nav is the whole page. It renders nothing when a room is open, so
+// the wrapper must not keep any width in that case.
+export const PageNavWrapper = style({
+  selectors: {
+    '&:empty': { display: 'none' },
+  },
+});
+
 export const PageNav = recipe({
   variants: {
     size: {
@@ -110,7 +118,6 @@ export const PageHeroSection = style([
     margin: 'auto',
   },
 ]);
-
 
 export const PageContentCenter = style([
   DefaultReset,
