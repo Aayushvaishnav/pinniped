@@ -159,11 +159,27 @@ const clearPendingEvents = () => {
   keys.forEach((key) => window.localStorage.removeItem(key));
 };
 
+const CLEAR_CACHE_TIMEOUT_MS = 5000;
+
 export const clearCacheAndReload = async (mx: MatrixClient) => {
   mx.stopClient();
   clearNavToActivePathStore(mx.getSafeUserId());
   clearPendingEvents();
-  await mx.store.deleteAllData().catch(() => undefined);
+  // js-sdk's clearDatabase only logs when another tab blocks the delete, so the
+  // promise never settles; stop waiting and say so instead of hanging silently.
+  const deleted = await Promise.race([
+    mx.store
+      .deleteAllData()
+      .catch(() => undefined)
+      .then(() => true),
+    new Promise<boolean>((resolve) => {
+      setTimeout(() => resolve(false), CLEAR_CACHE_TIMEOUT_MS);
+    }),
+  ]);
+  if (!deleted) {
+    window.alert(SYNC_STORE_BLOCKED_MESSAGE);
+    return;
+  }
   // When startup fell back to a MemoryStore, deleteAllData() never touches
   // IndexedDB, so delete the sync cache database directly as well.
   try {
