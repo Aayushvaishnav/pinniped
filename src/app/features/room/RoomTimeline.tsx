@@ -218,7 +218,8 @@ const useTimelinePagination = (
   mx: MatrixClient,
   timeline: Timeline,
   setTimeline: Dispatch<SetStateAction<Timeline>>,
-  limit: number
+  limit: number,
+  onStalled: () => void
 ) => {
   const timelineRef = useRef(timeline);
   timelineRef.current = timeline;
@@ -226,6 +227,7 @@ const useTimelinePagination = (
 
   const handleTimelinePagination = useMemo(() => {
     let fetching = false;
+    let stalled = false;
 
     const recalibratePagination = (
       linkedTimelines: EventTimeline[],
@@ -256,7 +258,7 @@ const useTimelinePagination = (
     };
 
     return async (backwards: boolean) => {
-      if (fetching) return;
+      if (fetching || stalled) return;
       const { linkedTimelines: lTimelines } = timelineRef.current;
       const timelinesEventsCount = lTimelines.map(timelineToEventsCount);
 
@@ -289,6 +291,8 @@ const useTimelinePagination = (
       }
 
       fetching = true;
+      const direction = backwards ? Direction.Backward : Direction.Forward;
+      const eventsBefore = getTimelinesEventsCount(getLinkedTimelines(timelineToPaginate));
       const [err] = await to(
         mx.paginateEventTimeline(timelineToPaginate, {
           backwards,
@@ -298,6 +302,22 @@ const useTimelinePagination = (
       if (err) {
         // TODO: handle pagination error.
         fetching = false;
+        return;
+      }
+      // A request that adds no events and leaves the token unchanged will
+      // repeat forever. It happens when the server never receives the `from`
+      // token, e.g. a browser extension strips it as a tracking parameter.
+      if (
+        getTimelinesEventsCount(getLinkedTimelines(timelineToPaginate)) === eventsBefore &&
+        timelineToPaginate.getPaginationToken(direction) === paginationToken
+      ) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[timeline] pagination made no progress in ${timelineToPaginate.getRoomId()}, giving up`
+        );
+        stalled = true;
+        fetching = false;
+        if (alive()) onStalled();
         return;
       }
       const fetchedTimeline =
@@ -317,7 +337,7 @@ const useTimelinePagination = (
         recalibratePagination(lTimelines, timelinesEventsCount, backwards);
       }
     };
-  }, [mx, alive, setTimeline, limit]);
+  }, [mx, alive, setTimeline, limit, onStalled]);
   return handleTimelinePagination;
 };
 
@@ -518,6 +538,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const eventsLength = getTimelinesEventsCount(timeline.linkedTimelines);
   const liveTimelineLinked =
     timeline.linkedTimelines[timeline.linkedTimelines.length - 1] === getLiveTimeline(room);
+  const [paginationStalled, setPaginationStalled] = useState(false);
   const canPaginateBack = Boolean(
     timeline.linkedTimelines[0]?.getPaginationToken(Direction.Backward)
   );
@@ -530,7 +551,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     mx,
     timeline,
     setTimeline,
-    PAGINATION_LIMIT
+    PAGINATION_LIMIT,
+    useCallback(() => setPaginationStalled(true), [])
   );
 
   const getScrollElement = useCallback(() => scrollRef.current, []);
@@ -2037,7 +2059,23 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
               <RoomIntro room={room} />
             </div>
           )}
+          {paginationStalled && (
+            <div
+              style={{
+                padding: `${config.space.S600} ${config.space.S400}`,
+                textAlign: 'center',
+              }}
+            >
+              <Text size="T300" priority="300">
+                Older messages could not be loaded. The server keeps returning the same messages,
+                which usually means a browser extension (an ad or tracker blocker, or a link
+                cleaner) is removing the &quot;from&quot; parameter from requests. Try a private
+                window or turn extensions off for this site.
+              </Text>
+            </div>
+          )}
           {(canPaginateBack || !rangeAtStart) &&
+            !paginationStalled &&
             (messageLayout === MessageLayout.Compact ? (
               <>
                 <MessageBase>
