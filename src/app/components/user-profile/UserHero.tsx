@@ -21,6 +21,8 @@ import { UserPresence } from '../../hooks/useUserPresence';
 import { AvatarPresence, PresenceBadge } from '../presence';
 import { ImageViewer } from '../image-viewer';
 import { stopPropagation } from '../../utils/keyboard';
+import { MatrixOrgBadge } from '../server-badge';
+import { isMatrixOrgAdministered } from '../../plugins/matrix-org-servers';
 
 type UserHeroProps = {
   userId: string;
@@ -134,6 +136,7 @@ export function UserHeroName({ displayName, userId, pronouns }: UserHeroNameProp
             </Text>
           )}
         </Text>
+        {server && isMatrixOrgAdministered(server) && <MatrixOrgBadge server={server} />}
       </Box>
     </Box>
   );

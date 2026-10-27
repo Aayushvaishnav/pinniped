@@ -4,6 +4,7 @@ import { MatrixClient, RoomMemberEvent, RoomMemberEventHandlerMap } from 'matrix
 import { useEffect } from 'react';
 import { useSetting } from './hooks/settings';
 import { settingsAtom } from './settings';
+import { logTyping } from './typingLog';
 
 export const TYPING_TIMEOUT_MS = 5000; // 5 seconds
 
@@ -82,6 +83,7 @@ export const roomIdToTypingMembersAtom = atom<
     const rToTyping = get(baseRoomIdToTypingMembersAtom);
 
     if (action.type === 'PUT') {
+      logTyping(`store put ${action.userId} in ${action.roomId}`);
       set(
         baseRoomIdToTypingMembersAtom,
         produce(rToTyping, (draft) => putTypingMember(draft, action))
@@ -98,6 +100,7 @@ export const roomIdToTypingMembersAtom = atom<
           TYPING_TIMEOUT_MS
         );
         if (timeout) {
+          logTyping(`store timeout ${userId} in ${roomId} after ${TYPING_TIMEOUT_MS}ms`);
           set(
             baseRoomIdToTypingMembersAtom,
             produce(get(baseRoomIdToTypingMembersAtom), (draft) =>
@@ -110,6 +113,15 @@ export const roomIdToTypingMembersAtom = atom<
           );
         }
       }, TYPING_TIMEOUT_MS);
+    }
+
+    if (action.type === 'DELETE') {
+      const known = rToTyping
+        .get(action.roomId)
+        ?.some((receipt) => receipt.userId === action.userId);
+      logTyping(
+        `store delete ${action.userId} in ${action.roomId} (${known ? 'removed' : 'not tracked'})`
+      );
     }
 
     if (
@@ -136,6 +148,11 @@ export const useBindRoomIdToTypingMembersAtom = (
       event,
       member
     ) => {
+      logTyping(
+        `event ${member.userId} in ${member.roomId} typing=${member.typing}${
+          hideActivity ? ' (dropped: hideActivity)' : ''
+        }`
+      );
       if (hideActivity) {
         return;
       }
@@ -147,6 +164,7 @@ export const useBindRoomIdToTypingMembersAtom = (
       });
     };
 
+    logTyping(`listener bound (hideActivity=${hideActivity})`);
     mx.on(RoomMemberEvent.Typing, handleTypingEvent);
     return () => {
       mx.removeListener(RoomMemberEvent.Typing, handleTypingEvent);

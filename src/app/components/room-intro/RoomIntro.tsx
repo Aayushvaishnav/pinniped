@@ -17,6 +17,8 @@ import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { InviteUserPrompt } from '../invite-user-prompt';
+import { MatrixOrgRoomBadge } from '../server-badge';
+import { useMatrixOrgExposure } from '../../hooks/useMatrixOrgExposure';
 
 export type RoomIntroProps = {
   room: Room;
@@ -30,7 +32,9 @@ export const RoomIntro = as<'div', RoomIntroProps>(({ room, ...props }, ref) => 
   const [invitePrompt, setInvitePrompt] = useState(false);
 
   const createEvent = getStateEvent(room, StateEvent.RoomCreate);
-  const avatarMxc = useRoomAvatar(room, mDirects.has(room.roomId));
+  const direct = mDirects.has(room.roomId);
+  const avatarMxc = useRoomAvatar(room, direct);
+  const matrixOrgExposure = useMatrixOrgExposure(room);
   const name = useRoomName(room);
   const topic = useRoomTopic(room);
   const avatarHttpUrl = avatarMxc ? mxcUrlToHttp(mx, avatarMxc, useAuthentication) : undefined;
@@ -62,9 +66,12 @@ export const RoomIntro = as<'div', RoomIntroProps>(({ room, ...props }, ref) => 
       </Box>
       <Box direction="Column" gap="300">
         <Box direction="Column" gap="100">
-          <Text size="H3" priority="500">
-            {name}
-          </Text>
+          <Box alignItems="Center" gap="200">
+            <Text size="H3" priority="500">
+              {name}
+            </Text>
+            {!direct && matrixOrgExposure && <MatrixOrgRoomBadge count={matrixOrgExposure.count} />}
+          </Box>
           <Text size="T400" priority="400">
             {typeof topic === 'string' ? topic : 'This is the beginning of conversation.'}
           </Text>
