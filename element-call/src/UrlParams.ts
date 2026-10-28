@@ -276,6 +276,8 @@ export interface UrlConfiguration {
    */
   simulcast?: boolean;
   screenShare?: string;
+  /** Where a screen share's audio comes from, see the `screenShareAudio` setting. */
+  screenShareAudio?: string;
   /** Volume of the call's own sounds, 0-1. */
   soundVolume?: number;
   /** Listener-side volume of soundboard sounds, 0-1. */
@@ -557,6 +559,7 @@ export const computeUrlParams = (search = "", hash = ""): UrlParams => {
       : undefined,
     simulcast: parser.getFlagParam("simulcast", false),
     screenShare: parser.getParam("screenShare") || undefined,
+    screenShareAudio: parser.getParam("screenShareAudio") || undefined,
     mutedSounds: parser.getParam("mutedSounds")?.split(",").filter(Boolean),
     soundVolume: Number.isFinite(
       parseFloat(parser.getParam("soundVolume") ?? ""),

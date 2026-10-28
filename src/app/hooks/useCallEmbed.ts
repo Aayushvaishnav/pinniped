@@ -14,7 +14,9 @@ import {
   CallEmbed,
   ElementCallThemeKind,
   ElementWidgetActions,
+  useCallActivity,
   useClientWidgetApiEvent,
+  screenShareAudioSource,
 } from '../plugins/call';
 import { CallControlEvent } from '../plugins/call/CallControl';
 import { useSetting } from '../state/hooks/settings';
@@ -195,6 +197,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
   const [voiceTuning] = useSetting(settingsAtom, 'callVoiceTuning');
   const [simulcast] = useSetting(settingsAtom, 'callSimulcast');
   const [screenShare] = useSetting(settingsAtom, 'callScreenShare');
+  const [screenShareAudio] = useSetting(settingsAtom, 'callScreenShareAudio');
   const [soundVolume] = useSetting(settingsAtom, 'soundVolume');
   const [soundboardVolume] = useSetting(settingsAtom, 'soundboardVolume');
   const allSettings = useAtomValue(settingsAtom);
@@ -212,6 +215,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
         voiceTuning: withDefaultTuning(voiceTuning),
         simulcast,
         screenShare: `${screenShare.resolution}:${screenShare.fps}`,
+        screenShareAudio: screenShareAudioSource(screenShareAudio),
         soundVolume,
         soundboardVolume,
         mutedSounds: mutedSounds ? mutedSounds.split(',') : [],
@@ -229,6 +233,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
     voiceTuning,
     simulcast,
     screenShare,
+    screenShareAudio,
     soundVolume,
     soundboardVolume,
     mutedSounds,
@@ -336,4 +341,57 @@ export const useCallConnectionStatus = (embed: CallEmbed): string => {
   }, [embed]);
 
   return status;
+};
+
+/**
+ * Linux desktop: makes the virtual microphone that carries other applications' audio while the
+ * call is up, and feeds it only while you share your screen. The call widget publishes it as the
+ * share's audio. Other applications' audio is only fed in while screen share audio is on.
+ */
+export const useScreenShareAudioBridge = (embed: CallEmbed) => {
+  const mx = useMatrixClient();
+  const [enabled] = useSetting(settingsAtom, 'callScreenShareAudio');
+  const joined = useCallJoined(embed);
+  const { screenSharers } = useCallActivity(embed);
+  const sharing = joined && screenSharers.has(mx.getSafeUserId());
+  const bridge = window.cinnyDesktop?.screenShareAudio;
+
+  // The device stays for the whole call: if it vanished while the widget still captures it, the
+  // capture can silently move to the real microphone and send it a second time.
+  useEffect(() => {
+    if (!bridge) return undefined;
+    bridge.prepare();
+    return () => {
+      bridge.release();
+    };
+  }, [bridge]);
+
+  // Only audio played to the output device the call uses is shared, see electron/screenshare-audio.cjs.
+  const [audioOutput] = useSetting(settingsAtom, 'callAudioOutput');
+  const [outputLabel, setOutputLabel] = useState('');
+  useEffect(() => {
+    if (!bridge) return undefined;
+    let cancelled = false;
+    const resolve = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const output = audioOutput
+        ? devices.find((d) => d.kind === 'audiooutput' && d.deviceId === audioOutput)
+        : undefined;
+      if (!cancelled) setOutputLabel(output?.label ?? '');
+    };
+    resolve().catch(() => setOutputLabel(''));
+    navigator.mediaDevices.addEventListener('devicechange', resolve);
+    return () => {
+      cancelled = true;
+      navigator.mediaDevices.removeEventListener('devicechange', resolve);
+    };
+  }, [bridge, audioOutput]);
+
+  useEffect(() => {
+    if (!bridge || !enabled) return undefined;
+    bridge.link(sharing, outputLabel);
+    return () => {
+      bridge.link(false);
+    };
+  }, [bridge, enabled, sharing, outputLabel]);
 };

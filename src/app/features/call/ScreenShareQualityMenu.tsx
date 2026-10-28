@@ -8,6 +8,7 @@ import {
   PopOut,
   RadioButton,
   RectCords,
+  Switch,
   Text,
   color,
 } from 'folds';
@@ -46,6 +47,7 @@ function Option({ label, selected, onSelect }: OptionProps) {
  */
 export const useScreenShareQualityMenu = (callEmbed: CallEmbed, sharing: boolean) => {
   const [quality, setQuality] = useSetting(settingsAtom, 'callScreenShare');
+  const [shareAudio, setShareAudio] = useSetting(settingsAtom, 'callScreenShareAudio');
   const [anchor, setAnchor] = useState<RectCords>();
 
   const open = useCallback((button: HTMLElement) => {
@@ -89,6 +91,18 @@ export const useScreenShareQualityMenu = (callEmbed: CallEmbed, sharing: boolean
                   <Line variant="Surface" size="300" />
                 </>
               )}
+              <MenuItem
+                size="300"
+                radii="300"
+                variant="Surface"
+                role="menuitemcheckbox"
+                aria-checked={shareAudio}
+                onClick={() => setShareAudio(!shareAudio)}
+                after={<Switch variant="Primary" value={shareAudio} tabIndex={-1} />}
+              >
+                <Text size="T300">Share Audio</Text>
+              </MenuItem>
+              <Line variant="Surface" size="300" />
               <Text
                 size="L400"
                 style={{

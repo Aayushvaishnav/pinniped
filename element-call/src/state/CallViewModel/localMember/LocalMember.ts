@@ -10,6 +10,9 @@ import {
   ParticipantEvent,
   type LocalParticipant,
   type ScreenShareCaptureOptions,
+  type LocalAudioTrack,
+  createLocalAudioTrack,
+  Track,
   RoomEvent,
   MediaDeviceFailure,
 } from "livekit-client";
@@ -59,7 +62,10 @@ import {
   parseScreenShareQuality,
   screenShareBudget,
 } from "../../../livekit/options.ts";
-import { screenShareQuality as screenShareQualitySetting } from "../../../settings/settings.ts";
+import {
+  screenShareAudio as screenShareAudioSetting,
+  screenShareQuality as screenShareQualitySetting,
+} from "../../../settings/settings.ts";
 import {
   ConnectionState,
   type Connection,
@@ -704,6 +710,58 @@ export const createLocalMembership$ = ({
     ),
   );
 
+  // A microphone published as the share's audio, when the client asks for one
+  // (the capture itself has no system audio there, see the setting).
+  let shareAudioTrack: LocalAudioTrack | null = null;
+  const stopShareAudio = (): void => {
+    const track =
+      shareAudioTrack ??
+      participant$.value?.getTrackPublication(Track.Source.ScreenShareAudio)
+        ?.track;
+    shareAudioTrack = null;
+    if (track === undefined || track === null) return;
+    participant$.value?.unpublishTrack(track, true).catch(logger.error);
+    track.stop();
+  };
+  const startShareAudio = async (label: string): Promise<void> => {
+    const device = (await navigator.mediaDevices.enumerateDevices()).find(
+      (d) => d.kind === "audioinput" && d.label === label,
+    );
+    if (!device) {
+      logger.warn(`Screen share audio device "${label}" not found`);
+      return;
+    }
+    const track = await createLocalAudioTrack({
+      deviceId: { exact: device.deviceId },
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+      channelCount: 2,
+    });
+    // The share may have ended while the device was opening.
+    if (!sharingScreen$.value) {
+      track.stop();
+      return;
+    }
+    shareAudioTrack = track;
+    await participant$.value?.publishTrack(track, {
+      source: Track.Source.ScreenShareAudio,
+      name: "screen_share_audio",
+      dtx: false,
+      red: false,
+    });
+  };
+  sharingScreen$.pipe(scope.bind()).subscribe((sharing) => {
+    if (!sharing) stopShareAudio();
+  });
+  // The client can switch the share's audio on or off while the share runs.
+  screenShareAudioSetting.value$.pipe(scope.bind()).subscribe((source) => {
+    if (!sharingScreen$.value) return;
+    if (!source.startsWith("device:")) stopShareAudio();
+    else if (shareAudioTrack === null)
+      startShareAudio(source.slice("device:".length)).catch(logger.error);
+  });
+
   let toggleScreenSharing: (() => void) | null = null;
   if (
     "getDisplayMedia" in (navigator.mediaDevices ?? {}) &&
@@ -713,16 +771,23 @@ export const createLocalMembership$ = ({
       const preset = screenShareBudget(
         parseScreenShareQuality(screenShareQualitySetting.getValue()),
       );
+      const audioSource = screenShareAudioSetting.getValue();
       const screenshareSettings: ScreenShareCaptureOptions = {
         // Screen share audio shouldn't have any filtering.
         // "echoCancellation" is purposely excluded, as setting it to
         // false causes the screen share audio track to include
         // an echo of the incoming participant's voice
-        audio: {
-          autoGainControl: false,
-          noiseSuppression: false,
-          voiceIsolation: false,
-        },
+        audio:
+          audioSource === "display"
+            ? {
+                autoGainControl: false,
+                noiseSuppression: false,
+                voiceIsolation: false,
+                // Keeps the call itself out of a system audio capture. LiveKit passes
+                // the object on to getDisplayMedia but does not know the constraint.
+                ...({ suppressLocalAudioPlayback: true } as object),
+              }
+            : false,
         // Ask for a smooth picture over a sharp one: "detail" makes WebRTC
         // shed frame rate first when the encoder or network falls behind.
         contentHint: "motion",
@@ -733,7 +798,7 @@ export const createLocalMembership$ = ({
         },
         selfBrowserSurface: "include",
         surfaceSwitching: "include",
-        systemAudio: "include",
+        systemAudio: audioSource === "display" ? "include" : "exclude",
       };
       const targetScreenshareState = !sharingScreen$.value;
       logger.info(
@@ -755,6 +820,11 @@ export const createLocalMembership$ = ({
             maxBitrate: preset.maxBitrate,
             maxFramerate: preset.frameRate,
           },
+        })
+        .then(() => {
+          if (targetScreenshareState && audioSource.startsWith("device:"))
+            return startShareAudio(audioSource.slice("device:".length));
+          return undefined;
         })
         .catch(logger.error);
     };

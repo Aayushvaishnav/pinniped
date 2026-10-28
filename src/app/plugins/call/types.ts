@@ -50,6 +50,18 @@ export type ScreenShareFps = typeof screenShareFrameRates[number];
 /** Screen share quality; the call widget takes it as `<resolution>:<fps>`. */
 export type ScreenShareQuality = { resolution: ScreenShareResolution; fps: ScreenShareFps };
 
+/** The label of the virtual microphone the desktop app makes on Linux (electron/screenshare-audio.cjs). */
+export const SCREEN_SHARE_AUDIO_DEVICE = 'Pinniped Screen Share Audio';
+
+/**
+ * What the call widget shares as a screen share's audio: `off`, `display` (what the browser or
+ * Windows offers with the capture) or `device:<label>` (a microphone to publish instead).
+ */
+export const screenShareAudioSource = (enabled: boolean): string => {
+  if (!enabled) return 'off';
+  return window.cinnyDesktop?.screenShareAudio ? `device:${SCREEN_SHARE_AUDIO_DEVICE}` : 'display';
+};
+
 /** Call audio preferences; an empty device id is the system default. */
 export type ElementCallSettings = {
   denoise: boolean;
@@ -61,6 +73,8 @@ export type ElementCallSettings = {
   simulcast: boolean;
   /** `<resolution>:<fps>`, e.g. `720p:60`. */
   screenShare: string;
+  /** Where a screen share's audio comes from, see {@link screenShareAudioSource}. */
+  screenShareAudio: string;
   /** Volume of the call's own sounds, 0-1. */
   soundVolume: number;
   /** How loud soundboard sounds are for this client, 0-1. */

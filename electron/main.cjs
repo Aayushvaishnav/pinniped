@@ -14,6 +14,7 @@ const path = require('path');
 const { registerAppScheme, registerAppHandler, APP_ORIGIN } = require('./app-protocol.cjs');
 const { buildAppMenu } = require('./menu.cjs');
 const { createRichPresenceServer } = require('./rich-presence.cjs');
+const screenShareAudio = require('./screenshare-audio.cjs');
 
 // dist sits next to electron/ in both dev and the packaged asar
 const DIST_DIR = path.join(__dirname, '..', 'dist');
@@ -78,6 +79,13 @@ ipcMain.handle('rich-presence:stop', async () => {
   }
 });
 
+// System audio for screen shares on Linux; see screenshare-audio.cjs.
+ipcMain.handle('screenshare-audio:prepare', () => screenShareAudio.prepare());
+ipcMain.handle('screenshare-audio:link', (_event, active, output) =>
+  screenShareAudio.link(active === true, typeof output === 'string' ? output : '')
+);
+ipcMain.handle('screenshare-audio:release', () => screenShareAudio.release());
+
 // Seconds since the last keyboard/mouse input anywhere on the system; the
 // renderer uses it for idle detection.
 ipcMain.handle('system:idle-time', () => powerMonitor.getSystemIdleTime());
@@ -122,7 +130,15 @@ function enableScreenShare() {
     (request, callback) => {
       desktopCapturer
         .getSources({ types: ['screen', 'window'] })
-        .then((sources) => callback(sources.length ? { video: sources[0] } : undefined))
+        .then((sources) =>
+          callback(
+            sources.length
+              ? // Windows can capture system audio; the call widget turns local playback off
+                // so the call is not shared back. Linux gets its audio from screenshare-audio.cjs.
+                { video: sources[0], ...(process.platform === 'win32' && { audio: 'loopback' }) }
+              : undefined
+          )
+        )
         .catch(() => callback());
     },
     { useSystemPicker: true }
@@ -292,5 +308,6 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     isQuitting = true;
     rpServer?.stop();
+    screenShareAudio.releaseSync();
   });
 }

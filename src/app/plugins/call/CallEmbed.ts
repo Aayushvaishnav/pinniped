@@ -25,6 +25,7 @@ import {
   ElementCallThemeKind,
   ElementMediaStateDetail,
   ElementWidgetActions,
+  screenShareAudioSource,
 } from './types';
 import { getCallSoundHandoff, getCallSoundOverrides, getMutedCallSounds } from '../../sound/play';
 import { getSettings } from '../../state/settings';
@@ -152,6 +153,7 @@ export class CallEmbed {
       'screenShare',
       `${settings.callScreenShare.resolution}:${settings.callScreenShare.fps}`
     );
+    params.append('screenShareAudio', screenShareAudioSource(settings.callScreenShareAudio));
     params.append('soundVolume', settings.soundVolume.toString());
     params.append('mutedSounds', getMutedCallSounds(settings).join(','));
     params.append('soundboardVolume', settings.soundboardVolume.toString());

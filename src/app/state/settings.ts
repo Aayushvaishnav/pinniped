@@ -48,6 +48,8 @@ export interface Settings {
   callSimulcast: boolean;
   // Screen share preset, picked when a share starts; see ScreenShareQuality.
   callScreenShare: ScreenShareQuality;
+  // Share the computer's audio with a screen share.
+  callScreenShareAudio: boolean;
   // Call devices, as enumerateDevices ids; '' = system default.
   callAudioInput: string;
   callAudioOutput: string;
@@ -120,6 +122,7 @@ const defaultSettings: Settings = {
   callVoiceTuning: {},
   callSimulcast: false,
   callScreenShare: { resolution: '720p', fps: 60 },
+  callScreenShareAudio: true,
   callAudioInput: '',
   callAudioOutput: '',
 

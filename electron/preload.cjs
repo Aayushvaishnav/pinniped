@@ -14,6 +14,15 @@ contextBridge.exposeInMainWorld('cinnyDesktop', {
   setBadgeCount: (count, overlay, hasUnread) =>
     ipcRenderer.send('badge:set', { count, overlay, hasUnread }),
   getSystemIdleTime: () => ipcRenderer.invoke('system:idle-time'),
+  // Linux: a virtual microphone with the other applications' audio, for screen shares.
+  screenShareAudio:
+    process.platform === 'linux'
+      ? {
+          prepare: () => ipcRenderer.invoke('screenshare-audio:prepare'),
+          link: (active, output) => ipcRenderer.invoke('screenshare-audio:link', active, output),
+          release: () => ipcRenderer.invoke('screenshare-audio:release'),
+        }
+      : undefined,
   supportsRichPresenceBridge: true,
   startRichPresenceBridge: () => ipcRenderer.invoke('rich-presence:start'),
   stopRichPresenceBridge: () => ipcRenderer.invoke('rich-presence:stop'),

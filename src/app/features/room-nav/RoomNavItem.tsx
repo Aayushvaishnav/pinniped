@@ -78,6 +78,8 @@ import { useUserRichPresence } from '../../hooks/useUserRichPresence';
 import { AvatarPresence, PresenceBadge } from '../../components/presence';
 import { PresenceStatus } from '../../components/presence/PresenceStatus';
 import { useRoomName } from '../../hooks/useRoomMeta';
+import { useStateEvent } from '../../hooks/useStateEvent';
+import { UnencryptedIcon } from '../../components/unencrypted-indicator';
 import { useCallMembers, useCallSession } from '../../hooks/useCall';
 import { useCallEmbed, useCallStart } from '../../hooks/useCallEmbed';
 import { useCallParticipantActivity } from '../../hooks/useCallSpeakers';
@@ -414,6 +416,8 @@ export function RoomNavItem({
   );
 
   const roomName = useRoomName(room);
+  const encrypted = !!useStateEvent(room, StateEvent.RoomEncryption);
+  const unencryptedDm = !!direct && !encrypted;
 
   const [showPresenceInDMList] = useSetting(settingsAtom, 'showPresenceInDMList');
   const dmPartnerId = direct && showAvatar ? room.getAvatarFallbackMember()?.userId : undefined;
@@ -564,6 +568,7 @@ export function RoomNavItem({
                   />
                 )}
               </Box>
+              {unencryptedDm && <UnencryptedIcon />}
               {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
                 <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
                   <TypingIndicator size="300" disableAnimation />

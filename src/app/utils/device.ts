@@ -30,6 +30,13 @@ declare global {
       showWindow?: () => void;
       setBadgeCount?: (count: number, overlayPng?: string, hasUnread?: boolean) => void;
       getSystemIdleTime?: () => Promise<number>;
+      /** Linux only: a virtual microphone carrying other applications' audio, for screen shares. */
+      screenShareAudio?: {
+        prepare: () => Promise<{ ok: true; label: string } | { ok: false; error: string }>;
+        /** `output` is the label of the playback device the app uses, empty for the system default. */
+        link: (active: boolean, output?: string) => Promise<void>;
+        release: () => Promise<void>;
+      };
       supportsRichPresenceBridge?: true;
       startRichPresenceBridge?: () => Promise<RichPresenceBridgeStartResult>;
       stopRichPresenceBridge?: () => Promise<void>;

@@ -53,6 +53,7 @@ import {
   voiceGateThreshold,
   voiceTuning,
   screenShareQuality,
+  screenShareAudio,
   soundEffectVolume,
   soundboardVolume,
   mutedSounds,
@@ -68,7 +69,7 @@ export enum ElementWidgetActions {
   HangupCall = "im.vector.hangup",
   Close = "io.element.close",
   // toWidget (fork): the client sets the call audio preferences, data
-  // `{ denoise?, voiceGate?, voiceGateAuto?, voiceGateThreshold?, voiceTuning?, simulcast?, screenShare?, soundVolume?, soundboardVolume?, mutedSounds?, audioInput?, audioOutput? }`.
+  // `{ denoise?, voiceGate?, voiceGateAuto?, voiceGateThreshold?, voiceTuning?, simulcast?, screenShare?, screenShareAudio?, soundVolume?, soundboardVolume?, mutedSounds?, audioInput?, audioOutput? }`.
   // An empty device ID means the system default.
   CallSettings = "io.cinny.call_settings",
   // toWidget (fork): play or stop a soundboard sound, see SoundboardCommand
@@ -139,6 +140,7 @@ export const initializeWidget = (
       voiceGateThreshold: voiceGateThresholdParam,
       simulcast,
       screenShare,
+      screenShareAudio: screenShareAudioParam,
       soundVolume,
       soundboardVolume: soundboardVolumeParam,
       mutedSounds: mutedSoundsParam,
@@ -185,6 +187,7 @@ export const initializeWidget = (
         voiceGateThreshold.setValue(voiceGateThresholdParam);
       videoSimulcast.setValue(simulcast ?? false);
       if (screenShare) screenShareQuality.setValue(screenShare);
+      if (screenShareAudioParam) screenShareAudio.setValue(screenShareAudioParam);
       mutedSounds.setValue(mutedSoundsParam ?? []);
       if (soundVolume !== undefined) soundEffectVolume.setValue(soundVolume);
       if (soundboardVolumeParam !== undefined)
@@ -203,6 +206,7 @@ export const initializeWidget = (
             voiceGateThreshold?: number;
             simulcast?: boolean;
             screenShare?: string;
+            screenShareAudio?: string;
             soundVolume?: number;
             soundboardVolume?: number;
             mutedSounds?: string[];
@@ -221,6 +225,8 @@ export const initializeWidget = (
           if (data.simulcast !== undefined)
             videoSimulcast.setValue(data.simulcast);
           if (data.screenShare) screenShareQuality.setValue(data.screenShare);
+          if (data.screenShareAudio)
+            screenShareAudio.setValue(data.screenShareAudio);
           if (data.soundVolume !== undefined)
             soundEffectVolume.setValue(data.soundVolume);
           if (data.soundboardVolume !== undefined)

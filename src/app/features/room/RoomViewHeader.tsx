@@ -60,6 +60,8 @@ import { getMatrixToRoom } from '../../plugins/matrix-to';
 import { getViaServers } from '../../plugins/via-servers';
 import { useMatrixOrgExposure } from '../../hooks/useMatrixOrgExposure';
 import { MatrixOrgRoomBadge } from '../../components/server-badge';
+import { UnencryptedBadge } from '../../components/unencrypted-indicator';
+import { useStateEvent } from '../../hooks/useStateEvent';
 import { BackRouteHandler } from '../../components/BackRouteHandler';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useRoomPinnedEvents } from '../../hooks/useRoomPinnedEvents';
@@ -484,6 +486,8 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
   const searchDrawerActive = useAtomValue(roomSearchDrawerActiveAtom);
   const avatarMxc = useRoomAvatar(room, direct);
   const matrixOrgExposure = useMatrixOrgExposure(room);
+  const encrypted = !!useStateEvent(room, StateEvent.RoomEncryption);
+  const unencryptedDm = direct && !encrypted;
   const name = useRoomName(room);
   const topic = useRoomTopic(room);
   const avatarUrl = avatarMxc
@@ -582,6 +586,7 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
               <Text size={topic && !callView ? 'H5' : 'H3'} truncate>
                 {name}
               </Text>
+              {unencryptedDm && <UnencryptedBadge />}
               {!direct && matrixOrgExposure && (
                 <MatrixOrgRoomBadge count={matrixOrgExposure.count} />
               )}
