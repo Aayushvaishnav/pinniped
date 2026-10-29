@@ -21,7 +21,7 @@ export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: s
       if (!pdfJS) {
         throw new Error('PdfJS is not loaded');
       }
-      const doc = await pdfJS.getDocument(src).promise;
+      const doc = await pdfJS.getDocument({ url: src }).promise;
       return doc;
     }, [pdfJS, src])
   );
@@ -42,7 +42,7 @@ export const createPage = async (
   canvas.height = pageViewport.height;
 
   page.render({
-    canvasContext: context,
+    canvas,
     viewport: pageViewport,
   });
 

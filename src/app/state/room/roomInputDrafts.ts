@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import { atomFamily } from 'jotai/utils';
+import { atomFamily } from 'jotai-family';
 import { Descendant } from 'slate';
 import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { IEventRelation } from 'matrix-js-sdk';

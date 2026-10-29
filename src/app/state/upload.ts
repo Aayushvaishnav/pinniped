@@ -1,5 +1,5 @@
 import { atom, useAtom } from 'jotai';
-import { atomFamily } from 'jotai/utils';
+import { atomFamily } from 'jotai-family';
 import { MatrixClient, UploadResponse, UploadProgress, MatrixError } from 'matrix-js-sdk';
 import { useCallback } from 'react';
 import { useThrottle } from '../hooks/useThrottle';
