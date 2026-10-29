@@ -28,16 +28,22 @@ const appCommit = (() => {
 
 const elementCallPath = prepareElementCall();
 
+// vite-plugin-static-copy 2+ keeps the source directory structure in the output, so
+// `stripBase` drops the leading source directories to land files where the app (and
+// public/manifest.json) expect them.
+const elementCallRelative = path.relative(process.cwd(), elementCallPath).split(path.sep);
+
 const copyFiles = {
   targets: [
     {
-      src: `${elementCallPath}/*`,
+      src: `${elementCallRelative.join('/')}/**/*`,
       dest: 'public/element-call',
+      rename: { stripBase: elementCallRelative.filter((part) => part !== '..').length },
     },
     {
       src: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
       dest: '',
-      rename: 'pdf.worker.min.js',
+      rename: { stripBase: true, name: 'pdf.worker.min.js' },
     },
     {
       src: 'netlify.toml',
@@ -50,14 +56,17 @@ const copyFiles = {
     {
       src: 'public/manifest.json',
       dest: '',
+      rename: { stripBase: 1 },
     },
     {
       src: 'public/res/android',
       dest: 'public/',
+      rename: { stripBase: 2 },
     },
     {
       src: 'public/locales',
       dest: 'public/',
+      rename: { stripBase: 1 },
     },
   ],
 };
