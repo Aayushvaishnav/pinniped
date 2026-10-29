@@ -37,7 +37,7 @@ stdenv.mkDerivation (finalAttrs: {
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src prePnpmInstall;
     pnpm = pnpm_10;
-    fetcherVersion = 5;
+    fetcherVersion = 4;
     # The pnpm store holds platform-specific binaries (esbuild, rollup, ...), so the
     # hash is per system. CI refreshes x86_64-linux (scripts/update-pnpm-deps.sh).
     hash =
