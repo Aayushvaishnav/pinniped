@@ -45,10 +45,6 @@ const copyFiles = {
       rename: { stripBase: true, name: 'pdf.worker.min.js' },
     },
     {
-      src: 'netlify.toml',
-      dest: '',
-    },
-    {
       src: 'config.json',
       dest: '',
     },
