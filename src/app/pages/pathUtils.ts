@@ -78,17 +78,17 @@ export const getAppPathFromHref = (baseUrl: string, href: string): string => {
 export const getRootPath = (): string => ROOT_PATH;
 
 export const getLoginPath = (server?: string): string => {
-  const params = server ? { server: server } : undefined;
+  const params = server ? { server } : undefined;
   return generatePath(LOGIN_PATH, params);
 };
 
 export const getRegisterPath = (server?: string): string => {
-  const params = server ? { server: server } : undefined;
+  const params = server ? { server } : undefined;
   return generatePath(REGISTER_PATH, params);
 };
 
 export const getResetPasswordPath = (server?: string): string => {
-  const params = server ? { server: server } : undefined;
+  const params = server ? { server } : undefined;
   return generatePath(RESET_PASSWORD_PATH, params);
 };
 
@@ -99,8 +99,8 @@ export const getHomeInvitesPath = (): string => HOME_INVITES_PATH;
 export const getHomeSearchPath = (): string => HOME_SEARCH_PATH;
 export const getHomeRoomPath = (roomIdOrAlias: string, eventId?: string): string => {
   const params = {
-    roomIdOrAlias: roomIdOrAlias,
-    eventId: eventId ? eventId : null,
+    roomIdOrAlias,
+    eventId: eventId || null,
   };
 
   return generatePath(HOME_ROOM_PATH, params);
@@ -111,8 +111,8 @@ export const getRoomsCreatePath = (): string => ROOMS_CREATE_PATH;
 export const getRoomsSearchPath = (): string => ROOMS_SEARCH_PATH;
 export const getRoomsRoomPath = (roomIdOrAlias: string, eventId?: string): string => {
   const params = {
-    roomIdOrAlias: roomIdOrAlias,
-    eventId: eventId ? eventId : null,
+    roomIdOrAlias,
+    eventId: eventId || null,
   };
 
   return generatePath(ROOMS_ROOM_PATH, params);
@@ -122,8 +122,8 @@ export const getDirectPath = (): string => DIRECT_PATH;
 export const getDirectCreatePath = (): string => DIRECT_CREATE_PATH;
 export const getDirectRoomPath = (roomIdOrAlias: string, eventId?: string): string => {
   const params = {
-    roomIdOrAlias: roomIdOrAlias,
-    eventId: eventId ? eventId : null,
+    roomIdOrAlias,
+    eventId: eventId || null,
   };
 
   return generatePath(DIRECT_ROOM_PATH, params);
@@ -131,20 +131,20 @@ export const getDirectRoomPath = (roomIdOrAlias: string, eventId?: string): stri
 
 export const getSpacePath = (spaceIdOrAlias: string): string => {
   const params = {
-    spaceIdOrAlias: spaceIdOrAlias,
+    spaceIdOrAlias,
   };
 
   return generatePath(SPACE_PATH, params);
 };
 export const getSpaceLobbyPath = (spaceIdOrAlias: string): string => {
   const params = {
-    spaceIdOrAlias: spaceIdOrAlias,
+    spaceIdOrAlias,
   };
   return generatePath(SPACE_LOBBY_PATH, params);
 };
 export const getSpaceSearchPath = (spaceIdOrAlias: string): string => {
   const params = {
-    spaceIdOrAlias: spaceIdOrAlias,
+    spaceIdOrAlias,
   };
   return generatePath(SPACE_SEARCH_PATH, params);
 };
@@ -154,9 +154,9 @@ export const getSpaceRoomPath = (
   eventId?: string
 ): string => {
   const params = {
-    spaceIdOrAlias: spaceIdOrAlias,
-    roomIdOrAlias: roomIdOrAlias,
-    eventId: eventId ? eventId : null,
+    spaceIdOrAlias,
+    roomIdOrAlias,
+    eventId: eventId || null,
   };
 
   return generatePath(SPACE_ROOM_PATH, params);
@@ -166,7 +166,7 @@ export const getExplorePath = (): string => EXPLORE_PATH;
 export const getExploreFeaturedPath = (): string => EXPLORE_FEATURED_PATH;
 export const getExploreServerPath = (server: string): string => {
   const params = {
-    server: server,
+    server,
   };
   return generatePath(EXPLORE_SERVER_PATH, params);
 };

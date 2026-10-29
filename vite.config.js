@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import { wasm } from '@rollup/plugin-wasm';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import inject from '@rollup/plugin-inject';
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
@@ -255,8 +254,8 @@ export default defineConfig({
         define: {
           global: 'globalThis',
         },
+        inject: { Buffer: ['buffer', 'Buffer'] },
       },
-      plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
     },
   },
   build: {
@@ -265,7 +264,9 @@ export default defineConfig({
     sourcemap: process.env.SOURCEMAP === '1',
     copyPublicDir: false,
     rolldownOptions: {
-      plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
+      transform: {
+        inject: { Buffer: ['buffer', 'Buffer'] },
+      },
     },
   },
 });
