@@ -18,14 +18,32 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => state.navigate }));
-vi.mock('jotai', () => ({
-  useAtomValue: (key: 'invites' | 'directs' | 'parents' | 'unread') => state[key],
-}));
+vi.mock('jotai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('jotai')>();
+  // The mocked state modules below hand string pseudo-atoms to the hooks;
+  // real atoms (e.g. callEmbedAtom in EventSounds) use the real implementation.
+  return {
+    ...actual,
+    useAtomValue: (atomOrKey: unknown) =>
+      typeof atomOrKey === 'string'
+        ? state[atomOrKey as 'invites' | 'directs' | 'parents' | 'unread']
+        : actual.useAtomValue(atomOrKey as never),
+    useAtom: (atomOrKey: unknown) =>
+      typeof atomOrKey === 'string'
+        ? [state[atomOrKey as 'invites' | 'directs' | 'parents' | 'unread'], vi.fn()]
+        : actual.useAtom(atomOrKey as never),
+  };
+});
 vi.mock('../../src/app/state/room/roomToUnread', () => ({ roomToUnreadAtom: 'unread' }));
 vi.mock('../../src/app/state/room-list/inviteList', () => ({ allInvitesAtom: 'invites' }));
 vi.mock('../../src/app/state/room/roomToParents', () => ({ roomToParentsAtom: 'parents' }));
 vi.mock('../../src/app/state/mDirectList', () => ({ mDirectAtom: 'directs' }));
-vi.mock('../../src/app/state/settings', () => ({ settingsAtom: 'settings' }));
+vi.mock('../../src/app/state/settings', () => ({
+  settingsAtom: 'settings',
+  // The real module reads localStorage at import time, which the node test
+  // environment does not have. This shape makes playEventSound skip sounds.
+  getSettings: () => ({ isNotificationSounds: false, soundToggles: {} }),
+}));
 vi.mock('../../src/app/state/hooks/settings', () => ({
   useSetting: (
     _atom: unknown,
@@ -50,6 +68,9 @@ vi.mock('../../src/app/hooks/useMediaAuthentication', () => ({
 vi.mock('../../src/app/hooks/useSpaceAutoJoinGlobal', () => ({ useSpaceAutoJoinGlobal: vi.fn() }));
 vi.mock('../../src/app/hooks/useRoomNavShortcuts', () => ({ useRoomNavShortcuts: vi.fn() }));
 vi.mock('../../src/app/hooks/useRoomNavHistory', () => ({ useRoomNavHistory: vi.fn() }));
+vi.mock('../../src/app/hooks/useCallEmbed', () => ({ useCallJoined: () => false }));
+vi.mock('../../src/app/hooks/useSoundToggle', () => ({ useSoundToggle: () => false }));
+vi.mock('../../src/app/hooks/useSoundVolume', () => ({ useSoundVolume: vi.fn() }));
 vi.mock('../../src/app/state/gifFavorites', () => ({
   migrateGifFavorites: vi.fn().mockResolvedValue(undefined),
 }));
@@ -65,7 +86,6 @@ vi.mock('../../src/app/utils/room', async (importOriginal) => ({
 }));
 
 class DesktopNotification {
-  // eslint-disable-next-line no-use-before-define
   static instances: DesktopNotification[] = [];
 
   onclick?: (event: Event) => void;
