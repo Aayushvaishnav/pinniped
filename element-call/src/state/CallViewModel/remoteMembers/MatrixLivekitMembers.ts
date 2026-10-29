@@ -27,8 +27,7 @@ interface RemoteTaggedParticipant {
   value$: Behavior<RemoteParticipant | null>;
 }
 export type TaggedParticipant =
-  | LocalTaggedParticipant
-  | RemoteTaggedParticipant;
+  LocalTaggedParticipant | RemoteTaggedParticipant;
 
 export interface MatrixLivekitMember {
   membership$: Behavior<CallMembership>;

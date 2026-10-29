@@ -127,9 +127,7 @@ function generateRoomOption({
   devices: MediaDevices;
   processorState: ProcessorState;
   e2eeLivekitOptions:
-    | E2EEManagerOptions
-    | { e2eeManager: BaseE2EEManager }
-    | undefined;
+    E2EEManagerOptions | { e2eeManager: BaseE2EEManager } | undefined;
   controlledAudioDevices: boolean;
   echoCancellation: boolean;
 }): RoomOptions {

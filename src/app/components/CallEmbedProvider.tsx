@@ -98,7 +98,7 @@ function IncomingCall({ dm, info, onIgnore, onAnswer, onReject }: IncomingCallPr
   const roomName = useRoomName(room);
   const roomAvatar = useRoomAvatar(room, dm);
   const avatarUrl = roomAvatar
-    ? mxcUrlToHttp(mx, roomAvatar, useAuthentication, 96, 96, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, roomAvatar, useAuthentication, 96, 96, 'crop') ?? undefined)
     : undefined;
 
   const session = useCallSession(room);

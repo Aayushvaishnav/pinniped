@@ -473,11 +473,11 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
   );
   const [sharerId] = Array.from(screenSharers);
   const sharerName = sharerId
-    ? getMemberDisplayName(room, sharerId) ?? getMxIdLocalPart(sharerId) ?? sharerId
+    ? (getMemberDisplayName(room, sharerId) ?? getMxIdLocalPart(sharerId) ?? sharerId)
     : undefined;
   const sharerAvatarMxc = sharerId ? getMemberAvatarMxc(room, sharerId) : undefined;
   const sharerAvatarUrl = sharerAvatarMxc
-    ? mxcUrlToHttp(mx, sharerAvatarMxc, useAuthentication, 48, 48, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, sharerAvatarMxc, useAuthentication, 48, 48, 'crop') ?? undefined)
     : undefined;
   const streamQuality = useStreamQuality(sharerId ? embed : undefined);
   const direct = useIsDirectRoom();
@@ -491,7 +491,7 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
   const name = useRoomName(room);
   const topic = useRoomTopic(room);
   const avatarUrl = avatarMxc
-    ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined)
     : undefined;
 
   const [peopleDrawer, setPeopleDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');

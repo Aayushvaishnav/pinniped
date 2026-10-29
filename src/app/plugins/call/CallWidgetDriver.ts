@@ -31,7 +31,10 @@ export class CallWidgetDriver extends WidgetDriver {
 
   private readonly mx: MatrixClient;
 
-  public constructor(mx: MatrixClient, private inRoomId: string) {
+  public constructor(
+    mx: MatrixClient,
+    private inRoomId: string
+  ) {
     super();
     this.mx = mx;
 

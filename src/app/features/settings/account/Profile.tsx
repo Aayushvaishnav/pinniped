@@ -72,7 +72,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
 
   const defaultDisplayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
   const avatarUrl = profile.avatarUrl
-    ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 96, 96, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 96, 96, 'crop') ?? undefined)
     : undefined;
 
   const [imageFile, setImageFile] = useState<File>();
@@ -229,7 +229,7 @@ function ProfileBanner({ bannerMxc, onBannerChange }: ProfileBannerProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const bannerUrl = bannerMxc
-    ? mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined
+    ? (mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined)
     : undefined;
   const [imageFile, setImageFile] = useState<File>();
   const imageFileUrl = useObjectURL(imageFile);

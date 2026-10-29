@@ -167,8 +167,7 @@ export function createMemberMedia(
             ]).pipe(
               map(
                 ([keyInvalid, audioOkay, videoOkay]):
-                  | EncryptionStatus
-                  | undefined => {
+                  EncryptionStatus | undefined => {
                   if (keyInvalid) return EncryptionStatus.PasswordInvalid;
                   if (audioOkay || videoOkay) return EncryptionStatus.Okay;
                   return undefined; // no change

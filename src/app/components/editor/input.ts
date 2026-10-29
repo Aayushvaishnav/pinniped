@@ -276,7 +276,7 @@ const parseListMarkdown = (
   const digit = digitOrChar ? parseInt(digitOrChar, 10) : undefined;
 
   const lines: ParagraphElement[] = [];
-  let lineNo = digit === undefined || Number.isNaN(digit) ? digitOrChar ?? 1 : digit;
+  let lineNo = digit === undefined || Number.isNaN(digit) ? (digitOrChar ?? 1) : digit;
   const pushLine = (line: InlineElement[]) => {
     lines.push({
       type: BlockType.Paragraph,

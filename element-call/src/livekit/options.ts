@@ -15,11 +15,7 @@ import {
 } from "livekit-client";
 
 export type ScreenShareResolution =
-  | "480p"
-  | "720p"
-  | "1080p"
-  | "1440p"
-  | "source";
+  "480p" | "720p" | "1080p" | "1440p" | "source";
 export type ScreenShareFps = 15 | 30 | 60;
 export interface ScreenShareQuality {
   resolution: ScreenShareResolution;

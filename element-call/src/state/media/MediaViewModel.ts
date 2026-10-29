@@ -15,9 +15,7 @@ import { type UserMediaViewModel } from "./UserMediaViewModel";
  * A participant's media.
  */
 export type MediaViewModel =
-  | UserMediaViewModel
-  | ScreenShareViewModel
-  | RingingMediaViewModel;
+  UserMediaViewModel | ScreenShareViewModel | RingingMediaViewModel;
 
 /**
  * Properties which are common to all MediaViewModels.

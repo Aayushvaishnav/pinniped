@@ -45,8 +45,8 @@ export const screenShareResolutions = [
 ] as const;
 export const screenShareFrameRates = [15, 30, 60] as const;
 
-export type ScreenShareResolution = typeof screenShareResolutions[number]['id'];
-export type ScreenShareFps = typeof screenShareFrameRates[number];
+export type ScreenShareResolution = (typeof screenShareResolutions)[number]['id'];
+export type ScreenShareFps = (typeof screenShareFrameRates)[number];
 /** Screen share quality; the call widget takes it as `<resolution>:<fps>`. */
 export type ScreenShareQuality = { resolution: ScreenShareResolution; fps: ScreenShareFps };
 

@@ -21,8 +21,7 @@ import { type RemoteScreenShareViewModel } from "./RemoteScreenShareViewModel";
  * A participant's screen share media.
  */
 export type ScreenShareViewModel =
-  | LocalScreenShareViewModel
-  | RemoteScreenShareViewModel;
+  LocalScreenShareViewModel | RemoteScreenShareViewModel;
 
 /**
  * Properties which are common to all ScreenShareViewModels.

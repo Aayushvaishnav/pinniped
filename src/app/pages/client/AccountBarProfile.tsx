@@ -61,11 +61,11 @@ function AccountMenu({ requestClose, openSettings }: AccountMenuProps) {
 
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
   const avatarUrl = profile.avatarUrl
-    ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication) ?? undefined
+    ? (mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication) ?? undefined)
     : undefined;
   const bannerMxc = getProfileBanner(profile.extended);
   const bannerUrl = bannerMxc
-    ? mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined
+    ? (mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined)
     : undefined;
   const biography = getProfileBiography(profile.extended);
   const pronouns = getProfilePronouns(profile.extended)
@@ -166,7 +166,7 @@ export function AccountBarProfile() {
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
   const status = useOwnStatus(userId);
   const avatarUrl = profile.avatarUrl
-    ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 64, 64, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 64, 64, 'crop') ?? undefined)
     : undefined;
 
   const openSettings = (page?: SettingsPages) => {

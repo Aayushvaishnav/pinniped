@@ -4,8 +4,7 @@ import { useMemo } from 'react';
 import { Settings, settingsAtom as sAtom } from '../settings';
 
 export type SettingSetter<K extends keyof Settings> =
-  | Settings[K]
-  | ((s: Settings[K]) => Settings[K]);
+  Settings[K] | ((s: Settings[K]) => Settings[K]);
 
 export const useSetSetting = <K extends keyof Settings>(settingsAtom: typeof sAtom, key: K) => {
   const setterAtom = useMemo(

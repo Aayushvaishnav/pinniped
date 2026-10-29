@@ -35,7 +35,7 @@ const event = (content: Record<string, unknown>, ts = NOW, id = '$e'): IEventWit
     room_id: '!ai:stablecat.club',
     origin_server_ts: ts,
     content,
-  } as unknown as IEventWithRoomId);
+  }) as unknown as IEventWithRoomId;
 
 describe('tokenizeQuery', () => {
   it('keeps quoted phrases and quoted operator values whole', () => {

@@ -99,9 +99,7 @@ function DirectRoomTab({ room, selected, onClick }: DirectRoomTabProps) {
                   roomId={room.roomId}
                   src={getDirectRoomAvatarUrl(mx, room, 96, useAuthentication) ?? undefined}
                   alt={room.name}
-                  renderFallback={() => (
-                    <Text size="H4">{nameInitials(room.name, 2)}</Text>
-                  )}
+                  renderFallback={() => <Text size="H4">{nameInitials(room.name, 2)}</Text>}
                 />
               </SidebarAvatar>
             )}
@@ -128,10 +126,7 @@ function DirectRoomTab({ room, selected, onClick }: DirectRoomTabProps) {
                     escapeDeactivates: stopPropagation,
                   }}
                 >
-                  <DirectRoomMenu
-                    room={room}
-                    requestClose={() => setMenuAnchor(undefined)}
-                  />
+                  <DirectRoomMenu room={room} requestClose={() => setMenuAnchor(undefined)} />
                 </FocusTrap>
               }
             />

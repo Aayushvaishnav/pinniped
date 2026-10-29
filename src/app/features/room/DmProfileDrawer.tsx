@@ -58,7 +58,7 @@ export function DmProfileDrawer({ room }: DmProfileDrawerProps) {
   const bannerMxc = getProfileBanner(profile.extended);
   const biography = getProfileBiography(profile.extended);
   const bannerUrl = bannerMxc
-    ? mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined
+    ? (mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined)
     : undefined;
 
   return (

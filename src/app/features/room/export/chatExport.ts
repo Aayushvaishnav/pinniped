@@ -207,9 +207,7 @@ const getExportReactions = (
   eventId: string
 ): ExportReaction[] | undefined => {
   const sorted = getEventReactions(timelineSet, eventId)?.getSortedAnnotationsByKey() as
-    | [string, Set<MatrixEvent>][]
-    | null
-    | undefined;
+    [string, Set<MatrixEvent>][] | null | undefined;
   if (!sorted || sorted.length === 0) return undefined;
 
   return sorted.map(([key, reactions]) => ({

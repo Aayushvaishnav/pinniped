@@ -85,7 +85,7 @@ export function UserRichPresence({ presence }: UserRichPresenceProps) {
   const useAuthentication = useMediaAuthentication();
   const imageMxc = presence.type === 'media' ? presence.coverArt : presence.image;
   const imageUrl = imageMxc
-    ? mxcUrlToHttp(mx, imageMxc, useAuthentication, 96, 96, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, imageMxc, useAuthentication, 96, 96, 'crop') ?? undefined)
     : undefined;
   const [imageStatus, setImageStatus] = useState<'loading' | 'loaded' | 'error'>(
     imageUrl ? 'loading' : 'error'

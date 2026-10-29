@@ -68,8 +68,7 @@ const toExtensionBody = (ext: SearchExtensions) => ({
 
 const readApplied = (roomEvents: unknown): string[] | undefined => {
   const marker = (roomEvents as Record<string, unknown> | undefined)?.[SEARCH_EXTENSION_KEY] as
-    | { applied?: unknown }
-    | undefined;
+    { applied?: unknown } | undefined;
   if (!marker || !Array.isArray(marker.applied)) return undefined;
   return marker.applied.filter((a): a is string => typeof a === 'string');
 };

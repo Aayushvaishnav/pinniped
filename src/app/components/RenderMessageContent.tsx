@@ -272,7 +272,7 @@ export function RenderMessageContent({
               body={body}
               info={info}
               {...props}
-              autoPlay={gifLike ? mediaAutoLoad ?? false : false}
+              autoPlay={gifLike ? (mediaAutoLoad ?? false) : false}
               renderThumbnail={
                 mediaAutoLoad
                   ? () => (

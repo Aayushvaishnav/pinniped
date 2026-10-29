@@ -72,7 +72,10 @@ class DesktopNotification {
 
   close = vi.fn();
 
-  constructor(public title: string, public options: { body?: string; tag?: string }) {
+  constructor(
+    public title: string,
+    public options: { body?: string; tag?: string }
+  ) {
     DesktopNotification.instances.push(this);
   }
 }

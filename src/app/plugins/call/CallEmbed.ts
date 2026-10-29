@@ -32,11 +32,7 @@ import { getSettings } from '../../state/settings';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { protectFrameFromParentDrag } from './protectFrameFromParentDrag';
-import {
-  CallActivity,
-  emptyCallActivity,
-  parseCallActivity,
-} from './activity';
+import { CallActivity, emptyCallActivity, parseCallActivity } from './activity';
 import { CallStatsSample, trimStats } from './stats';
 import { withDefaultTuning } from './voiceTuning';
 

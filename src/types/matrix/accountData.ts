@@ -30,7 +30,7 @@ export enum AccountDataEvent {
 /** Pre-rename `im.kibby.*` account data types, migrated to their Pinniped equivalents. */
 export const LEGACY_ACCOUNT_DATA_MIGRATIONS: [
   legacy: keyof AccountDataEvents,
-  current: keyof AccountDataEvents
+  current: keyof AccountDataEvents,
 ][] = [
   ['im.kibby.room_order', AccountDataEvent.PinnipedRoomOrder],
   ['im.kibby.gif_favorites', AccountDataEvent.PinnipedGifFavorites],

@@ -327,7 +327,7 @@ function CallNavItemMembers({ room, members }: CallNavItemMembersProps) {
         const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
         const avatarMxc = getMemberAvatarMxc(room, userId);
         const avatarUrl = avatarMxc
-          ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96) ?? undefined
+          ? (mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96) ?? undefined)
           : undefined;
 
         return (

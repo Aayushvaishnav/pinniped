@@ -399,8 +399,7 @@ const useDnDMonitor = (
           const item = source.data.item as SidebarDraggable;
           const containerItem = dropTargets[0].data.item as SidebarDraggable;
           const instructionType = dropTargets[0].data.instructionType as
-            | InstructionType
-            | undefined;
+            InstructionType | undefined;
           if (!instructionType) return;
           onReorder(item, containerItem, instructionType);
         },

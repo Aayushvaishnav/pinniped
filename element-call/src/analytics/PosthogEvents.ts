@@ -297,10 +297,7 @@ export class CallConnectDurationTracker {
 }
 
 export type CallReconnectingReason =
-  | "sync"
-  | "membership"
-  | "probablyLeft"
-  | "livekit";
+  "sync" | "membership" | "probablyLeft" | "livekit";
 
 interface CallReconnecting extends IPosthogEvent {
   eventName: "CallReconnecting";

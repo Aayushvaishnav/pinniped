@@ -24,7 +24,7 @@ const settings = (over: Partial<Settings> = {}) =>
     soundToggles: {},
     notificationSoundBundle: 'skype',
     ...over,
-  } as Settings);
+  }) as Settings;
 
 describe('isSoundEnabled', () => {
   it('keeps the old defaults: event sounds follow the legacy switch, the rest are on', () => {

@@ -108,8 +108,8 @@ export const resolveActiveTheme = ({
   }
 
   return systemThemeKind === ThemeKind.Dark
-    ? themes.find((theme) => theme.id === darkThemeId) ?? DarkTheme
-    : themes.find((theme) => theme.id === lightThemeId) ?? LightTheme;
+    ? (themes.find((theme) => theme.id === darkThemeId) ?? DarkTheme)
+    : (themes.find((theme) => theme.id === lightThemeId) ?? LightTheme);
 };
 
 export const useActiveTheme = (): Theme => {

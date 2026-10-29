@@ -117,9 +117,11 @@ async function linkOnce(objects) {
       .filter((l) => sinkPorts.has(l.info['input-port-id']))
       .filter((l) => !reachesOutput.has(l.info['output-node-id']))
       .map((l) =>
-        run('pw-link', ['-d', String(l.info['output-port-id']), String(l.info['input-port-id'])]).catch(
-          () => {}
-        )
+        run('pw-link', [
+          '-d',
+          String(l.info['output-port-id']),
+          String(l.info['input-port-id']),
+        ]).catch(() => {})
       )
   );
 

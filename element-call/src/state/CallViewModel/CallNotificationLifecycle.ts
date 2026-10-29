@@ -46,12 +46,7 @@ export const ALL_OTHERS_LEFT_GRACE_MS = 30_000;
 
 export type AutoLeaveReason = "allOthersLeft" | "timeout" | "decline";
 export type CallPickupState =
-  | "unknown"
-  | "ringing"
-  | "timeout"
-  | "decline"
-  | "success"
-  | null;
+  "unknown" | "ringing" | "timeout" | "decline" | "success" | null;
 
 export type CallNotificationWrapper = {
   event_id: string;

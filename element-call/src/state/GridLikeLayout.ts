@@ -15,9 +15,7 @@ import {
 import { type TileStore } from "./TileStore";
 
 export type GridLikeLayoutType =
-  | "grid"
-  | "spotlight-landscape"
-  | "spotlight-portrait";
+  "grid" | "spotlight-landscape" | "spotlight-portrait";
 
 /**
  * Produces a grid-like layout (any layout with a grid and possibly a spotlight)

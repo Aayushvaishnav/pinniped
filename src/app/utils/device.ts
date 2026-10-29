@@ -19,8 +19,7 @@ export type DiscordRichPresenceActivity = {
 };
 
 export type RichPresenceBridgeStartResult =
-  | { ok: true; path: string; index: number }
-  | { ok: false; error: string };
+  { ok: true; path: string; index: number } | { ok: false; error: string };
 
 declare global {
   interface Window {

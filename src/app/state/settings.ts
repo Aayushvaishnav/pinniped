@@ -5,12 +5,7 @@ import type { SoundKind } from '../sound/bundles';
 
 const STORAGE_KEY = 'settings';
 export type DateFormat =
-  | 'D MMM YYYY'
-  | 'DD/MM/YYYY'
-  | 'MM/DD/YYYY'
-  | 'YYYY/MM/DD'
-  | 'YYYY-MM-DD'
-  | '';
+  'D MMM YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | 'YYYY-MM-DD' | '';
 export type MessageSpacing = '0' | '100' | '200' | '300' | '400' | '500';
 export enum MessageLayout {
   Modern = 0,

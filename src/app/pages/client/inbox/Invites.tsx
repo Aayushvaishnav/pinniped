@@ -109,7 +109,7 @@ const makeInviteData = (mx: MatrixClient, room: Room, useAuthentication: boolean
   const senderId = memberEvent?.getSender();
 
   const senderName = senderId
-    ? getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId
+    ? (getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId)
     : undefined;
   const inviteTs = memberEvent?.getTs();
   const reason =

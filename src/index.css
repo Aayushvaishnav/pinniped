@@ -1,6 +1,7 @@
 @font-face {
   font-family: Twemoji;
-  src: url('../public/font/Twemoji.v17.0.3.woff2') format('woff2'),
+  src:
+    url('../public/font/Twemoji.v17.0.3.woff2') format('woff2'),
     url('../public/font/Twemoji.v17.0.3.ttf') format('truetype');
   font-display: swap;
 }

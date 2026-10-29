@@ -187,7 +187,8 @@ export const initializeWidget = (
         voiceGateThreshold.setValue(voiceGateThresholdParam);
       videoSimulcast.setValue(simulcast ?? false);
       if (screenShare) screenShareQuality.setValue(screenShare);
-      if (screenShareAudioParam) screenShareAudio.setValue(screenShareAudioParam);
+      if (screenShareAudioParam)
+        screenShareAudio.setValue(screenShareAudioParam);
       mutedSounds.setValue(mutedSoundsParam ?? []);
       if (soundVolume !== undefined) soundEffectVolume.setValue(soundVolume);
       if (soundboardVolumeParam !== undefined)

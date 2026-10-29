@@ -126,9 +126,8 @@ export type EmojiReplacement = {
 export const emojiShortcodeMap: Map<string, EmojiReplacement> = new Map(
   emojis.flatMap((e) => {
     const allShortcodes = Array.isArray(e.shortcodes) ? e.shortcodes : [e.shortcode];
-    return allShortcodes.filter(Boolean).map((sc) => [
-      sc.toLowerCase(),
-      { key: e.unicode, shortcode: e.shortcode },
-    ]);
+    return allShortcodes
+      .filter(Boolean)
+      .map((sc) => [sc.toLowerCase(), { key: e.unicode, shortcode: e.shortcode }]);
   })
 );

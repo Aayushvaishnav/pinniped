@@ -484,14 +484,14 @@ function RoomNotificationsGroupComp({
                         userId={event.sender}
                         src={
                           senderAvatarMxc
-                            ? mxcUrlToHttp(
+                            ? (mxcUrlToHttp(
                                 mx,
                                 senderAvatarMxc,
                                 useAuthentication,
                                 48,
                                 48,
                                 'crop'
-                              ) ?? undefined
+                              ) ?? undefined)
                             : undefined
                         }
                         alt={displayName}

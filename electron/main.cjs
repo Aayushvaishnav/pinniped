@@ -109,8 +109,8 @@ ipcMain.on('badge:set', (_event, payload) => {
       count > 0
         ? `${count} unread mentions and direct messages`
         : hasUnread
-        ? 'Unread messages'
-        : ''
+          ? 'Unread messages'
+          : ''
     );
   }
 });

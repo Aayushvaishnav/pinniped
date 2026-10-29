@@ -37,7 +37,7 @@ export const useGlobalRoomOrder = (): (() => string[]) => {
   const joinedRooms = useMemo(() => new Set(allRooms), [allRooms]);
   const getRoom = useCallback(
     (roomId: string): Room | undefined =>
-      joinedRooms.has(roomId) ? mx.getRoom(roomId) ?? undefined : undefined,
+      joinedRooms.has(roomId) ? (mx.getRoom(roomId) ?? undefined) : undefined,
     [mx, joinedRooms]
   );
 

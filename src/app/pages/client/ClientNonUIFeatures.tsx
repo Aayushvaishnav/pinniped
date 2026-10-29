@@ -331,7 +331,7 @@ function MessageNotifications() {
           title,
           body: getEventBodyForNotification(mEvent),
           icon: senderAvatarMxc
-            ? mxcUrlToHttp(mx, senderAvatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
+            ? (mxcUrlToHttp(mx, senderAvatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined)
             : undefined,
           tag: room.roomId,
           roomId: room.roomId,

@@ -55,7 +55,7 @@ Object.entries(files).forEach(([path, url]) => {
 // A bundle without a message sound would be silent for the main use case.
 export const soundBundles: { id: string; name: string }[] = Object.keys(bundles)
   .filter((id) => bundles[id].message)
-  .map((id) => ({ id, name: id === DEFAULT_SOUND_BUNDLE ? 'Default' : BUNDLE_LABELS[id] ?? id }));
+  .map((id) => ({ id, name: id === DEFAULT_SOUND_BUNDLE ? 'Default' : (BUNDLE_LABELS[id] ?? id) }));
 
 export const getSoundUrl = (bundle: string, kind: SoundKind): string | undefined =>
   bundles[bundle]?.[kind] ?? bundles[DEFAULT_SOUND_BUNDLE][kind];

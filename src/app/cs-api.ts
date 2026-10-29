@@ -28,7 +28,7 @@ export type AutoDiscoveryInfo = Record<string, unknown> & {
     {
       livekit_service_url: string;
       type: 'livekit';
-    }
+    },
   ];
 };
 

@@ -9,7 +9,7 @@ import { IEventWithRoomId } from 'matrix-js-sdk';
  */
 
 export const HAS_KINDS = ['link', 'image', 'video', 'audio', 'file'] as const;
-export type HasKind = typeof HAS_KINDS[number];
+export type HasKind = (typeof HAS_KINDS)[number];
 
 export const SEARCH_OPERATORS = [
   'from',
@@ -21,7 +21,7 @@ export const SEARCH_OPERATORS = [
   'during',
   'pinned',
 ] as const;
-export type SearchOperator = typeof SEARCH_OPERATORS[number];
+export type SearchOperator = (typeof SEARCH_OPERATORS)[number];
 
 export type QueryToken =
   | { kind: 'text'; raw: string; start: number; end: number }

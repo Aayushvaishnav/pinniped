@@ -4,7 +4,7 @@ import { protectFrameFromParentDrag } from '../../src/app/plugins/call/protectFr
 const createFrame = (pointerEvents = '') =>
   ({
     style: { pointerEvents },
-  } as Pick<HTMLIFrameElement, 'style'>);
+  }) as Pick<HTMLIFrameElement, 'style'>;
 
 const createDocumentTarget = () =>
   new EventTarget() as unknown as Pick<Document, 'addEventListener' | 'removeEventListener'> &

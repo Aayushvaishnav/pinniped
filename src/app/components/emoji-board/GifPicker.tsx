@@ -91,7 +91,7 @@ const useFavoriteGifPreview = (
   if (fav.kind === 'mxc') {
     const { info } = fav;
     return {
-      src: fav.encInfo ? decryptedSrc : mxcUrlToHttp(mx, fav.mxc, useAuthentication) ?? undefined,
+      src: fav.encInfo ? decryptedSrc : (mxcUrlToHttp(mx, fav.mxc, useAuthentication) ?? undefined),
       aspect: info?.w && info?.h ? `${info.w} / ${info.h}` : undefined,
       video: fav.video,
     };

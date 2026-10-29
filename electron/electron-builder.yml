@@ -88,8 +88,8 @@ appImage:
 
 flatpak:
   # electron-builder defaults to the EOL 20.08 runtime; Flathub rejects EOL ones
-  runtimeVersion: "25.08"
-  baseVersion: "25.08"
+  runtimeVersion: '25.08'
+  baseVersion: '25.08'
   artifactName: ${productName}-${version}-${arch}.${ext}
   # Electron needs these inside the sandbox; calls need camera + audio.
   finishArgs:

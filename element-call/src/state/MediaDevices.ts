@@ -33,8 +33,7 @@ import { AndroidControlledAudioOutput } from "./AndroidControlledAudioOutput.ts"
 import { IOSControlledAudioOutput } from "./IOSControlledAudioOutput.ts";
 
 export type DeviceLabel =
-  | { type: "name"; name: string }
-  | { type: "number"; number: number };
+  { type: "name"; name: string } | { type: "number"; number: number };
 
 export type AudioOutputDeviceLabel =
   | DeviceLabel

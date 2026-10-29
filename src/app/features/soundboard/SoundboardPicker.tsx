@@ -265,7 +265,7 @@ export function SoundboardPicker({ callEmbed, room, anchor, requestClose }: Soun
                 {packs.map((p) => (
                   <RailItem
                     key={p.id}
-                    label={p === user ? 'My sounds' : p.name ?? 'Room sounds'}
+                    label={p === user ? 'My sounds' : (p.name ?? 'Room sounds')}
                     onClick={() => scrollTo(p.id)}
                   >
                     <PackAvatar pack={p} fallback={p === user ? 'Me' : 'R'} />

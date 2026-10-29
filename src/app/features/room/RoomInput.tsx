@@ -844,7 +844,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                     anchor={
                       emojiBoardTab === undefined
                         ? undefined
-                        : emojiBtnRef.current?.getBoundingClientRect() ?? undefined
+                        : (emojiBtnRef.current?.getBoundingClientRect() ?? undefined)
                     }
                     content={
                       <EmojiBoard

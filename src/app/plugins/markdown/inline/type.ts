@@ -18,14 +18,7 @@ export type InlineMDParser = (text: string) => string;
 export type InlineMatchConverter = (parse: InlineMDParser, match: MatchResult) => string;
 
 export type InlineMDMark =
-  | 'bold'
-  | 'italic'
-  | 'underline'
-  | 'strikeThrough'
-  | 'code'
-  | 'spoiler'
-  | 'link'
-  | 'escape';
+  'bold' | 'italic' | 'underline' | 'strikeThrough' | 'code' | 'spoiler' | 'link' | 'escape';
 
 /**
  * Describes where the syntax and content of a match are,
