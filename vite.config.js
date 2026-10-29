@@ -3,14 +3,13 @@ import react from '@vitejs/plugin-react';
 import { wasm } from '@rollup/plugin-wasm';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 import inject from '@rollup/plugin-inject';
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
-import buildConfig from './build.config';
+import buildConfig from './build.config.ts';
 import { prepareElementCall } from './scripts/fork/element-call-activity.mjs';
 import { buildElementCallFork, ELEMENT_CALL_SRC } from './scripts/fork/element-call/build.mjs';
 
@@ -236,17 +235,13 @@ export default defineConfig({
     }),
   ],
   optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: 'globalThis',
+    rolldownOptions: {
+      transform: {
+        define: {
+          global: 'globalThis',
+        },
       },
-      plugins: [
-        // Enable esbuild polyfill plugins
-        NodeGlobalsPolyfillPlugin({
-          process: false,
-          buffer: true,
-        }),
-      ],
+      plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
     },
   },
   build: {
@@ -254,7 +249,7 @@ export default defineConfig({
     // Fork-only: prod maps only on demand (SOURCEMAP=1); they cost ~3.5 s per build.
     sourcemap: process.env.SOURCEMAP === '1',
     copyPublicDir: false,
-    rollupOptions: {
+    rolldownOptions: {
       plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
     },
   },

@@ -9,19 +9,23 @@ describe('Windows badge IPC', () => {
     const setOverlayIcon = vi.fn();
     const setBadgeCount = vi.fn();
     const createFromDataURL = vi.fn(() => overlay);
-    const Window = vi.fn().mockImplementation(() => ({
-      webContents: { on: vi.fn(), setWindowOpenHandler: vi.fn() },
-      once: vi.fn(),
-      on: vi.fn(),
-      loadURL: vi.fn(),
-      isDestroyed: () => false,
-      setOverlayIcon,
-    }));
-    const Tray = vi.fn().mockImplementation(() => ({
-      setToolTip: vi.fn(),
-      setContextMenu: vi.fn(),
-      on: vi.fn(),
-    }));
+    const Window = vi.fn().mockImplementation(function () {
+      return {
+        webContents: { on: vi.fn(), setWindowOpenHandler: vi.fn() },
+        once: vi.fn(),
+        on: vi.fn(),
+        loadURL: vi.fn(),
+        isDestroyed: () => false,
+        setOverlayIcon,
+      };
+    });
+    const Tray = vi.fn().mockImplementation(function () {
+      return {
+        setToolTip: vi.fn(),
+        setContextMenu: vi.fn(),
+        on: vi.fn(),
+      };
+    });
     const electron = {
       app: {
         setAppUserModelId: vi.fn(),
