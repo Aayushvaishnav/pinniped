@@ -40,9 +40,10 @@ linux:
   syncDesktopName: true
   target:
     - AppImage
-    - deb
+    - rpm
 
 rpm:
+  artifactName: ${productName}-${version}-${arch}.${ext}
   # fpm defaults to single-threaded gzip -9 (w9.gzdio): ~65 s for the ~350 MB
   # payload. Multithreaded xz gets the same size class in a fraction of the time.
   fpm:
@@ -73,16 +74,13 @@ dmg:
 
 win:
   target:
-    - nsis
+    - msi
   icon: electron/build/icon.png
 
-nsis:
+msi:
   oneClick: true
   perMachine: false
-  artifactName: ${productName}-Setup-${version}-${arch}.${ext}
-
-appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
-deb:
+appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
