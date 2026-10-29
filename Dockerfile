@@ -1,5 +1,5 @@
 ## Element Call fork (vendored in element-call/, built from the tree)
-FROM node:24.13.1-alpine AS element-call
+FROM node:24.22.2-alpine AS element-call
 RUN npm install -g pnpm@10.33.0
 WORKDIR /src
 COPY element-call /src/element-call
@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm \
 
 
 ## Builder
-FROM node:24.13.1-alpine AS builder
+FROM node:24.22.2-alpine AS builder
 
 WORKDIR /src
 
@@ -28,7 +28,7 @@ RUN npm run build
 
 ## App
 # Unprivileged nginx: runs as uid 101 on port 8080, with its pid and temp files in /tmp.
-FROM nginxinc/nginx-unprivileged:1.31.2-alpine
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine
 
 USER root
 COPY --from=builder /src/dist /app
