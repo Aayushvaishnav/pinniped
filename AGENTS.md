@@ -1,84 +1,32 @@
 # AGENTS.md
 
-This repository is a private fork of [cinnyapp/cinny](https://github.com/cinnyapp/cinny), kept in sync with upstream `dev` via rebase. This file documents the workflow that any agent (human or AI) working in this repo must follow.
+Pinniped is an independent Matrix client. It started as a fork of [cinnyapp/cinny](https://github.com/cinnyapp/cinny) and no longer follows it: we do not rebase onto upstream, send fixes back, or track its release cadence. Upstream is history, not a dependency. This file documents the workflow that any agent (human or AI) working in this repo must follow.
 
 ## Remotes
 
 ```
-origin    git@github.com:largelanguagemeowing/pinniped.git   (the fork, push here)
-upstream  git@github.com:cinnyapp/cinny.git                (read-only source of truth)
+origin    git@github.com:largelanguagemeowing/pinniped.git   (push here)
+upstream  git@github.com:cinnyapp/cinny.git                (frozen reference, optional)
 ```
 
-- `origin` is the fork you own and push to.
-- `upstream` is the original cinnyapp/cinny. Fetch only. Never push here.
+- `origin` is the project. Push here.
+- `upstream` may stay configured to read old Cinny history (`git log upstream/dev`, `git show`, cherry-picking an idea). Never push to it, and never merge or rebase it into our branches.
 
-## Branch layout
+## Branches
 
-```
-upstream/dev  --*--*--*--*--*--*--*   (read-only)
-                 | ff-only
-dev           --*--*--*--*--*--*--*   (mirror, push to origin)
-                 | rebase
-fork/dev      --*--*--*  <- fork-specific commits, always on top
-```
+- `fork/dev` is the working branch. All work lands here, and it is what you build and deploy from.
+- `dev` is a frozen snapshot of `upstream/dev` as of the last sync. Do not update, commit on, or merge it. It is kept only as a reference point for what the code looked like before independence.
+- The `git sync`, `git fork-log` and `git dev-log` aliases belong to the old upstream workflow. Do not run `git sync`; it would rebase onto a moving upstream.
 
-- `dev` is a pure fast-forward mirror of `upstream/dev`. Never commit on it. Never rebase or merge into it. It only ever advances via `git merge --ff-only upstream/dev`.
-- `fork/dev` is where all fork-specific work lives. It is rebased onto `dev` on every sync. This is the branch you build and deploy from.
+Commit small, atomic changes with clear messages. History on `fork/dev` is ours, so regular merges and ordinary pushes are fine. Avoid force-pushing; use `--force-with-lease` only to repair a mistake.
 
-## Where to commit
+## Taking something from upstream
 
-- All fork-specific changes go on `fork/dev`.
-- Do not commit on `dev`. The `git sync` alias enforces this with a fast-forward-only merge that will refuse to run if `dev` has diverged.
-- Keep commits small and atomic. Small commits make rebase conflicts easy to resolve and easy to reorder or squash. Since this is a private fork with no upstream PRs, you are free to squash aggressively.
+Porting an upstream change is a deliberate act, not a sync: read the diff, re-implement or cherry-pick it onto `fork/dev`, and test it like any other change. Do not expect upstream files to merge cleanly any more; the code has diverged and will keep diverging.
 
-## Syncing with upstream
+## Dependencies
 
-Run the one-command sync:
-
-```bash
-git sync
-```
-
-This runs, in order:
-
-1. `git fetch upstream`
-2. `git checkout dev`
-3. `git merge --ff-only upstream/dev` (aborts if `dev` has diverged)
-4. `git push origin dev`
-5. `git checkout fork/dev`
-6. `git rebase dev` (replays your commits on top of the new `dev`)
-7. `git push --force-with-lease origin fork/dev`
-
-If any step fails, fix the cause and rerun. The `--force-with-lease` on the final push will fail if `origin/fork/dev` has moved since your last fetch, which protects against clobbering work pushed from another clone.
-
-## Useful aliases
-
-```bash
-git sync        # full upstream sync (see above)
-git fork-log    # show commits fork/dev carries on top of dev
-git dev-log     # show recent upstream commits on dev
-```
-
-## Config in effect (repo-local)
-
-```
-rebase.autoStash              = true
-pull.rebase                   = true
-push.default                  = current
-branch.dev.remote             = upstream   (fetch)
-branch.dev.pushRemote         = origin
-branch.fork/dev.remote        = .          (rebases onto local dev)
-branch.fork/dev.pushRemote    = origin
-branch.fork/dev.rebase        = true
-```
-
-## Recovering from a messy rebase
-
-1. `git rebase --abort` to get back to the pre-rebase state.
-2. Squash or reorder your commits: `git rebase -i dev`.
-3. Retry `git sync`.
-
-If one upstream commit conflicts with several of yours, squashing yours first usually makes the conflict trivial.
+We own our dependency versions. Upgrade majors when it helps us, one concern per commit, and verify with `npm run typecheck`, `npm run test:unit` and `npm run build` before committing. There is no upstream lockfile to stay close to.
 
 ## Element Call fork
 
@@ -95,7 +43,7 @@ not build the vendored tree — its call widget has none of the fork's changes).
 The vendored tree is upstream `v0.20.1` with the former patch series
 (voice-call-layout, sound-overrides) applied plus fork changes made in place.
 There are no patch files anymore; edit `element-call/` directly. To upgrade:
-refresh the tree from a new upstream tag and re-do the fork changes (see
+refresh the tree from a new Element Call tag and re-do the fork changes (see
 `git log -- element-call/` for what they are).
 
 Fork changes on top of upstream + old patches:
@@ -172,7 +120,7 @@ Fork changes on top of upstream + old patches:
 
 ## Build and deployment
 
-The fork ships as a container image to a Kubernetes cluster. The app is a static Vite SPA served by nginx (see `Dockerfile`: `node:24.13.1-alpine` builds, `nginx:1.31.2-alpine` serves). Build and deploy from `fork/dev`, after committing and pushing.
+Pinniped ships as a container image to a Kubernetes cluster. The app is a static Vite SPA served by nginx (see `Dockerfile`: `node:24.22.2-alpine` builds, `nginx-unprivileged:1.31.7-alpine` serves). Build and deploy from `fork/dev`, after committing and pushing.
 
 ### Target
 
@@ -230,6 +178,10 @@ podman run --rm repo.k8s.mreow.de/githubshit/cinny:latest cat /app/index.html \
 
 A successful deploy: the live hash changed from the previous deploy, and live == pushed image. The build runs inside the container (no local `dist/` is produced), and a local `npm run build` yields a different hash than the container build (different Node version), so do not use a local build to verify the deployed bundle. Compare against the pushed image's `index.html`.
 
+## Desktop builds
+
+`.github/workflows/desktop.yml` builds the Electron app on Linux (AppImage, rpm, flatpak), Windows (msi) and macOS (dmg) from `electron/electron-builder.yml`, uploads the installers as workflow artifacts, and attaches them to a GitHub release on `v*` tags. The app ID is `club.stablecat.pinniped`; the flatpak pins the 25.08 runtime and base app (electron-builder defaults to the EOL 20.08, which Flathub rejects). Flathub's AI policy forbids AI-written manifests and AI-opened submission PRs, so a human writes and submits those.
+
 ## Nix flake
 
 `flake.nix` and `package.nix` are fork-only. They build the Electron app from source in the nixpkgs idiom: `buildNpmPackage` builds the Vite bundle, then a wrapper launches nixpkgs' `electron` against it. No electron-builder, fpm, or asar is involved (the main process uses only node built-ins + electron, so no node_modules are shipped). `dist/` and `electron/` are installed as siblings under `$out/lib/cinny` because `electron/main.cjs` resolves `../dist`.
@@ -243,8 +195,8 @@ nix profile install .#cinny # install into the user profile
 Caveats:
 
 - Flakes only see git-tracked files. Freshly created `flake.nix`/`package.nix` must be committed (or `git add -N`'d) before `nix build` works in the repo.
-- The package version is read from `package.json` at eval time, so it tracks upstream automatically on rebase.
-- When `package-lock.json` changes (upstream dependency updates), refresh `npmDepsHash` by running:
+- The package version is read from `package.json` at eval time, so it follows our own version bumps.
+- When `package-lock.json` changes (dependency updates), refresh `npmDepsHash` by running:
   ```bash
   nix run .#update-npm-deps
   ```
@@ -253,10 +205,10 @@ Caveats:
 
 ## Fork-only files
 
-- `AGENTS.md` itself is fork-only. It does not exist upstream and must survive every rebase.
+- `AGENTS.md` itself is Pinniped-only. It does not exist upstream.
 - `flake.nix` and `package.nix` are fork-only (see the Nix flake section). Upstream has neither file.
 - `element-call/` is fork-only (see the Element Call fork section).
-- Any other fork-only files (scripts, configs) should be clearly named and kept in fork-specific paths so they do not collide with upstream files during rebase.
+- Since we no longer rebase, new files do not need to avoid upstream paths, but keep scripts and configs clearly named.
 
 ## Frontend form sizing
 
