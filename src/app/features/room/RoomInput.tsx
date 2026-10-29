@@ -12,7 +12,6 @@ import React, {
 import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
-import { ReactEditor } from 'slate-react';
 import { Transforms, Editor } from 'slate';
 import FocusTrap from 'focus-trap-react';
 import {
@@ -442,7 +441,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-      if (isMobile) ReactEditor.focus(editor);
+      if (isMobile) safeFocusEditor(editor);
     }, [
       mx,
       roomId,
@@ -859,7 +858,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                         requestClose={() => {
                           setEmojiBoardTab((t) => {
                             if (t) {
-                              if (!isMobile) ReactEditor.focus(editor);
+                              if (!isMobile) safeFocusEditor(editor);
                               return undefined;
                             }
                             return t;

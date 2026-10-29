@@ -20,7 +20,6 @@ import {
   config,
 } from 'folds';
 import { Editor, Transforms } from 'slate';
-import { ReactEditor } from 'slate-react';
 import { IContent, IMentions, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
 import { isKeyHotkey } from 'is-hotkey';
 import {
@@ -240,7 +239,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       });
 
       editor.insertFragment(initialValue);
-      if (!mobileOrTablet()) ReactEditor.focus(editor);
+      if (!mobileOrTablet()) safeFocusEditor(editor);
     }, [editor, getPrevBodyAndFormattedBody, isMarkdown]);
 
     useEffect(() => {
@@ -333,7 +332,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                             requestClose={() => {
                               setAnchor((v) => {
                                 if (v) {
-                                  if (!mobileOrTablet()) ReactEditor.focus(editor);
+                                  if (!mobileOrTablet()) safeFocusEditor(editor);
                                   return undefined;
                                 }
                                 return v;
