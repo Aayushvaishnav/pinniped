@@ -48,6 +48,9 @@ jobs:
             drv=$(grep -oE "hash mismatch in fixed-output derivation '[^']+'" "$log" | head -1)
             if [[ -z "$hash" ]]; then
               echo "build failed for a reason other than a stale hash" >&2
+              # nix only prints the last 25 lines of a failed build; show the rest.
+              failed=$(grep -oE "Cannot build '[^']+\.drv'" "$log" | head -1 | grep -oE "/nix/store/[^']+")
+              [[ -n "$failed" ]] && nix log "$failed" >&2 || true
               exit 1
             fi
             case "$drv" in
