@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useMemo } from 'react';
-import { Capabilities, validateAuthMetadata, ValidatedAuthMetadata } from 'matrix-js-sdk';
+import { Capabilities, ValidatedAuthMetadata } from 'matrix-js-sdk';
 import { AsyncStatus, useAsyncCallbackValue } from '../hooks/useAsyncCallback';
 import { useMatrixClient } from '../hooks/useMatrixClient';
 import { MediaConfig } from '../hooks/useMediaConfig';
@@ -39,15 +39,8 @@ export function ServerConfigsLoader({ children }: ServerConfigsLoaderProps) {
 
       const capabilities = promiseFulfilledResult(result[0]);
       const mediaConfig = promiseFulfilledResult(result[1]);
-      const authMetadata = promiseFulfilledResult(result[2]);
+      const validatedAuthMetadata = promiseFulfilledResult(result[2]);
       const serverSoftware = identifyServerSoftware(promiseFulfilledResult(result[3]));
-      let validatedAuthMetadata: ValidatedAuthMetadata | undefined;
-
-      try {
-        validatedAuthMetadata = validateAuthMetadata(authMetadata);
-      } catch (e) {
-        console.error(e);
-      }
 
       return {
         capabilities,

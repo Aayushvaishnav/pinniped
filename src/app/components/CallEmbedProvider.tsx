@@ -73,7 +73,7 @@ type IncomingCallInfo = {
   senderTs: number;
   lifetime: number;
   intent?: string;
-  notificationType: RTCNotificationType;
+  notificationType?: RTCNotificationType;
   refEventId: string;
 };
 type IncomingCallProps = {

@@ -65,7 +65,7 @@ export const useMutualRooms = (userId: string): AsyncState<string[], unknown> =>
   const [mutualRoomsState] = useAsyncCallbackValue(
     useCallback(() => {
       if (support) return fetchAllMutualRooms(mx, userId);
-      if (unstableSupport) return mx._unstable_getSharedRooms(userId);
+      if (unstableSupport) return mx.getMutualRooms(userId);
       return Promise.resolve([]);
     }, [mx, userId, unstableSupport, support])
   );
