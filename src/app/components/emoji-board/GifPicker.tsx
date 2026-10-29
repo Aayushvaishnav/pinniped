@@ -191,13 +191,7 @@ function GifTile({ fav, onClick, isFavorited, onToggleFavorite }: GifTileProps) 
     );
   } else {
     media = (
-      <img
-        className={css.GifTileImg}
-        loading="lazy"
-        alt={title}
-        src={src}
-        style={mediaStyle}
-      />
+      <img className={css.GifTileImg} loading="lazy" alt={title} src={src} style={mediaStyle} />
     );
   }
 
@@ -429,20 +423,20 @@ export function GifPicker({ onGifSelect, requestClose }: GifPickerProps) {
           )}
           {displayGifs.length > 0 && (
             <GifVisibilityContext.Provider value={visibilityObserver}>
-            <div className={css.GifGrid}>
-              {displayGifs.map((fav) => {
-                const id = getFavoriteGifId(fav);
-                return (
-                  <GifTile
-                    key={id}
-                    fav={fav}
-                    onClick={handleGifClick}
-                    isFavorited={favoriteIds.has(id)}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
-                );
-              })}
-            </div>
+              <div className={css.GifGrid}>
+                {displayGifs.map((fav) => {
+                  const id = getFavoriteGifId(fav);
+                  return (
+                    <GifTile
+                      key={id}
+                      fav={fav}
+                      onClick={handleGifClick}
+                      isFavorited={favoriteIds.has(id)}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  );
+                })}
+              </div>
             </GifVisibilityContext.Provider>
           )}
           {!isFavouritesTab && loadingMore && (

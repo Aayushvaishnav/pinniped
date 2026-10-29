@@ -243,7 +243,9 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
   ]);
 };
 
-export const useCallEmbedPlacementSync = (containerViewRef: RefObject<HTMLDivElement | null>): void => {
+export const useCallEmbedPlacementSync = (
+  containerViewRef: RefObject<HTMLDivElement | null>
+): void => {
   const callEmbedRef = useCallEmbedRef();
 
   const syncCallEmbedPlacement = useCallback(() => {
