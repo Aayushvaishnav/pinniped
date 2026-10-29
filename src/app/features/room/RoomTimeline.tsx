@@ -86,6 +86,7 @@ import {
   getReactionContent,
   isMembershipChanged,
   reactionOrEditEvent,
+  getRoomUnreadInfo,
 } from '../../utils/room';
 import { useSetting } from '../../state/hooks/settings';
 import { MessageLayout, settingsAtom } from '../../state/settings';
@@ -429,18 +430,6 @@ const getEmptyTimeline = () => ({
   linkedTimelines: [],
 });
 
-const getRoomUnreadInfo = (room: Room, scrollTo = false) => {
-  const readUptoEventId = room.getEventReadUpTo(room.client.getUserId() ?? '');
-  if (!readUptoEventId) return undefined;
-  const evtTimeline = getEventTimeline(room, readUptoEventId);
-  const latestTimeline = evtTimeline && getFirstLinkedTimeline(evtTimeline, Direction.Forward);
-  return {
-    readUptoEventId,
-    inLiveTimeline: latestTimeline === room.getLiveTimeline(),
-    scrollTo,
-  };
-};
-
 export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -497,7 +486,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   const imagePackRooms: Room[] = useImagePackRooms(room.roomId, roomToParents);
 
-  const [unreadInfo, setUnreadInfo] = useState(() => getRoomUnreadInfo(room, true));
+  const [unreadInfo, setUnreadInfo] = useState(() => getRoomUnreadInfo(mx, room, true));
   const readUptoEventIdRef = useRef<string>(undefined);
   if (unreadInfo) {
     readUptoEventIdRef.current = unreadInfo.readUptoEventId;
@@ -653,7 +642,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           }
 
           if (!isUserActive() && !unreadInfo) {
-            setUnreadInfo(getRoomUnreadInfo(room));
+            setUnreadInfo(getRoomUnreadInfo(mx, room));
           }
 
           scrollToBottomRef.current.count += 1;
@@ -670,7 +659,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         }
         setTimeline((ct) => ({ ...ct }));
         if (!unreadInfo) {
-          setUnreadInfo(getRoomUnreadInfo(room));
+          setUnreadInfo(getRoomUnreadInfo(mx, room));
         }
       },
       [mx, room, unreadInfo, hideActivity]

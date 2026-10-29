@@ -15,6 +15,7 @@ import {
   NotificationCountType,
   RelationType,
   ReceiptType,
+  Direction,
   Room,
   RoomMember,
 } from 'matrix-js-sdk';
@@ -22,6 +23,7 @@ import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { getLocalReadTs } from '../state/readMarkers';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { MATRIX_GIF_PROPERTY_NAME } from '../../types/matrix/common';
+import { getEventTimeline, getFirstLinkedTimeline } from './timeline';
 import { getPollQuestion, isPollStartType } from './poll';
 import {
   IRoomCreateContent,
@@ -246,6 +248,23 @@ export const roomHaveUnread = (mx: MatrixClient, room: Room) => {
   }
   // Nothing in the loaded window can notify, so there is nothing unread to show.
   return false;
+};
+
+// Where a room's timeline should open: at the read receipt. Only meaningful
+// while the room is actually unread. The receipt's event id can lag behind what
+// roomHaveUnread() knows (a receipt the server never echoed, our own latest
+// message), and honouring it then drops the user on an old message.
+export const getRoomUnreadInfo = (mx: MatrixClient, room: Room, scrollTo = false) => {
+  if (!roomHaveNotification(room) && !roomHaveUnread(mx, room)) return undefined;
+  const readUptoEventId = room.getEventReadUpTo(mx.getUserId() ?? '');
+  if (!readUptoEventId) return undefined;
+  const evtTimeline = getEventTimeline(room, readUptoEventId);
+  const latestTimeline = evtTimeline && getFirstLinkedTimeline(evtTimeline, Direction.Forward);
+  return {
+    readUptoEventId,
+    inLiveTimeline: latestTimeline === room.getLiveTimeline(),
+    scrollTo,
+  };
 };
 
 export const getUnreadInfo = (room: Room): UnreadInfo => {
