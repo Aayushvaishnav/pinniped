@@ -187,6 +187,12 @@ export default defineConfig({
     __APP_COMMIT__: JSON.stringify(appCommit),
   },
   base: buildConfig.base,
+  // Vite 8 follows Node's CJS interop in this "type": "module" package: a default import
+  // of a CommonJS dependency is its whole exports object, not exports.default (millify
+  // broke that way). Keep the pre-8 behaviour for every dependency.
+  legacy: {
+    inconsistentCjsInterop: true,
+  },
   resolve: {
     // Fork-only: bare `folds` resolves to our shim (src/folds/index.ts) which
     // re-exports folds but overrides the `Icons` enum with lucide-react icons.
