@@ -104,16 +104,16 @@ export const getThumbnailContent = (thumbnailInfo: {
   return content;
 };
 
-export const encryptFile = async (
-  file: File | Blob
+export const encryptFile = async <T extends File | Blob>(
+  file: T
 ): Promise<{
   encInfo: EncryptedAttachmentInfo;
   file: File;
-  originalFile: File | Blob;
+  originalFile: T;
 }> => {
   const dataBuffer = await file.arrayBuffer();
   const encryptedAttachment = await encryptAttachment(dataBuffer);
-  const encFile = new File([encryptedAttachment.data], file.name, {
+  const encFile = new File([encryptedAttachment.data], file instanceof File ? file.name : '', {
     type: file.type,
   });
   return {
@@ -133,7 +133,7 @@ export const decryptFile = async (
   return blob;
 };
 
-export type TUploadContent = File | Blob;
+export type TUploadContent = File;
 
 export type ContentUploadOptions = {
   name?: string;
