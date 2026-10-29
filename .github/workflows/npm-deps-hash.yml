@@ -40,7 +40,7 @@ jobs:
           # Each stale fixed-output hash fails the build on its own, so fix one per
           # attempt (npm deps, pnpm deps) until the whole build passes.
           for attempt in 1 2 3 4; do
-            if nix build .#pinniped --no-link 2>&1 | tee "$log"; then
+            if nix build .#pinniped --no-link -L 2>&1 | tee "$log"; then
               built=true
               break
             fi
@@ -48,9 +48,6 @@ jobs:
             drv=$(grep -oE "hash mismatch in fixed-output derivation '[^']+'" "$log" | head -1)
             if [[ -z "$hash" ]]; then
               echo "build failed for a reason other than a stale hash" >&2
-              # nix only prints the last 25 lines of a failed build; show the rest.
-              failed=$(grep -oE "Cannot build '[^']+\.drv'" "$log" | head -1 | grep -oE "/nix/store/[^']+")
-              [[ -n "$failed" ]] && nix log "$failed" >&2 || true
               exit 1
             fi
             case "$drv" in
