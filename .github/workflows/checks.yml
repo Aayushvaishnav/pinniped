@@ -1,0 +1,40 @@
+# Fork-only: lint, typecheck and unit tests on every push to fork/dev (and PRs).
+# None of these need the Element Call widget build, so they run without it —
+# a red suite shows up here instead of sitting unnoticed.
+name: checks
+on:
+  push:
+    branches: [fork/dev]
+  pull_request:
+    paths:
+      - src/**
+      - tests/**
+      - scripts/**
+      - package.json
+      - package-lock.json
+      - eslint.config.js
+      - tsconfig.json
+      - vitest.config.ts
+      - .github/workflows/checks.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
