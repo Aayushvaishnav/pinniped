@@ -12,6 +12,7 @@ import {
   LocalVideoTrack,
   ParticipantEvent,
   type Room as LivekitRoom,
+  RoomEvent,
   Track,
 } from "livekit-client";
 import {
@@ -115,6 +116,34 @@ export class Publisher {
       ParticipantEvent.LocalTrackPublished,
       this.onLocalTrackPublished.bind(this),
     );
+
+    this.republishTracksAfterRejoin(room);
+  }
+
+  /**
+   * LiveKit stops and drops our local tracks when it gives up on a session.
+   * When the connection then rejoins the room, bring mic and camera back
+   * according to the current mute state, as the initial setup does.
+   */
+  private republishTracksAfterRejoin(room: LivekitRoom): void {
+    let dropped = false;
+    const onDisconnected = (): void => {
+      dropped = true;
+    };
+    const onConnected = (): void => {
+      if (!dropped) return;
+      dropped = false;
+      this.logger.info("Rejoined the room, republishing local tracks");
+      this.enableTracksForMuteState().catch((e) =>
+        this.logger.error("Failed to republish tracks after rejoining", e),
+      );
+    };
+    room.on(RoomEvent.Disconnected, onDisconnected);
+    room.on(RoomEvent.Connected, onConnected);
+    this.scope.onEnd(() => {
+      room.off(RoomEvent.Disconnected, onDisconnected);
+      room.off(RoomEvent.Connected, onConnected);
+    });
   }
 
   public async destroy(): Promise<void> {
@@ -213,22 +242,28 @@ export class Publisher {
    */
   public async createAndSetupTracks(): Promise<void> {
     this.logger.debug("createAndSetupTracks called");
-    const lkRoom = this.connection.livekitRoom;
     // Observe mute state changes and update LiveKit microphone/camera states accordingly
     this.observeMuteStates();
 
-    // Check if audio and/or video is enabled. We only create tracks if enabled,
-    // because it could prompt for permission, and we don't want to do that unnecessarily.
+    await this.enableTracksForMuteState();
+  }
+
+  /**
+   * Starts the tracks that the mute state asks for. We only create tracks if
+   * enabled, because it could prompt for permission, and we don't want to do
+   * that unnecessarily.
+   *
+   * We don't await the creation, because livekit could block until the tracks
+   * are fully published, and not only that they are created.
+   * We are using the `ParticipantEvent.LocalTrackPublished` to be notified
+   * when tracks are actually published, and at that point
+   * we can pause upstream if needed (depending on if startPublishing has been called).
+   */
+  private enableTracksForMuteState(): Promise<void> {
+    const lkRoom = this.connection.livekitRoom;
     const audio = this.muteStates.audio.enabled$.value;
     const video = this.muteStates.video.enabled$.value;
 
-    // We don't await the creation, because livekit could block until the tracks
-    // are fully published, and not only that they are created.
-    // We don't have control on that, localParticipant creates and publishes the tracks
-    // asap.
-    // We are using the `ParticipantEvent.LocalTrackPublished` to be notified
-    // when tracks are actually published, and at that point
-    // we can pause upstream if needed (depending on if startPublishing has been called).
     if (audio && video) {
       // Enable both at once in order to have a single permission prompt!
       void lkRoom.localParticipant.enableCameraAndMicrophone();

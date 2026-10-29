@@ -17,6 +17,7 @@ import {
   vi,
 } from "vitest";
 import {
+  DisconnectReason,
   type LocalParticipant,
   type RemoteParticipant,
   type Room as LivekitRoom,
@@ -618,3 +619,124 @@ describe("remote participants", () => {
 //   });
 // });
 // });
+
+describe("Rejoining after the SFU drops us", () => {
+  const refreshedConfig = {
+    url: "wss://matrix-rtc.m.localhost/livekit/sfu",
+    jwt: testJWTToken,
+    livekitAlias: "alias",
+    livekitIdentity: "@me:example.org:ABCDEF",
+  };
+
+  function setupLocalConnection(
+    refreshSFUConfig: () => Promise<typeof refreshedConfig>,
+  ): Connection {
+    setupTest();
+    const connection = setupRemoteConnectionWithRefresh(refreshSFUConfig);
+    return connection;
+  }
+
+  function setupRemoteConnectionWithRefresh(
+    refreshSFUConfig: () => Promise<typeof refreshedConfig>,
+  ): Connection {
+    fakeLivekitRoom.connect.mockImplementation(async (): Promise<void> => {
+      fakeLivekitRoom.state = LivekitConnectionState.Connected;
+      fakeLivekitRoom.emit(
+        RoomEvent.ConnectionStateChanged,
+        fakeLivekitRoom.state,
+      );
+    });
+    return new Connection(
+      {
+        client,
+        roomId: ROOM_ID,
+        transport: livekitFocus,
+        scope: testScope,
+        ownMembershipIdentity: ownMemberMock,
+        livekitRoomFactory: () => fakeLivekitRoom,
+        existingSFUConfig: refreshedConfig,
+        refreshSFUConfig,
+      },
+      logger,
+    );
+  }
+
+  function drop(reason?: DisconnectReason): void {
+    fakeLivekitRoom.state = LivekitConnectionState.Disconnected;
+    fakeLivekitRoom.emit(RoomEvent.Disconnected, reason);
+  }
+
+  it("fetches a fresh token and reconnects", async () => {
+    vi.useFakeTimers();
+    const refresh = vi.fn().mockResolvedValue(refreshedConfig);
+    const connection = setupLocalConnection(refresh);
+    await connection.start();
+    expect(fakeLivekitRoom.connect).toHaveBeenCalledTimes(1);
+
+    drop(DisconnectReason.UNKNOWN_REASON);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(fakeLivekitRoom.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it("backs off and retries when the first attempts fail", async () => {
+    vi.useFakeTimers();
+    const refresh = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("jwt service down"))
+      .mockRejectedValueOnce(new Error("jwt service down"))
+      .mockResolvedValue(refreshedConfig);
+    const connection = setupLocalConnection(refresh);
+    await connection.start();
+
+    drop(DisconnectReason.SERVER_SHUTDOWN);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(refresh).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(refresh).toHaveBeenCalledTimes(3);
+    expect(fakeLivekitRoom.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not rejoin after a deliberate disconnect", async () => {
+    vi.useFakeTimers();
+    const refresh = vi.fn().mockResolvedValue(refreshedConfig);
+    const connection = setupLocalConnection(refresh);
+    await connection.start();
+
+    drop(DisconnectReason.CLIENT_INITIATED);
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(fakeLivekitRoom.connect).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not rejoin after the connection was stopped", async () => {
+    vi.useFakeTimers();
+    const refresh = vi.fn().mockResolvedValue(refreshedConfig);
+    const connection = setupLocalConnection(refresh);
+    await connection.start();
+    await connection.stop();
+
+    drop(DisconnectReason.UNKNOWN_REASON);
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("gives up with an error after the retry limit", async () => {
+    vi.useFakeTimers();
+    const refresh = vi.fn().mockRejectedValue(new Error("gone"));
+    const connection = setupLocalConnection(refresh);
+    await connection.start();
+
+    drop(DisconnectReason.UNKNOWN_REASON);
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    expect(refresh).toHaveBeenCalledTimes(7);
+    expect(connection.state$.getValue()).toBeInstanceOf(ElementCallError);
+    expect(fakeLivekitRoom.connect).toHaveBeenCalledTimes(1);
+  });
+});

@@ -172,7 +172,7 @@ export function createConnectionManager$({
                   transport.transport.livekit_service_url,
                   transport.sfuConfig,
                 ],
-                data: undefined,
+                data: transport.refreshSFUConfig,
               };
             } else {
               yield {
@@ -180,12 +180,12 @@ export function createConnectionManager$({
                   transport.livekit_service_url,
                   undefined as SFUConfig | undefined,
                 ],
-                data: undefined,
+                data: undefined as (() => Promise<SFUConfig>) | undefined,
               };
             }
           }
         },
-        (scope, _data$, serviceUrl, sfuConfig) => {
+        (scope, data$, serviceUrl, sfuConfig) => {
           const connection = connectionFactory.createConnection(
             scope,
             {
@@ -197,6 +197,7 @@ export function createConnectionManager$({
             // TODO: This whole optional SFUConfig parameter is not particularly elegant.
             // I would like it if connections always fetched the SFUConfig by themselves.
             sfuConfig,
+            data$.value,
           );
           // Start the connection immediately
           // Use connection state to track connection progress

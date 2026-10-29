@@ -12,8 +12,10 @@ import {
 } from "@livekit/components-core";
 import {
   ConnectionError,
+  DisconnectReason,
   type Room as LivekitRoom,
   type RemoteParticipant,
+  RoomEvent,
 } from "livekit-client";
 import { type LivekitTransportConfig } from "matrix-js-sdk/lib/matrixrtc";
 import { BehaviorSubject, map } from "rxjs";
@@ -29,11 +31,32 @@ import { type Behavior } from "../../Behavior.ts";
 import { type ObservableScope } from "../../ObservableScope.ts";
 import {
   ElementCallError,
+  FailToStartLivekitConnection,
   InsufficientCapacityError,
   SFURoomCreationRestrictedError,
   UnknownCallError,
 } from "../../../utils/errors.ts";
 import { type JwtEndpointVersion } from "../localMember/LocalTransport.ts";
+
+/**
+ * How long to wait before each attempt to rejoin after the SFU drops us.
+ * The first attempt is immediate, since a restarted SFU is usually back at once.
+ * About a minute in total, then the failure is surfaced.
+ */
+const REJOIN_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000, 30000];
+
+/**
+ * Disconnects that mean we must not rejoin: we asked for it, were removed on
+ * purpose, or another device took over our identity (rejoining would just
+ * fight it).
+ */
+const FINAL_DISCONNECT_REASONS: ReadonlySet<DisconnectReason> = new Set([
+  DisconnectReason.CLIENT_INITIATED,
+  DisconnectReason.DUPLICATE_IDENTITY,
+  DisconnectReason.PARTICIPANT_REMOVED,
+  DisconnectReason.USER_REJECTED,
+  DisconnectReason.USER_UNAVAILABLE,
+]);
 
 export interface ConnectionOpts {
   /**
@@ -41,6 +64,12 @@ export interface ConnectionOpts {
    * On top the local transport will send additional data to the jwt server to use delayed event delegation.
    */
   existingSFUConfig?: SFUConfig;
+  /**
+   * Fetches a fresh SFU config with the same identity as `existingSFUConfig`.
+   * Needed to rejoin after the SFU drops us, as the JWT service creates the
+   * LiveKit room when it issues a token.
+   */
+  refreshSFUConfig?: () => Promise<SFUConfig>;
   /**
    * For local connections that use the oldest member pattern. here we have not prefetched the sfuConfig
    * and hence we need to let the connection do the jwt token fetching.
@@ -139,6 +168,9 @@ export class Connection {
   private readonly logger: Logger;
   private readonly ownMembershipIdentity: CallMembershipIdentityParts;
   private readonly existingSFUConfig?: SFUConfig;
+  private readonly refreshSFUConfig?: () => Promise<SFUConfig>;
+  private watchingForDrops = false;
+  private rejoining = false;
   /**
    * Creates a new connection to a matrix RTC LiveKit backend.
    *
@@ -149,6 +181,7 @@ export class Connection {
   public constructor(opts: ConnectionOpts, logger: Logger) {
     this.ownMembershipIdentity = opts.ownMembershipIdentity;
     this.existingSFUConfig = opts.existingSFUConfig;
+    this.refreshSFUConfig = opts.refreshSFUConfig;
     this.roomId = opts.roomId;
     this.logger = logger.getChild(
       "[Connection " + opts.transport.livekit_service_url + "]",
@@ -253,6 +286,7 @@ export class Connection {
       }
       // If we were stopped while connecting, don't proceed to update state.
       if (this.stopped) return;
+      this.watchForDrops();
     } catch (error) {
       this.logger.debug(`Failed to connect to LiveKit room: ${error}`);
       this._state$.next(
@@ -264,6 +298,56 @@ export class Connection {
       );
       // Its okay to ignore the throw. The error is part of the state.
       throw error;
+    }
+  }
+
+  /**
+   * Rejoins the LiveKit room if the SFU drops us after we were connected.
+   *
+   * LiveKit first tries to resume the session itself. That fails for good when
+   * the SFU restarted or the room is gone (the resume gets a 404), and we would
+   * otherwise stay disconnected for the rest of the call.
+   */
+  private watchForDrops(): void {
+    if (this.watchingForDrops) return;
+    this.watchingForDrops = true;
+    const onDisconnected = (reason?: DisconnectReason): void => {
+      if (this.stopped || this.rejoining) return;
+      if (reason !== undefined && FINAL_DISCONNECT_REASONS.has(reason)) return;
+      this.logger.warn(`Dropped by the SFU (reason ${reason}), rejoining`);
+      void this.rejoin();
+    };
+    this.livekitRoom.on(RoomEvent.Disconnected, onDisconnected);
+    this.scope.onEnd(() =>
+      this.livekitRoom.off(RoomEvent.Disconnected, onDisconnected),
+    );
+  }
+
+  private async rejoin(): Promise<void> {
+    this.rejoining = true;
+    try {
+      for (const [attempt, delay] of REJOIN_DELAYS_MS.entries()) {
+        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+        if (this.stopped) return;
+        try {
+          const { url, jwt, livekitAlias } = await (this.refreshSFUConfig?.() ??
+            this.getSFUConfigForRemoteConnection());
+          if (this.stopped) return;
+          this._livekitAlias = livekitAlias;
+          await this.livekitRoom.connect(url, jwt);
+          this.logger.info(`Rejoined after ${attempt + 1} attempt(s)`);
+          return;
+        } catch (e) {
+          this.logger.warn(`Rejoin attempt ${attempt + 1} failed`, e);
+        }
+      }
+      if (!this.stopped) {
+        this._state$.next(
+          new FailToStartLivekitConnection("Could not rejoin the call"),
+        );
+      }
+    } finally {
+      this.rejoining = false;
     }
   }
 

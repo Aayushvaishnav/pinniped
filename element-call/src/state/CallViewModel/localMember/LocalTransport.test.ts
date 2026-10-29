@@ -177,6 +177,7 @@ describe("LocalTransport", () => {
     };
     expect(advertised$.value).toStrictEqual(expectedTransport);
     expect(active$.value).toStrictEqual({
+      refreshSFUConfig: expect.any(Function),
       transport: expectedTransport,
       sfuConfig: {
         jwt: "jwt",
@@ -364,6 +365,7 @@ describe("LocalTransport", () => {
       };
       expect(advertised$.value).toStrictEqual(expectedTransport);
       expect(active$.value).toStrictEqual({
+        refreshSFUConfig: expect.any(Function),
         transport: expectedTransport,
         sfuConfig: {
           jwt: "e30=.eyJzdWIiOiJAbWU6ZXhhbXBsZS5vcmc6QUJDREVGIiwidmlkZW8iOnsicm9vbSI6IiFleGFtcGxlX3Jvb21faWQifX0=.e30=",
@@ -382,6 +384,7 @@ describe("LocalTransport", () => {
       expect(advertised$.value).toBe(null);
       await flushPromises();
       expect(active$.value).toStrictEqual({
+        refreshSFUConfig: expect.any(Function),
         transport: {
           livekit_service_url: "https://lk.example.org",
           type: "livekit",
@@ -411,6 +414,7 @@ describe("LocalTransport", () => {
       };
       expect(advertised$.value).toStrictEqual(expectedTransport);
       expect(active$.value).toStrictEqual({
+        refreshSFUConfig: expect.any(Function),
         transport: expectedTransport,
         sfuConfig: {
           jwt: "e30=.eyJzdWIiOiJAbWU6ZXhhbXBsZS5vcmc6QUJDREVGIiwidmlkZW8iOnsicm9vbSI6IiFleGFtcGxlX3Jvb21faWQifX0=.e30=",
@@ -488,6 +492,7 @@ describe("LocalTransport", () => {
       };
       expect(advertised$.value).toStrictEqual(expectedTransport);
       expect(active$.value).toStrictEqual({
+        refreshSFUConfig: expect.any(Function),
         transport: expectedTransport,
         sfuConfig: {
           jwt: "e30=.eyJzdWIiOiJAbWU6ZXhhbXBsZS5vcmc6QUJDREVGIiwidmlkZW8iOnsicm9vbSI6IiFleGFtcGxlX3Jvb21faWQifX0=.e30=",

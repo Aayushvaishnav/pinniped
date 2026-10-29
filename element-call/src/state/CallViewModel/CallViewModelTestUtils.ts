@@ -216,6 +216,7 @@ export function withCallViewModel(mode: MatrixRTCMode) {
           active$: constant({
             transport: exampleTransport,
             sfuConfig: exampleSfuConfig,
+            refreshSFUConfig: () => Promise.resolve(exampleSfuConfig),
           }),
           advertised$: constant(exampleTransport),
         },

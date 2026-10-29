@@ -37,6 +37,7 @@ export interface ConnectionFactory {
     ownMembershipIdentity: CallMembershipIdentityParts,
     logger: Logger,
     sfuConfig?: SFUConfig,
+    refreshSFUConfig?: () => Promise<SFUConfig>,
   ): Connection;
 }
 
@@ -90,6 +91,7 @@ export class ECConnectionFactory implements ConnectionFactory {
    * @param ownMembershipIdentity required to connect (using the jwt service) with the SFU.
    * @param logger The logger instance to use for this connection.
    * @param sfuConfig optional config in case we already have a token for this connection.
+   * @param refreshSFUConfig optional way to get a fresh token when rejoining after a drop.
    * @returns
    */
   public createConnection(
@@ -98,10 +100,12 @@ export class ECConnectionFactory implements ConnectionFactory {
     ownMembershipIdentity: CallMembershipIdentityParts,
     logger: Logger,
     sfuConfig?: SFUConfig,
+    refreshSFUConfig?: () => Promise<SFUConfig>,
   ): Connection {
     return new Connection(
       {
         existingSFUConfig: sfuConfig,
+        refreshSFUConfig,
         roomId: this.roomId,
         transport,
         client: this.client,

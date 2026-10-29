@@ -98,6 +98,12 @@ export enum JwtEndpointVersion {
 export interface LocalTransportWithSFUConfig {
   transport: LivekitTransportConfig;
   sfuConfig: SFUConfig;
+  /**
+   * Fetches a fresh SFU config with the same identity parameters as `sfuConfig`.
+   * Used to rejoin after the SFU drops us: the JWT service creates the LiveKit
+   * room as a side effect, which a stale token would not do.
+   */
+  refreshSFUConfig: () => Promise<SFUConfig>;
 }
 
 export function isLocalTransportWithSFUConfig(
@@ -308,21 +314,23 @@ async function doOpenIdAndJWTFromUrl(
     OpenIDClientParts,
   delayId?: string,
 ): Promise<LocalTransportWithSFUConfig> {
-  const sfuConfig = await getSFUConfigWithOpenID(
-    client,
-    membership,
-    transport.livekit_service_url,
-    roomId,
-    {
-      forceJwtEndpoint: forceJwtEndpoint,
-      delayEndpointBaseUrl: client.baseUrl,
-      delayId,
-    },
-    logger,
-  );
+  const fetchSFUConfig = (): Promise<SFUConfig> =>
+    getSFUConfigWithOpenID(
+      client,
+      membership,
+      transport.livekit_service_url,
+      roomId,
+      {
+        forceJwtEndpoint: forceJwtEndpoint,
+        delayEndpointBaseUrl: client.baseUrl,
+        delayId,
+      },
+      logger,
+    );
   return {
     transport,
-    sfuConfig,
+    sfuConfig: await fetchSFUConfig(),
+    refreshSFUConfig: fetchSFUConfig,
   };
 }
 
