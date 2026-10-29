@@ -112,7 +112,7 @@ export const ImageEditor = as<'div', ImageEditorProps>(
       clientX: number;
       clientY: number;
       center: Point;
-    }>();
+    }>(undefined);
     const [stageSize, setStageSize] = useState<Size>({ width: 0, height: 0 });
     const [imageSize, setImageSize] = useState<Size>({ width: 0, height: 0 });
     const [zoom, setZoom] = useState(1);

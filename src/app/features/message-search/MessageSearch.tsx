@@ -47,7 +47,7 @@ type MessageSearchProps = {
   allowGlobal?: boolean;
   rooms: string[];
   senders?: string[];
-  scrollRef: RefObject<HTMLDivElement>;
+  scrollRef: RefObject<HTMLDivElement | null>;
 };
 export function MessageSearch({
   defaultRoomsFilterName,

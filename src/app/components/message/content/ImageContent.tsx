@@ -88,7 +88,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     // delay before falling back to the manual retry button.
     const [retryCount, setRetryCount] = useState(0);
     const maxRetries = 3;
-    const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     useEffect(
       () => () => {

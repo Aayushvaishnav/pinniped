@@ -34,7 +34,7 @@ const SCROLL_DIRECTION = -1;
  * over when the image is persistently zoomed via the header controls).
  */
 export const useMagnifier = (
-  imgRef: React.RefObject<HTMLImageElement>,
+  imgRef: React.RefObject<HTMLImageElement | null>,
   enabled: boolean
 ): MagnifierState => {
   const [visible, setVisible] = useState(false);

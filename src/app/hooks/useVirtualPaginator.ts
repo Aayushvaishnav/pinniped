@@ -171,18 +171,18 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
     scrollTop: number;
     anchorOffsetTop: number;
     anchorItem: number;
-  }>();
+  }>(undefined);
 
   const scrollToItemRef = useRef<{
     index: number;
     opts?: ScrollToOptions;
-  }>();
+  }>(undefined);
 
   // Scroll anchor tracks the topmost visible item so we can compensate
   // for async content height changes (images loading, URL previews, etc.)
   // that shift content above the viewport and would otherwise cause the
   // view to jump.
-  const scrollAnchorRef = useRef<{ index: number; offsetTop: number }>();
+  const scrollAnchorRef = useRef<{ index: number; offsetTop: number }>(undefined);
 
   const propRef = useRef({
     range,

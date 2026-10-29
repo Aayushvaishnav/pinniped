@@ -31,7 +31,7 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
   const [editing, setEditing] = useState(false);
   const [emoji, setEmoji] = useState(sound.emoji);
   const [busy, setBusy] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>();
+  const audioRef = useRef<HTMLAudioElement>(undefined);
 
   const preview = async () => {
     audioRef.current?.pause();

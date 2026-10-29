@@ -21,7 +21,7 @@ export const usePan = (active: boolean) => {
   }, [active]);
 
   // Detaches the in-progress drag's document listeners, if any.
-  const stopDragRef = useRef<() => void>();
+  const stopDragRef = useRef<() => void>(undefined);
 
   const handleMouseMove = (evt: MouseEvent) => {
     // Primary button no longer held: the mouseup was lost (released over an

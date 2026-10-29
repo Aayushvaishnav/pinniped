@@ -264,9 +264,9 @@ type SidebarDraggable = string | FolderDraggable;
 
 const useDraggableItem = (
   item: SidebarDraggable,
-  targetRef: RefObject<HTMLElement>,
+  targetRef: RefObject<HTMLElement | null>,
   onDragging: (item?: SidebarDraggable) => void,
-  dragHandleRef?: RefObject<HTMLElement>
+  dragHandleRef?: RefObject<HTMLElement | null>
 ): boolean => {
   const [dragging, setDragging] = useState(false);
 
@@ -296,7 +296,7 @@ const useDraggableItem = (
 
 const useDropTarget = (
   item: SidebarDraggable,
-  targetRef: RefObject<HTMLElement>
+  targetRef: RefObject<HTMLElement | null>
 ): Instruction | undefined => {
   const [dropState, setDropState] = useState<Instruction>();
 
@@ -344,7 +344,7 @@ const useDropTarget = (
 
 function useDropTargetInstruction<T extends InstructionType>(
   item: SidebarDraggable,
-  targetRef: RefObject<HTMLElement>,
+  targetRef: RefObject<HTMLElement | null>,
   instructionType: T
 ): T | undefined {
   const [dropState, setDropState] = useState<T>();
@@ -376,7 +376,7 @@ function useDropTargetInstruction<T extends InstructionType>(
 }
 
 const useDnDMonitor = (
-  scrollRef: RefObject<HTMLElement>,
+  scrollRef: RefObject<HTMLElement | null>,
   onDragging: (dragItem?: SidebarDraggable) => void,
   onReorder: (
     draggable: SidebarDraggable,
@@ -668,7 +668,7 @@ function ClosedSpaceFolder({
 }
 
 type SpaceTabsProps = {
-  scrollRef: RefObject<HTMLDivElement>;
+  scrollRef: RefObject<HTMLDivElement | null>;
 };
 export function SpaceTabs({ scrollRef }: SpaceTabsProps) {
   const navigate = useNavigate();

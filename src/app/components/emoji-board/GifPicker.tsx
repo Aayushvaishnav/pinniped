@@ -107,9 +107,9 @@ type VisibilityObserver = {
 };
 const GifVisibilityContext = createContext<VisibilityObserver | undefined>(undefined);
 
-const useGifVisibilityObserver = (rootRef: RefObject<HTMLElement>): VisibilityObserver => {
+const useGifVisibilityObserver = (rootRef: RefObject<HTMLElement | null>): VisibilityObserver => {
   const callbacks = useRef(new Map<Element, (visible: boolean) => void>());
-  const observerRef = useRef<IntersectionObserver>();
+  const observerRef = useRef<IntersectionObserver>(undefined);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -142,7 +142,7 @@ const useGifVisibilityObserver = (rootRef: RefObject<HTMLElement>): VisibilityOb
 };
 
 // `mounted` re-runs registration once a tile whose src was pending renders its element
-const useGifTileVisible = (ref: RefObject<HTMLElement>, mounted: boolean): boolean => {
+const useGifTileVisible = (ref: RefObject<HTMLElement | null>, mounted: boolean): boolean => {
   const observer = useContext(GifVisibilityContext);
   const [visible, setVisible] = useState(false);
   useEffect(() => {

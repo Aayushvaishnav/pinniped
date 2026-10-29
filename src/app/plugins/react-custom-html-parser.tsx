@@ -6,6 +6,7 @@ import React, {
   lazy,
   useMemo,
   useState,
+  type JSX,
 } from 'react';
 import {
   Element,
@@ -13,6 +14,7 @@ import {
   HTMLReactParserOptions,
   attributesToProps,
   domToReact,
+  DOMNode,
 } from 'html-react-parser';
 import { MatrixClient } from 'matrix-js-sdk';
 import classNames from 'classnames';
@@ -20,7 +22,6 @@ import { Box, Chip, config, Header, Icon, IconButton, Icons, Scroll, Text, toRem
 import { IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
 import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChildNode } from 'domhandler';
 import * as css from '../styles/CustomHtml.css';
 import {
   getMxIdLocalPart,
@@ -205,19 +206,19 @@ export const highlightText = (
   });
 
 /**
- * Recursively extracts and concatenates all text content from an array of ChildNode objects.
+ * Recursively extracts and concatenates all text content from an array of DOMNode objects.
  *
- * @param {ChildNode[]} nodes - An array of ChildNode objects to extract text from.
+ * @param {DOMNode[]} nodes - An array of DOMNode objects to extract text from.
  * @returns {string} The concatenated plain text content of all descendant text nodes.
  */
-const extractTextFromChildren = (nodes: ChildNode[]): string => {
+const extractTextFromChildren = (nodes: DOMNode[]): string => {
   let text = '';
 
   nodes.forEach((node) => {
     if (node.type === 'text') {
       text += node.data;
     } else if (node instanceof Element && node.children) {
-      text += extractTextFromChildren(node.children);
+      text += extractTextFromChildren(node.children as DOMNode[]);
     }
   });
 
@@ -228,7 +229,7 @@ export function CodeBlock({
   children,
   opts,
 }: {
-  children: ChildNode[];
+  children: DOMNode[];
   opts: HTMLReactParserOptions;
 }) {
   const code = children[0];
@@ -324,7 +325,8 @@ export const getReactCustomHtmlParser = (
   const opts: HTMLReactParserOptions = {
     replace: (domNode) => {
       if (domNode instanceof Element && 'name' in domNode) {
-        const { name, attribs, children, parent } = domNode;
+        const { name, attribs, parent } = domNode;
+        const children = domNode.children as DOMNode[];
         const props = attributesToProps(attribs);
 
         if (name === 'h1') {
@@ -422,7 +424,7 @@ export const getReactCustomHtmlParser = (
           if (parent && 'name' in parent && parent.name === 'pre') {
             const codeReact = domToReact(children, opts);
             if (typeof codeReact === 'string') {
-              let lang = props.className;
+              let lang = attribs.class;
               if (lang === 'language-rs') lang = 'language-rust';
               else if (lang === 'language-js') lang = 'language-javascript';
               else if (lang === 'language-ts') lang = 'language-typescript';
@@ -449,7 +451,7 @@ export const getReactCustomHtmlParser = (
           }
         }
 
-        if (name === 'a' && testMatrixTo(tryDecodeURIComponent(props.href))) {
+        if (name === 'a' && testMatrixTo(tryDecodeURIComponent(attribs.href))) {
           const content = children.find((child) => !(child instanceof DOMText))
             ? undefined
             : children.map((c) => (c instanceof DOMText ? c.data : '')).join();
@@ -457,7 +459,7 @@ export const getReactCustomHtmlParser = (
           const mention = renderMatrixMention(
             mx,
             roomId,
-            tryDecodeURIComponent(props.href),
+            tryDecodeURIComponent(attribs.href),
             makeMentionCustomProps(params.handleMentionClick, content)
           );
 
@@ -482,8 +484,8 @@ export const getReactCustomHtmlParser = (
         }
 
         if (name === 'img') {
-          const htmlSrc = mxcUrlToHttp(mx, props.src, params.useAuthentication);
-          if (htmlSrc && props.src.startsWith('mxc://') === false) {
+          const htmlSrc = mxcUrlToHttp(mx, attribs.src, params.useAuthentication);
+          if (htmlSrc && attribs.src.startsWith('mxc://') === false) {
             return (
               <a href={htmlSrc} target="_blank" rel="noreferrer noopener">
                 {props.alt || props.title || htmlSrc}
