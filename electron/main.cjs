@@ -45,7 +45,7 @@ if (process.platform === 'linux') app.setDesktopName('pinniped');
 // Windows toasts are attributed to the AppUserModelID; it has to match the one
 // electron-builder writes into the Start menu shortcut (the appId), otherwise
 // toasts show under the wrong name or are dropped.
-if (process.platform === 'win32') app.setAppUserModelId('de.mreow.pinniped');
+if (process.platform === 'win32') app.setAppUserModelId('club.stablecat.pinniped');
 
 // MSC4320 rich-presence publisher: impersonates Discord's local RPC pipe and
 // forwards captured activity to the renderer to publish as the user's profile

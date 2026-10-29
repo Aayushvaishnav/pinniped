@@ -1,4 +1,4 @@
-# Fork-only: build the Electron desktop app (AppImage + rpm, msi, dmg) on CI.
+# Fork-only: build the Electron desktop app (AppImage, rpm, flatpak, msi, dmg) on CI.
 # Every run uploads the installers as workflow artifacts; pushing a `v*` tag
 # also attaches them to a GitHub release.
 name: desktop
@@ -57,10 +57,11 @@ jobs:
         include:
           - name: linux
             os: ubuntu-latest
-            flags: --linux AppImage rpm
+            flags: --linux AppImage rpm flatpak
             files: |
               electron/out/*.AppImage
               electron/out/*.rpm
+              electron/out/*.flatpak
           - name: windows
             os: windows-latest
             flags: --win msi
@@ -77,7 +78,10 @@ jobs:
           cache: npm
       - name: Install rpm tooling
         if: matrix.name == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y rpm
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       - run: npm ci
         env:
           HUSKY: '0'
