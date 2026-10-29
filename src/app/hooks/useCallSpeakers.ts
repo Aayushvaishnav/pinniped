@@ -8,6 +8,3 @@ export const useCallParticipantActivity = (callEmbed?: CallEmbed) => {
   const { speakers, screenSharers, muted } = joined ? activity : emptyCallActivity;
   return { speakers, screenSharers, muted };
 };
-
-export const useCallSpeakers = (callEmbed?: CallEmbed): ReadonlySet<string> =>
-  useCallParticipantActivity(callEmbed).speakers;

@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { color, config } from 'folds';
+import { GATE_DB_SPAN } from '../../../hooks/useMicLevel';
 
 type VoiceGateMeterProps = {
   /** The live microphone level on the gate scale, 0-1. */
@@ -21,8 +22,6 @@ type VoiceGateMeterProps = {
 };
 
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
-/** The meter scale spans -70..-20 dBFS (see levelToGatePosition). */
-const DB_SPAN = 50;
 
 /**
  * A level meter for the voice gate. With a threshold it can be dragged: the meter is orange
@@ -35,7 +34,7 @@ export function VoiceGateMeter({
   hysteresisDb,
   holdMs,
 }: VoiceGateMeterProps) {
-  const hysteresis = hysteresisDb / DB_SPAN;
+  const hysteresis = hysteresisDb / GATE_DB_SPAN;
   const trackRef = useRef<HTMLDivElement>(null);
   const [gateOpen, setGateOpen] = useState(false);
   const lastLoudAt = useRef(0);

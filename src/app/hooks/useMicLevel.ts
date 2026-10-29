@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 
-/**
- * Where a level (RMS, 0..1) sits on the voice gate's 0-1 scale: -70 dBFS to -20 dBFS,
- * the same scale as the threshold the call widget applies.
- */
+/** The voice gate's 0-1 scale covers -70 dBFS to -20 dBFS, as the call widget's threshold does. */
+export const GATE_DB_MIN = -70;
+export const GATE_DB_SPAN = 50;
+
+/** Where a level (RMS, 0..1) sits on the voice gate's 0-1 scale. */
 export const levelToGatePosition = (level: number): number => {
   const db = level > 0 ? 20 * Math.log10(level) : -100;
-  return Math.min(1, Math.max(0, (db + 70) / 50));
+  return Math.min(1, Math.max(0, (db - GATE_DB_MIN) / GATE_DB_SPAN));
 };
-
-/** The call widget's gate closes this far below its open level (6 dB of the -70..-20 dB scale). */
-export const GATE_HYSTERESIS_POSITION = 6 / 50;
 
 /**
  * The live loudness of a microphone on the gate scale (see levelToGatePosition), or 0 while

@@ -200,6 +200,7 @@ export const useCallSettingsSync = (embed: CallEmbed) => {
   const [soundVolume] = useSetting(settingsAtom, 'soundVolume');
   const [soundboardVolume] = useSetting(settingsAtom, 'soundboardVolume');
   const allSettings = useAtomValue(settingsAtom);
+  // Joined so the effect below compares by value; the array is new every render.
   const mutedSounds = getMutedCallSounds(allSettings).join(',');
   const [audioInput] = useSetting(settingsAtom, 'callAudioInput');
   const [audioOutput] = useSetting(settingsAtom, 'callAudioOutput');

@@ -31,6 +31,7 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
   const [editing, setEditing] = useState(false);
   const [emoji, setEmoji] = useState(sound.emoji);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
   const audioRef = useRef<HTMLAudioElement>(undefined);
 
   const preview = async () => {
@@ -46,16 +47,34 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
     const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
     if (!name) return;
     setBusy(true);
-    await onSave(sound.id, name, emoji ?? '').catch(() => undefined);
-    setBusy(false);
-    setEditing(false);
+    setError(undefined);
+    try {
+      await onSave(sound.id, name, emoji ?? '');
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleDelete = async () => {
     setBusy(true);
-    await onDelete(sound.id).catch(() => undefined);
-    setBusy(false);
+    setError(undefined);
+    try {
+      await onDelete(sound.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed.');
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const errorText = error && (
+    <Text size="T200" style={{ color: color.Critical.Main, marginTop: config.space.S100 }}>
+      {error}
+    </Text>
+  );
 
   if (editing) {
     return (
@@ -93,6 +112,7 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
             <Text size="B400">Cancel</Text>
           </Button>
         </Box>
+        {errorText}
       </SettingTile>
     );
   }
@@ -140,7 +160,9 @@ function SoundRow({ sound, canEdit, onSave, onDelete }: SoundRowProps) {
           )}
         </Box>
       }
-    />
+    >
+      {errorText}
+    </SettingTile>
   );
 }
 

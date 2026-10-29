@@ -342,10 +342,10 @@ export class CallEmbed {
     });
 
     // Attach listeners for feeding events - the underlying widget classes handle permissions for us
-    this.mx.on(ClientEvent.Event, this.onEvent.bind(this));
-    this.mx.on(MatrixEventEvent.Decrypted, this.onEventDecrypted.bind(this));
-    this.mx.on(RoomStateEvent.Events, this.onStateUpdate.bind(this));
-    this.mx.on(ClientEvent.ToDeviceEvent, this.onToDeviceEvent.bind(this));
+    this.mx.on(ClientEvent.Event, this.onEvent);
+    this.mx.on(MatrixEventEvent.Decrypted, this.onEventDecrypted);
+    this.mx.on(RoomStateEvent.Events, this.onStateUpdate);
+    this.mx.on(ClientEvent.ToDeviceEvent, this.onToDeviceEvent);
   }
 
   /**
@@ -361,10 +361,10 @@ export class CallEmbed {
     this.container.removeChild(this.iframe);
     this.control.dispose();
 
-    this.mx.off(ClientEvent.Event, this.onEvent.bind(this));
-    this.mx.off(MatrixEventEvent.Decrypted, this.onEventDecrypted.bind(this));
-    this.mx.off(RoomStateEvent.Events, this.onStateUpdate.bind(this));
-    this.mx.off(ClientEvent.ToDeviceEvent, this.onToDeviceEvent.bind(this));
+    this.mx.off(ClientEvent.Event, this.onEvent);
+    this.mx.off(MatrixEventEvent.Decrypted, this.onEventDecrypted);
+    this.mx.off(RoomStateEvent.Events, this.onStateUpdate);
+    this.mx.off(ClientEvent.ToDeviceEvent, this.onToDeviceEvent);
 
     // Clear internal state
     this.readUpToMap = {};
@@ -375,28 +375,28 @@ export class CallEmbed {
     this.joined = true;
   }
 
-  private onEvent(ev: MatrixEvent): void {
+  private onEvent = (ev: MatrixEvent): void => {
     this.mx.decryptEventIfNeeded(ev);
     this.feedEvent(ev);
-  }
+  };
 
-  private onEventDecrypted(ev: MatrixEvent): void {
+  private onEventDecrypted = (ev: MatrixEvent): void => {
     this.feedEvent(ev);
-  }
+  };
 
-  private onStateUpdate(ev: MatrixEvent): void {
+  private onStateUpdate = (ev: MatrixEvent): void => {
     if (this.call === null) return;
     const raw = ev.getEffectiveEvent();
     this.call.feedStateUpdate(raw as IRoomEvent).catch((e) => {
       console.error('Error sending state update to widget: ', e);
     });
-  }
+  };
 
-  private async onToDeviceEvent(ev: MatrixEvent): Promise<void> {
+  private onToDeviceEvent = async (ev: MatrixEvent): Promise<void> => {
     await this.mx.decryptEventIfNeeded(ev);
     if (ev.isDecryptionFailure()) return;
     await this.call?.feedToDevice(ev.getEffectiveEvent() as IRoomEvent, ev.isEncrypted());
-  }
+  };
 
   /**
    * Determines whether the event has a relation to an unknown parent.
