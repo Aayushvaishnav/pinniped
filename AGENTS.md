@@ -136,8 +136,36 @@ The deployment uses `imagePullPolicy: Always` with the `:latest` tag, so a rollo
 
 ### Tooling (this machine)
 
-- `podman` (not docker) for image builds and pushes
+- `podman` (Linux) or OrbStack's `docker` (macOS, see below) for image builds and pushes
 - `kubectl` (context `admin@alessandro-talos`, always pass it explicitly)
+
+#### macOS (Apple Silicon): OrbStack
+
+The cluster nodes are `amd64`; Apple Silicon Macs are `arm64`, so an unflagged build
+pushes an image that will not run. Use [OrbStack](https://orbstack.dev) (`brew install --cask orbstack`)
+and always pass `--platform linux/amd64`. Docker Desktop and podman machine work too but are slower.
+
+- Select OrbStack explicitly with `docker --context orbstack ...` (Docker Desktop may be the default context).
+- The amd64 build runs under emulation and the Element Call widget build needs memory.
+  With the 8 GB default the daemon died mid-build (`error reading from server: EOF`);
+  `orbctl config set memory_mib 12288 && orbctl stop && orbctl start` fixed it.
+- Log in once with `docker --context orbstack login repo.k8s.mreow.de`
+  (the `podman` auth file is not shared).
+- `--format docker` is podman-only; omit it.
+
+```bash
+SHA=$(git rev-parse --short HEAD)
+docker --context orbstack build --platform linux/amd64 \
+  --build-arg APP_COMMIT=$SHA \
+  -t repo.k8s.mreow.de/githubshit/cinny:latest \
+  -t repo.k8s.mreow.de/githubshit/cinny:sha-$SHA \
+  -f Dockerfile .
+docker --context orbstack push repo.k8s.mreow.de/githubshit/cinny:sha-$SHA
+docker --context orbstack push repo.k8s.mreow.de/githubshit/cinny:latest
+```
+
+Then roll out and verify as below. When verifying against the pushed image, add
+`--platform linux/amd64` to `docker run`.
 
 ### Deploy steps
 
