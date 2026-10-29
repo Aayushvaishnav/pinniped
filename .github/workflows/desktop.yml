@@ -1,6 +1,8 @@
 # Fork-only: build the Electron desktop app (AppImage, rpm, flatpak, msi, dmg) on CI.
-# Every run uploads the installers as workflow artifacts; pushing a `v*` tag
-# also attaches them to a GitHub release.
+# Every run builds the web bundle. The installers are packaged on tags, manual runs
+# and pushes that touch packaging (electron/, package*.json, this file); other pushes
+# skip the three-OS packaging. Installers are uploaded as workflow artifacts, and a
+# `v*` tag also attaches them to a GitHub release.
 name: desktop
 on:
   push:
@@ -23,6 +25,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Packaging needed?
+    runs-on: ubuntu-latest
+    outputs:
+      packaging: ${{ steps.diff.outputs.packaging }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # Anything but a plain branch push packages. If the push range cannot be
+          # diffed (new branch, force push), package too.
+          packaging=true
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" != refs/tags/* ]] \
+            && [[ -n "$BEFORE" && "$BEFORE" != 0000000000000000000000000000000000000000 ]] \
+            && changed=$(git diff --name-only "$BEFORE" "$GITHUB_SHA" 2>/dev/null); then
+            if ! grep -qE '^(electron/|package\.json$|package-lock\.json$|\.github/workflows/desktop\.yml$)' <<<"$changed"; then
+              packaging=false
+            fi
+          fi
+          echo "packaging=$packaging" >> "$GITHUB_OUTPUT"
+          echo "packaging=$packaging"
+
   web:
     name: Web bundle
     runs-on: ubuntu-latest
@@ -36,10 +64,21 @@ jobs:
         with:
           version: 10.33.0
       - run: npm ci
+      # The Element Call widget only changes with element-call/, so reuse its build
+      # (restored after npm ci, which wipes node_modules).
+      - name: Restore the Element Call widget build
+        id: widget
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/cinny-element-call-fork
+          key: element-call-${{ hashFiles('element-call/**', 'scripts/fork/element-call/build.mjs') }}
       - name: Build (includes the Element Call fork)
         env:
           APP_COMMIT: ${{ github.sha }}
           NODE_OPTIONS: --max_old_space_size=8192
+          # File mtimes after a checkout are always newer than the cached build, so
+          # tell vite to trust a cache hit instead of rebuilding the widget.
+          ELEMENT_CALL_FORK_REBUILD: ${{ steps.widget.outputs.cache-hit == 'true' && '0' || '1' }}
         run: npm run build
       - uses: actions/upload-artifact@v4
         with:
@@ -49,7 +88,8 @@ jobs:
 
   package:
     name: Package (${{ matrix.name }})
-    needs: web
+    needs: [web, changes]
+    if: needs.changes.outputs.packaging == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
