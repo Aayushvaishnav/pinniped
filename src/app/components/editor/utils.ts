@@ -1,3 +1,4 @@
+import { ReactEditor } from 'slate-react';
 import { BasePoint, BaseRange, Editor, Element, Point, Range, Text, Transforms } from 'slate';
 import { BlockType, MarkType } from './types';
 import {
@@ -17,6 +18,19 @@ const ALL_MARK_TYPE: MarkType[] = [
   MarkType.StrikeThrough,
   MarkType.Underline,
 ];
+
+/**
+ * Focus the editor, tolerating a selection that points at a node that is no longer
+ * rendered (e.g. the editor was reset while an autocomplete menu was closing).
+ */
+export const safeFocusEditor = (editor: Editor) => {
+  try {
+    ReactEditor.focus(editor);
+  } catch {
+    Transforms.deselect(editor);
+    ReactEditor.focus(editor);
+  }
+};
 
 export const isMarkActive = (editor: Editor, format: MarkType) => {
   const marks = Editor.marks(editor);

@@ -46,6 +46,7 @@ import {
   getMentions,
   replaceShortcodeWithEmoji,
   isInOpenCodeBlock,
+  safeFocusEditor,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -216,8 +217,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     );
 
     const handleCloseAutocomplete = useCallback(() => {
-      ReactEditor.focus(editor);
       setAutocompleteQuery(undefined);
+      safeFocusEditor(editor);
     }, [editor]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {

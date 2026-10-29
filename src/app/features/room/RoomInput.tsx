@@ -62,6 +62,7 @@ import {
   getMentions,
   replaceShortcodeWithEmoji,
   isInOpenCodeBlock,
+  safeFocusEditor,
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { getGifToSend, isGifVideo } from '../../utils/klipy';
@@ -501,7 +502,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const handleCloseAutocomplete = useCallback(() => {
       setAutocompleteQuery(undefined);
-      ReactEditor.focus(editor);
+      safeFocusEditor(editor);
     }, [editor]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
