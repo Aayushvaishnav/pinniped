@@ -198,7 +198,6 @@ export function AccountBarProfile() {
     document.addEventListener('pointerdown', handlePress, true);
     return () => document.removeEventListener('pointerdown', handlePress, true);
     // closeMenu only touches refs and a state setter
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menuCords]);
 
   const handleOpenMenu: MouseEventHandler<HTMLElement> = (evt) => {

@@ -453,7 +453,6 @@ export const useCommands = (mx: MatrixClient, room: Room): CommandRecord => {
 
           let token: string | undefined = eventContext.start;
           while (token) {
-            // eslint-disable-next-line no-await-in-loop
             const response = await mx.createMessagesRequest(
               room.roomId,
               token,
@@ -474,7 +473,6 @@ export const useCommands = (mx: MatrixClient, room: Room): CommandRecord => {
 
             const eventIds = eventsToDelete.map((roomEvent) => roomEvent.event_id);
 
-            // eslint-disable-next-line no-await-in-loop
             await rateLimitedActions(eventIds, (eventId) =>
               mx.redactEvent(room.roomId, eventId, undefined, { reason })
             );

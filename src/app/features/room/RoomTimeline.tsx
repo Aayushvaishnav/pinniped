@@ -1,4 +1,3 @@
-/* eslint-disable react/destructuring-assignment */
 import React, {
   ClipboardEventHandler,
   Dispatch,
@@ -293,7 +292,7 @@ const useTimelinePagination = (
       if (!paginationToken) {
         // Without a token the SDK requests the newest events again, which the
         // timeline already holds, so it would loop forever without progress.
-        // eslint-disable-next-line no-console
+
         console.warn(
           `[timeline] not paginating ${
             backwards ? 'back' : 'forward'
@@ -325,7 +324,6 @@ const useTimelinePagination = (
         getTimelinesEventsCount(getLinkedTimelines(timelineToPaginate)) === eventsBefore &&
         timelineToPaginate.getPaginationToken(direction) === paginationToken
       ) {
-        // eslint-disable-next-line no-console
         console.warn(
           `[timeline] pagination made no progress in ${timelineToPaginate.getRoomId()}, giving up`
         );

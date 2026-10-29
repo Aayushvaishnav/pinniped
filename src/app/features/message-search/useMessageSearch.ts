@@ -194,7 +194,6 @@ export const useMessageSearch = (params: MessageSearchParams) => {
       let requests = 1;
       let loaded = page.groups.reduce((n, g) => n + g.items.length, 0);
       while (page.nextToken && loaded < limit && requests < MAX_FILTER_REQUESTS) {
-        // eslint-disable-next-line no-await-in-loop
         const more = parseSearchResult(await fetchPage(page.nextToken), resultFilter);
         requests += 1;
         loaded += more.groups.reduce((n, g) => n + g.items.length, 0);

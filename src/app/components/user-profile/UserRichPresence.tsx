@@ -102,7 +102,7 @@ export function UserRichPresence({ presence }: UserRichPresenceProps) {
   const handleExternalLink: MouseEventHandler<HTMLAnchorElement> = (event) => {
     if (!externalUrl) return;
     // The MSC requires an explicit warning before opening user-provided links.
-    // eslint-disable-next-line no-alert
+
     const shouldOpen = window.confirm(
       `This link was supplied by another Matrix user and opens an external site:\n\n${externalUrl}\n\nContinue?`
     );

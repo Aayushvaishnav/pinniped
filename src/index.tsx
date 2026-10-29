@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { enableMapSet } from 'immer';
@@ -21,7 +20,6 @@ import { APP_VERSION } from './app/utils/device';
 
 document.body.classList.add(configClass, varsClass);
 
-// eslint-disable-next-line no-console
 console.info(`Pinniped ${APP_VERSION}`);
 
 const mountApp = () => {

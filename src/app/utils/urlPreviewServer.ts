@@ -27,10 +27,9 @@ const fetchFromPreviewServer = async (
   // One retry after a 429, waiting as long as the server asked.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const delay = blockedUntil - Date.now();
-    // eslint-disable-next-line no-await-in-loop
+
     if (delay > 0) await wait(delay);
 
-    // eslint-disable-next-line no-await-in-loop
     const res = await fetch(
       `${server}/_matrix/client/v1/media/preview_url?url=${encodeURIComponent(url)}`,
       {
@@ -43,7 +42,7 @@ const fetchFromPreviewServer = async (
       if (!res.ok) throw new Error(`Preview server responded ${res.status}`);
       return res.json();
     }
-    // eslint-disable-next-line no-await-in-loop
+
     const body = await res.json().catch(() => ({}));
     const retryMs =
       Number(body?.retry_after_ms) ||

@@ -119,10 +119,10 @@ const MIME_TYPES = {
 // viteStaticCopy only runs at build time, so dist serves config.json, public/ and
 // the Element Call bundle — but the dev server serves none of them and the app
 // fetches those paths at runtime. Serve them in dev from where they live.
-function serveRuntimeCopies(elementCallPath) {
+function serveRuntimeCopies(widgetDir) {
   const sources = [
     ['/config.json', path.resolve('config.json')],
-    ['/public/element-call/', elementCallPath],
+    ['/public/element-call/', widgetDir],
     ['/public/', path.resolve('public')],
   ];
   return {

@@ -176,7 +176,6 @@ function GifTile({ fav, onClick, isFavorited, onToggleFavorite }: GifTileProps) 
     media = <div className={css.GifTileImg} style={mediaStyle} />;
   } else if (video) {
     media = (
-      // eslint-disable-next-line jsx-a11y/media-has-caption
       <video
         className={css.GifTileImg}
         autoPlay

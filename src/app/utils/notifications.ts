@@ -43,7 +43,7 @@ export async function markAsRead(mx: MatrixClient, roomId: string, privateReceip
     rememberLocalReadTs(roomId, latestEvent.getTs());
   } catch (err) {
     sentReceipts.delete(roomId);
-    // eslint-disable-next-line no-console
+
     console.warn('Failed to send read receipt', roomId, eventId, err);
   }
 }

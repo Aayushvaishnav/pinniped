@@ -52,13 +52,12 @@ const fetchProfileThrottled = async (
   try {
     for (let attempt = 0; ; attempt += 1) {
       try {
-        // eslint-disable-next-line no-await-in-loop
         return await mx.getExtendedProfile(userId);
       } catch (err) {
         const { errcode, data } = err as { errcode?: string; data?: { retry_after_ms?: number } };
         if (errcode !== 'M_LIMIT_EXCEEDED' || attempt >= MAX_RATE_LIMIT_RETRIES) throw err;
         const wait = Math.min(data?.retry_after_ms ?? 2000, 30_000);
-        // eslint-disable-next-line no-await-in-loop
+
         await new Promise((resolve) => {
           setTimeout(resolve, wait);
         });

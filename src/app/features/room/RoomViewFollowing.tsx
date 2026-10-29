@@ -88,7 +88,6 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
               <Icon style={{ opacity: config.opacity.P300 }} size="100" src={Icons.CheckTwice} />
               <Text size="T300" truncate>
                 {parts.map((part, index) => (
-                  // eslint-disable-next-line react/no-array-index-key
                   <React.Fragment key={index}>
                     {index > 0 && (
                       <Text as="span" size="Inherit" priority="300">

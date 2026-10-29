@@ -1,5 +1,3 @@
-/* eslint-disable react/function-component-definition -- these are folds IconSrc
-   render functions (called by folds' Icon), not React components. */
 // Fork-only. Overrides folds' `Icons` enum with lucide-react icons. Each icon
 // returns a lucide <svg> sized to fill folds' Icon container (both viewBox
 // 0 0 24 24), so it nests inside folds' sized <svg>. `filled` toggles fill as an

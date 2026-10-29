@@ -117,7 +117,6 @@ export const useCallJoined = (embed?: CallEmbed): boolean => {
 export const useCallHangupEvent = (embed: CallEmbed, callback: () => void) => {
   // Log who ended the call: an unexpected widget-initiated hangup is otherwise invisible.
   const logAndCallback = (action: string) => (evt: unknown) => {
-    // eslint-disable-next-line no-console
     console.info(`[call] widget requested ${action}`, evt);
     callback();
   };

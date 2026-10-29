@@ -72,10 +72,7 @@ const getSiteLabel = (url?: string): string | undefined => {
 
 // Bold the numbers in "❤️ 51,976  💬 158", as Discord does.
 const renderStats = (stats: string): ReactNode[] =>
-  stats.split(/(\d[\d.,]*[KkMm]?)/).map((part, i) =>
-    // eslint-disable-next-line react/no-array-index-key
-    i % 2 === 1 ? <b key={i}>{part}</b> : part
-  );
+  stats.split(/(\d[\d.,]*[KkMm]?)/).map((part, i) => (i % 2 === 1 ? <b key={i}>{part}</b> : part));
 
 // Discord's mosaic: 1 big; 2 side by side; 1 big + 2 stacked; 2x2; then rows
 // of three with any remainder (1 or 2 tiles) in a wider first row.

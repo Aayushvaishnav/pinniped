@@ -135,7 +135,6 @@ export const useSpaceAutoJoinGlobal = () => {
       );
     });
     // updateCount re-runs this when state events arrive
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mx, spaces, updateCount]);
 
   // Spaces visible in the sidebar (pinned). Pinned subspaces are skipped so

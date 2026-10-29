@@ -86,7 +86,6 @@ async function deriveKeys(salt, iterations, password) {
       throw friendlyError(`subtleCrypto.importKey failed for HMAC key: ${e}`, cryptoFailMsg());
     });
 
-  // eslint-disable-next-line no-return-await
   return await Promise.all([aesProm, hmacProm]);
 }
 
@@ -138,7 +137,7 @@ function unpackMegolmKeyFile(data) {
 
   // look for the start line
   let lineStart = 0;
-  while (1) {
+  while (true) {
     const lineEnd = fileStr.indexOf('\n', lineStart);
     if (lineEnd < 0) {
       throw new Error('Header line not found');
@@ -156,7 +155,7 @@ function unpackMegolmKeyFile(data) {
   const dataStart = lineStart;
 
   // look for the end line
-  while (1) {
+  while (true) {
     const lineEnd = fileStr.indexOf('\n', lineStart);
     const line = fileStr.slice(lineStart, lineEnd < 0 ? undefined : lineEnd).trim();
     if (line === TRAILER_LINE) {

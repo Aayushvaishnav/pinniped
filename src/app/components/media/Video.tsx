@@ -11,7 +11,6 @@ export const Video = forwardRef<HTMLVideoElement, VideoHTMLAttributes<HTMLVideoE
       (el: HTMLVideoElement | null) => {
         mediaRef.current = el;
         if (typeof ref === 'function') ref(el);
-        // eslint-disable-next-line no-param-reassign
         else if (ref) ref.current = el;
       },
       [ref]

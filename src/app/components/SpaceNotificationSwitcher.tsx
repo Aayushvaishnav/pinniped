@@ -47,11 +47,10 @@ export function SpaceNotificationModeSwitcher({
       async (mode: RoomNotificationMode) => {
         // Apply sequentially: push rule updates share one account-data
         // event, so concurrent writes can clobber each other.
-        // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+
         for (const roomId of roomIds) {
           const previousMode = getRoomNotificationMode(preferences, roomId);
           try {
-            // eslint-disable-next-line no-await-in-loop
             await setRoomNotificationPreference(mx, roomId, mode, previousMode);
           } catch {
             // Keep going so one bad room doesn't block the rest.

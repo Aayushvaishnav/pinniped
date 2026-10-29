@@ -94,7 +94,7 @@ export function PollContent({ room, mEvent, poll }: PollContentProps) {
           M_POLL_RESPONSE.altName as any,
           makePollResponseContent(pollEventId, answerIds) as any
         );
-      } catch (err) {
+      } catch {
         setPending(undefined);
         setError(answerIds.length > 0 ? 'Failed to send vote.' : 'Failed to remove vote.');
       } finally {
