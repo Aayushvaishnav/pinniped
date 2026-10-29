@@ -9,7 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import buildConfig from './build.config.ts';
-import { prepareElementCall } from './scripts/fork/element-call-activity.mjs';
+import { prepareElementCall } from './scripts/fork/element-call/prepare.mjs';
 import { buildElementCallFork, ELEMENT_CALL_SRC } from './scripts/fork/element-call/build.mjs';
 
 // Fork-only: short commit hash baked into the bundle. The container build has

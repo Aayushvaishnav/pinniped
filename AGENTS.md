@@ -34,11 +34,10 @@ Calls run in an embedded Element Call widget (`element-call/`, vendored in the
 tree). It is NOT built by cinny's own build: `scripts/fork/element-call/build.mjs`
 runs `pnpm install && pnpm build:embedded` in `element-call/` and copies
 `dist/` to `node_modules/.cache/cinny-element-call-fork`, which
-`scripts/fork/element-call-activity.mjs` (called from vite.config.js) embeds
-under `public/element-call/`. The Dockerfile does the same in a first stage.
-`vite` and `vite build` rebuild it automatically when anything under `element-call/` is newer than the last build (the Dockerfile and nix set `ELEMENT_CALL_FORK_REBUILD=0`). Without a fork build, vite falls back to the published
-`@element-hq/element-call-embedded` package (used by the nix build, which does
-not build the vendored tree — its call widget has none of the fork's changes).
+`scripts/fork/element-call/prepare.mjs` (called from vite.config.js) embeds
+under `public/element-call/`. The Dockerfile and `element-call.nix` build it
+separately and point `ELEMENT_CALL_FORK_DIST` at the result.
+`vite` and `vite build` rebuild it automatically when anything under `element-call/` is newer than the last build (the Dockerfile and nix set `ELEMENT_CALL_FORK_REBUILD=0`). There is no fallback: without a widget build, vite fails and says to run `npm run build:element-call`.
 
 The vendored tree is upstream `v0.20.1` with the former patch series
 (voice-call-layout, sound-overrides) applied plus fork changes made in place.
@@ -184,7 +183,7 @@ A successful deploy: the live hash changed from the previous deploy, and live ==
 
 ## Nix flake
 
-`flake.nix` and `package.nix` are fork-only. They build the Electron app from source in the nixpkgs idiom: `buildNpmPackage` builds the Vite bundle, then a wrapper launches nixpkgs' `electron` against it. No electron-builder, fpm, or asar is involved (the main process uses only node built-ins + electron, so no node_modules are shipped). `dist/` and `electron/` are installed as siblings under `$out/lib/cinny` because `electron/main.cjs` resolves `../dist`.
+`flake.nix`, `package.nix` and `element-call.nix` are fork-only. `element-call.nix` builds the vendored Element Call widget with pnpm (`fetchPnpmDeps`); `package.nix` builds the Electron app from source in the nixpkgs idiom, embedding that widget through `ELEMENT_CALL_FORK_DIST`: `buildNpmPackage` builds the Vite bundle, then a wrapper launches nixpkgs' `electron` against it. No electron-builder, fpm, or asar is involved (the main process uses only node built-ins + electron, so no node_modules are shipped). `dist/` and `electron/` are installed as siblings under `$out/lib/cinny` because `electron/main.cjs` resolves `../dist`.
 
 ```bash
 nix build .#cinny           # build, symlinked at ./result
@@ -201,12 +200,13 @@ Caveats:
   nix run .#update-npm-deps
   ```
   (fork-only script `scripts/update-npm-deps.sh`; prefetches and rewrites the hash in `package.nix` in place, no-op if already current)
-- CI covers this automatically: `.github/workflows/npm-deps-hash.yml` (fork-only) runs on pushes to `fork/dev` that touch `package-lock.json`, refreshes the hash, verifies `nix build .#pinniped`, and opens a PR (`auto/npm-deps-hash`) that only needs merging. So normally: push the rebase, merge the PR if it appears, done.
+- When `element-call/pnpm-lock.yaml` changes, the pnpm store hash in `element-call.nix` goes stale. It is per system (`x86_64-linux` is refreshed by CI with `scripts/update-pnpm-deps.sh <hash>`; `aarch64-linux` is still `lib.fakeHash` and needs a manual refresh on that architecture).
+- CI covers this automatically: `.github/workflows/npm-deps-hash.yml` (fork-only) runs on pushes to `fork/dev` that touch `package-lock.json`, `element-call/pnpm-lock.yaml` or the nix files, refreshes whichever hash is stale (npm and pnpm), verifies `nix build .#pinniped`, and opens a PR (`auto/npm-deps-hash`) that only needs merging. So normally: push the rebase, merge the PR if it appears, done.
 
 ## Fork-only files
 
 - `AGENTS.md` itself is Pinniped-only. It does not exist upstream.
-- `flake.nix` and `package.nix` are fork-only (see the Nix flake section). Upstream has neither file.
+- `flake.nix`, `package.nix` and `element-call.nix` are fork-only (see the Nix flake section). Upstream has none of them.
 - `element-call/` is fork-only (see the Element Call fork section).
 - Since we no longer rebase, new files do not need to avoid upstream paths, but keep scripts and configs clearly named.
 

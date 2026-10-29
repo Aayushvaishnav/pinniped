@@ -1,4 +1,5 @@
-# Fork-only: refresh npmDepsHash in package.nix when package-lock.json changes
+# Fork-only: refresh the fixed-output hashes of the Nix build (npmDepsHash in
+# package.nix, the pnpm store hash in element-call.nix) when a lockfile changes
 # on fork/dev, verify the Nix build, and open a PR with the fix. The maintainer
 # only ever merges the PR; no local Nix tooling needed.
 name: npm-deps-hash
@@ -8,6 +9,9 @@ on:
     paths:
       - package-lock.json
       - package.nix
+      - element-call.nix
+      - element-call/pnpm-lock.yaml
+      - flake.nix
   workflow_dispatch:
 
 permissions:
@@ -24,42 +28,55 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Try build (captures the correct hash on failure)
+      - name: Build, refreshing stale hashes
         id: build
         run: |
           set -o pipefail
           # --no-link: no result symlink; log lives outside the checkout so the
-          # PR only ever contains the package.nix hash change.
+          # PR only ever contains the hash changes.
           log="$RUNNER_TEMP/build.log"
-          if nix build .#pinniped --no-link 2>&1 | tee "$log"; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
+          changed=false
+          built=false
+          # Each stale fixed-output hash fails the build on its own, so fix one per
+          # attempt (npm deps, pnpm deps) until the whole build passes.
+          for attempt in 1 2 3 4; do
+            if nix build .#pinniped --no-link 2>&1 | tee "$log"; then
+              built=true
+              break
+            fi
             hash=$(grep -oE "got: +sha256-[A-Za-z0-9+/=]+" "$log" | head -1 | awk '{print $2}')
+            drv=$(grep -oE "hash mismatch in fixed-output derivation '[^']+'" "$log" | head -1)
             if [[ -z "$hash" ]]; then
-              echo "build failed for a reason other than the npm deps hash" >&2
+              echo "build failed for a reason other than a stale hash" >&2
               exit 1
             fi
-            echo "hash=$hash" >> "$GITHUB_OUTPUT"
+            case "$drv" in
+              *pnpm-deps*) ./scripts/update-pnpm-deps.sh "$hash" ;;
+              *npm-deps*) ./scripts/update-npm-deps.sh "$hash" ;;
+              *)
+                echo "unrecognised fixed-output derivation: $drv" >&2
+                exit 1
+                ;;
+            esac
+            changed=true
+          done
+          if [[ "$built" != true ]]; then
+            echo "build still failing after refreshing hashes" >&2
+            exit 1
           fi
-
-      - name: Rewrite npmDepsHash
-        if: steps.build.outputs.hash
-        run: ./scripts/update-npm-deps.sh "${{ steps.build.outputs.hash }}"
-
-      - name: Verify build with new hash
-        if: steps.build.outputs.hash
-        run: nix build .#pinniped --no-link
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
 
       - name: Open PR
-        if: steps.build.outputs.hash
+        if: steps.build.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           base: fork/dev
           branch: auto/npm-deps-hash
-          title: 'chore: refresh npmDepsHash for package-lock.json'
+          title: 'chore: refresh Nix dependency hashes'
           body: |
-            `package-lock.json` changed but `npmDepsHash` in `package.nix` was stale.
-            Hash refreshed and `nix build .#pinniped` verified on CI. Merge to keep
+            A lockfile changed but the Nix dependency hashes (`npmDepsHash` in
+            `package.nix`, the pnpm store hash in `element-call.nix`) were stale.
+            Hashes refreshed and `nix build .#pinniped` verified on CI. Merge to keep
             the Nix flake buildable.
-          commit-message: 'chore: refresh npmDepsHash in package.nix'
+          commit-message: 'chore: refresh Nix dependency hashes'
           delete-branch: true

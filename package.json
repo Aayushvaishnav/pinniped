@@ -94,7 +94,6 @@
     "ua-parser-js": "2.0.10"
   },
   "devDependencies": {
-    "@element-hq/element-call-embedded": "0.20.1",
     "@playwright/test": "1.64.1",
     "@rollup/plugin-wasm": "6.2.2",
     "@tanstack/react-query-devtools": "5.105.0",

@@ -31,7 +31,8 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          pinniped = pkgs.callPackage ./package.nix { };
+          element-call = pkgs.callPackage ./element-call.nix { };
+          pinniped = pkgs.callPackage ./package.nix { inherit (self.packages.${system}) element-call; };
           cinny = self.packages.${system}.pinniped; # alias for the old name
           default = self.packages.${system}.pinniped;
         }
