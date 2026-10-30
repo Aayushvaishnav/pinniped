@@ -18,6 +18,8 @@ import {
 } from "livekit-client";
 import { observeParticipantEvents } from "@livekit/components-core";
 import {
+  MatrixRTCSessionEvent,
+  MembershipManagerEvent,
   Status as RTCSessionStatus,
   type LivekitTransport,
   type LivekitTransportConfig,
@@ -74,6 +76,12 @@ import {
 import { type HomeserverConnected } from "./HomeserverConnected.ts";
 import { type LocalTransport } from "./LocalTransport.ts";
 import { areLivekitTransportsEqual } from "../remoteMembers/MatrixLivekitMembers.ts";
+
+/** Backoff for rejoining the MatrixRTC session after the membership manager gave up. */
+const MEMBERSHIP_REJOIN_BASE_DELAY_MS = 1_000;
+const MEMBERSHIP_REJOIN_MAX_DELAY_MS = 15_000;
+/** How long to keep trying before telling the user the call is lost. */
+const MEMBERSHIP_REJOIN_TIMEOUT_MS = 5 * 60_000;
 
 export enum TransportState {
   /** Not even a transport is available to the LocalMembership */
@@ -143,7 +151,7 @@ interface Props {
   localTransport$: Behavior<LocalTransport>;
   matrixRTCSession: Pick<
     MatrixRTCSession,
-    "updateCallIntent" | "leaveRoomSession"
+    "updateCallIntent" | "leaveRoomSession" | "on" | "off"
   >;
   logger: Logger;
 }
@@ -632,7 +640,74 @@ export const createLocalMembership$ = ({
           setMatrixError(new MembershipManagerError(error));
       }
 
+      // The membership manager gives up after about the delayed-leave delay,
+      // and by then the homeserver has removed our membership as well. If the
+      // homeserver was only briefly unavailable (e.g. a node drain), we are
+      // still in the SFU but invisible to everyone else. Keep trying to join
+      // again with backoff, and only report the error if it stays down.
+      let rejoinCancelled = false;
+      let rejoinTimer: ReturnType<typeof setTimeout> | undefined;
+      let rejoinAttempts = 0;
+      let rejoinStartedAt: number | undefined;
+      const onMembershipManagerError = (error: unknown): void => {
+        rejoinStartedAt ??= Date.now();
+        if (Date.now() - rejoinStartedAt > MEMBERSHIP_REJOIN_TIMEOUT_MS) {
+          logger.error("Giving up rejoining the MatrixRTC session", error);
+          setMatrixError(
+            new MembershipManagerError(
+              error instanceof Error ? error : new Error(String(error)),
+            ),
+          );
+          return;
+        }
+        const delay = Math.min(
+          MEMBERSHIP_REJOIN_BASE_DELAY_MS * 2 ** rejoinAttempts++,
+          MEMBERSHIP_REJOIN_MAX_DELAY_MS,
+        );
+        logger.warn(
+          `Membership manager failed, rejoining the MatrixRTC session in ${delay}ms (attempt ${rejoinAttempts})`,
+          error,
+        );
+        clearTimeout(rejoinTimer);
+        rejoinTimer = setTimeout(() => {
+          if (rejoinCancelled) return;
+          try {
+            // Throws or errors again via the event if the homeserver is
+            // still unreachable, which schedules the next attempt.
+            joinMatrixRTC(transport);
+          } catch (e) {
+            onMembershipManagerError(e);
+          }
+        }, delay);
+      };
+      const onMembershipStatusChanged = (
+        _old: RTCSessionStatus,
+        status: RTCSessionStatus,
+      ): void => {
+        if (status !== RTCSessionStatus.Connected) return;
+        rejoinAttempts = 0;
+        rejoinStartedAt = undefined;
+      };
+      matrixRTCSession.on(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        onMembershipManagerError,
+      );
+      matrixRTCSession.on(
+        MembershipManagerEvent.StatusChanged,
+        onMembershipStatusChanged,
+      );
+
       return Promise.resolve(async (): Promise<void> => {
+        rejoinCancelled = true;
+        clearTimeout(rejoinTimer);
+        matrixRTCSession.off(
+          MatrixRTCSessionEvent.MembershipManagerError,
+          onMembershipManagerError,
+        );
+        matrixRTCSession.off(
+          MembershipManagerEvent.StatusChanged,
+          onMembershipStatusChanged,
+        );
         try {
           // TODO Update matrixRTCSession to allow udpating the transport without leaving the session!
           await matrixRTCSession.leaveRoomSession(1000);

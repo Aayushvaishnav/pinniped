@@ -19,10 +19,7 @@ import {
   isE2EESupported as isE2EESupportedBrowser,
 } from "livekit-client";
 import { logger } from "matrix-js-sdk/lib/logger";
-import {
-  MatrixRTCSessionEvent,
-  type MatrixRTCSession,
-} from "matrix-js-sdk/lib/matrixrtc";
+import { type MatrixRTCSession } from "matrix-js-sdk/lib/matrixrtc";
 import { useNavigate } from "react-router-dom";
 
 import type { IWidgetApiRequest } from "matrix-widget-api";
@@ -64,13 +61,11 @@ import {
 import { useLatest } from "../useLatest";
 import { usePageTitle } from "../usePageTitle";
 import {
-  ConnectionLostError,
   E2EENotSupportedError,
   ElementCallError,
   UnknownCallError,
 } from "../utils/errors.ts";
 import { GroupCallErrorBoundary } from "./GroupCallErrorBoundary.tsx";
-import { useTypedEventEmitter } from "../useEvents";
 import { muteAllAudio$ } from "../state/MuteAllAudioModel.ts";
 import { useAppBarTitle } from "../AppBar.tsx";
 import { useBehavior } from "../useBehavior.ts";
@@ -157,13 +152,8 @@ export const GroupCallView: FC<Props> = ({
     };
   }, [rtcSession]);
 
-  // TODO move this into the callViewModel LocalMembership.ts
-  // We might actually not need this at all. Since we get into fatalError on those errors already?
-  useTypedEventEmitter(
-    rtcSession,
-    MatrixRTCSessionEvent.MembershipManagerError,
-    (error) => setExternalError(new ConnectionLostError()),
-  );
+  // MembershipManagerError is handled in LocalMember.ts, which rejoins with
+  // backoff and only reports the failure once that gives up.
   useEffect(() => {
     // Sanity check the room object
     if (client.getRoom(rtcSession.room.roomId) !== rtcSession.room)

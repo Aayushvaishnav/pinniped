@@ -7,10 +7,13 @@ Please see LICENSE in the repository root for full details.
 */
 
 import {
+  MatrixRTCSessionEvent,
+  MembershipManagerEvent,
   Status as RTCMemberStatus,
   type LivekitTransportConfig,
   type MatrixRTCSession,
 } from "matrix-js-sdk/lib/matrixrtc";
+import { EventEmitter } from "events";
 import {
   describe,
   expect,
@@ -18,6 +21,7 @@ import {
   vi,
   beforeAll,
   afterAll,
+  afterEach,
   beforeEach,
 } from "vitest";
 import { AutoDiscovery } from "matrix-js-sdk/lib/autodiscovery";
@@ -46,6 +50,7 @@ import {
 import {
   FailToGetOpenIdToken,
   MatrixRTCTransportMissingError,
+  MembershipManagerError,
 } from "../../../utils/errors";
 import { Epoch, ObservableScope } from "../../ObservableScope";
 import { constant } from "../../Behavior";
@@ -215,6 +220,8 @@ describe("LocalMembership", () => {
     matrixRTCSession: {
       updateCallIntent: vi.fn().mockReturnValue(Promise.resolve()),
       leaveRoomSession: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
     } as unknown as MatrixRTCSession,
     muteStates: mockMuteStates(),
     trackProcessorState$: constant({
@@ -340,6 +347,8 @@ describe("LocalMembership", () => {
       matrixRTCSession: {
         updateCallIntent: vi.fn().mockImplementation(reject),
         leaveRoomSession: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
       },
       connectionManager: mockConnectionManager,
       localTransport$: new BehaviorSubject(aLocalTransport),
@@ -352,6 +361,144 @@ describe("LocalMembership", () => {
     defaultCreateLocalMemberValues.muteStates.video.setEnabled$.value?.(true);
     expect(internalLogger).toHaveBeenCalledWith(expextedLog);
     scope.end();
+  });
+
+  describe("rejoining after the membership manager gives up", () => {
+    function setup(): {
+      scope: ObservableScope;
+      session: EventEmitter;
+      joinMatrixRTC: ReturnType<typeof vi.fn>;
+      localMembership: ReturnType<typeof createLocalMembership$>;
+    } {
+      const scope = new ObservableScope();
+      const session = new EventEmitter();
+      const joinMatrixRTC = vi.fn();
+      const mockConnectionManager = {
+        transports$: constant(new Epoch([])),
+        connectionManagerData$: constant(
+          new Epoch(new ConnectionManagerData()),
+        ),
+      };
+      const localMembership = createLocalMembership$({
+        scope,
+        ...defaultCreateLocalMemberValues,
+        joinMatrixRTC,
+        matrixRTCSession: Object.assign(session, {
+          updateCallIntent: vi.fn().mockResolvedValue(undefined),
+          leaveRoomSession: vi.fn(),
+        }) as unknown as MatrixRTCSession,
+        connectionManager: mockConnectionManager,
+        localTransport$: new BehaviorSubject({
+          advertised$: new BehaviorSubject(aTransport),
+          active$: new BehaviorSubject(aTransportWithSFUConfig),
+        } as LocalTransport),
+      });
+      return { scope, session, joinMatrixRTC, localMembership };
+    }
+
+    function matrixState(
+      localMembership: ReturnType<typeof createLocalMembership$>,
+    ): unknown {
+      const state = localMembership.localMemberState$.value;
+      return typeof state === "object" && "matrix" in state
+        ? state.matrix
+        : state;
+    }
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("joins again with backoff when the membership manager errors", async () => {
+      const { scope, session, joinMatrixRTC, localMembership } = setup();
+      localMembership.requestJoinAndPublish();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(1);
+
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      await vi.advanceTimersByTimeAsync(999);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(2);
+
+      // The next failure waits twice as long.
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(3);
+      scope.end();
+    });
+
+    it("starts the backoff over once the membership is connected again", async () => {
+      const { scope, session, joinMatrixRTC, localMembership } = setup();
+      localMembership.requestJoinAndPublish();
+      await vi.advanceTimersByTimeAsync(0);
+
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      await vi.advanceTimersByTimeAsync(1000);
+      session.emit(
+        MembershipManagerEvent.StatusChanged,
+        RTCMemberStatus.Connecting,
+        RTCMemberStatus.Connected,
+      );
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(3);
+      scope.end();
+    });
+
+    it("reports the error when rejoining keeps failing for too long", async () => {
+      const { scope, session, localMembership } = setup();
+      localMembership.requestJoinAndPublish();
+      await vi.advanceTimersByTimeAsync(0);
+
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1);
+      expect(matrixState(localMembership)).not.toBeInstanceOf(
+        MembershipManagerError,
+      );
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      expect(matrixState(localMembership)).toBeInstanceOf(
+        MembershipManagerError,
+      );
+      scope.end();
+    });
+
+    it("stops retrying once the call is left", async () => {
+      const { scope, session, joinMatrixRTC, localMembership } = setup();
+      localMembership.requestJoinAndPublish();
+      await vi.advanceTimersByTimeAsync(0);
+
+      session.emit(
+        MatrixRTCSessionEvent.MembershipManagerError,
+        new Error("x"),
+      );
+      localMembership.requestDisconnect();
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(joinMatrixRTC).toHaveBeenCalledTimes(1);
+      expect(
+        session.listenerCount(MatrixRTCSessionEvent.MembershipManagerError),
+      ).toBe(0);
+      scope.end();
+    });
   });
 
   const aTransport = {
