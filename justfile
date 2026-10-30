@@ -5,7 +5,7 @@ build:
     npx electron-builder --config electron/electron-builder.yml --linux rpm
 
 install: build
-    sudo rpm -Uvh --force electron/out/pinniped-*.rpm
+    sudo rpm -Uvh --force "$(ls -t electron/out/[Pp]inniped-*.rpm | head -1)"
 
 # Fast iteration on the installed app: rebuild the bundle and repack the asar in place.
 # Run `just install` once first; this refreshes app code only, not the electron
