@@ -23,6 +23,7 @@ import {
   of,
   delay,
   combineLatest,
+  merge,
 } from "rxjs";
 import { logger as rootLogger } from "matrix-js-sdk/lib/logger";
 
@@ -107,9 +108,14 @@ export function createHomeserverConnected$(
   //
   // If that is not the case we certainly still have a valid membership on the matrix network
   // independet if the sync currently works.
-  const certainlyConnected$ = fromEvent(
-    matrixRTCSession,
-    MembershipManagerEvent.ProbablyLeft,
+  //
+  // A rejoin after the membership manager gave up creates a fresh manager that
+  // starts with probablyLeft=false, so it never emits ProbablyLeft(false) to
+  // clear the old flag. Re-read it on status changes too, or we would stay
+  // "probablyLeft" (and show the reconnecting toast) forever.
+  const certainlyConnected$ = merge(
+    fromEvent(matrixRTCSession, MembershipManagerEvent.ProbablyLeft),
+    fromEvent(matrixRTCSession, MembershipManagerEvent.StatusChanged),
   ).pipe(
     startWith(null),
     map(() => matrixRTCSession.probablyLeft !== true),

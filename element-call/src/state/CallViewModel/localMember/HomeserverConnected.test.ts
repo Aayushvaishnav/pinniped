@@ -175,6 +175,21 @@ describe("createHomeserverConnected$", () => {
     expect(hsConnected.combined$.value).toEqual([true, null]);
   });
 
+  it("recovers when a rejoin replaces the manager and probablyLeft clears without a ProbablyLeft event", () => {
+    const hsConnected = createHomeserverConnected$(scope, client, session, 0);
+    client.setSyncState(SyncState.Syncing);
+    session.setMembershipStatus(Status.Connected);
+    session.setProbablyLeft(true);
+    expect(hsConnected.combined$.value).toEqual([false, "probablyLeft"]);
+
+    // A fresh MembershipManager starts with probablyLeft=false and only emits
+    // ProbablyLeft on a change, so all we get is the status moving on.
+    session.probablyLeft = false;
+    session.setMembershipStatus(Status.Connecting);
+    session.setMembershipStatus(Status.Connected);
+    expect(hsConnected.combined$.value).toEqual([true, null]);
+  });
+
   it("composite sequence reflects each individual failure reason", () => {
     const hsConnected = createHomeserverConnected$(scope, client, session, 0);
 
