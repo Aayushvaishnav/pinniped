@@ -327,7 +327,8 @@ export class Connection {
     this.rejoining = true;
     try {
       for (const [attempt, delay] of REJOIN_DELAYS_MS.entries()) {
-        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+        if (delay > 0)
+          await new Promise((resolve) => setTimeout(resolve, delay));
         if (this.stopped) return;
         try {
           const { url, jwt, livekitAlias } = await (this.refreshSFUConfig?.() ??
