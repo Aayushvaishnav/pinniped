@@ -20,8 +20,6 @@ export interface Settings {
   darkThemeId?: string;
   monochromeMode?: boolean;
   lowAnimationMode?: boolean;
-  isMarkdown: boolean;
-  editorToolbar: boolean;
   twitterEmoji: boolean;
   pageZoom: number;
   hideActivity: boolean;
@@ -53,7 +51,6 @@ export interface Settings {
   showPresenceInMemberList: boolean;
   showPresenceInDMList: boolean;
   memberSortFilterIndex: number;
-  enterForNewline: boolean;
   messageLayout: MessageLayout;
   messageSpacing: MessageSpacing;
   hideMembershipEvents: boolean;
@@ -102,8 +99,6 @@ const defaultSettings: Settings = {
   darkThemeId: undefined,
   monochromeMode: false,
   lowAnimationMode: false,
-  isMarkdown: true,
-  editorToolbar: false,
   twitterEmoji: true,
   pageZoom: 100,
   hideActivity: false,
@@ -125,7 +120,6 @@ const defaultSettings: Settings = {
   showPresenceInMemberList: true,
   showPresenceInDMList: true,
   memberSortFilterIndex: 0,
-  enterForNewline: false,
   messageLayout: 0,
   messageSpacing: '400',
   hideMembershipEvents: false,

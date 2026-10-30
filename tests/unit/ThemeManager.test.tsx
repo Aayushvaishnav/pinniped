@@ -220,7 +220,7 @@ describe('theme setting persistence', () => {
     expect(stored.themeId).toBe('dracula');
     expect(stored.pageZoom).toBe(150);
     expect(stored.useSystemTheme).toBe(false);
-    expect(stored.isMarkdown).toBe(true);
+    expect(stored.hideActivity).toBe(false);
   });
 
   it('restores the stored selection after a reload (fresh module state)', async () => {

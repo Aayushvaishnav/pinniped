@@ -47,8 +47,6 @@ import {
   isInOpenCodeBlock,
   safeFocusEditor,
 } from '../../../components/editor';
-import { useSetting } from '../../../state/hooks/settings';
-import { settingsAtom } from '../../../state/settings';
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { EmojiBoard } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -69,10 +67,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
   ({ room, roomId, mEvent, imagePackRooms, onCancel, ...props }, ref) => {
     const mx = useMatrixClient();
     const editor = useEditor();
-    const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
-    const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
-    const [toolbar, setToolbar] = useState(globalToolbar);
+    const [toolbar, setToolbar] = useState(false);
     const isComposing = useComposingCheck();
 
     const [autocompleteQuery, setAutocompleteQuery] =
@@ -114,12 +109,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
-        const plainText = toPlainText(editor.children, isMarkdown).trim();
+        const plainText = toPlainText(editor.children, true).trim();
         const customHtml = trimCustomHtml(
           toMatrixCustomHTML(editor.children, {
             allowTextFormatting: true,
-            allowBlockMarkdown: isMarkdown,
-            allowInlineMarkdown: isMarkdown,
+            allowBlockMarkdown: true,
+            allowInlineMarkdown: true,
           })
         );
 
@@ -169,7 +164,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         };
 
         return mx.sendMessage(roomId, content as any);
-      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody])
+      }, [mx, editor, roomId, mEvent, getPrevBodyAndFormattedBody])
     );
 
     const handleSave = useCallback(() => {
@@ -182,10 +177,9 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       (evt) => {
         if (
           (isKeyHotkey('mod+enter', evt) ||
-            (!enterForNewline &&
-              isKeyHotkey('enter', evt) &&
+            (isKeyHotkey('enter', evt) &&
               // Like Discord: Enter inside an unclosed ``` block adds a new line.
-              !(isMarkdown && isInOpenCodeBlock(editor)))) &&
+              !isInOpenCodeBlock(editor))) &&
           !isComposing(evt)
         ) {
           evt.preventDefault();
@@ -196,7 +190,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           onCancel();
         }
       },
-      [onCancel, handleSave, enterForNewline, isComposing, isMarkdown, editor]
+      [onCancel, handleSave, isComposing, editor]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -230,8 +224,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
       const initialValue =
         typeof customHtml === 'string'
-          ? htmlToEditorInput(customHtml, isMarkdown)
-          : plainToEditorInput(typeof body === 'string' ? body : '', isMarkdown);
+          ? htmlToEditorInput(customHtml, true)
+          : plainToEditorInput(typeof body === 'string' ? body : '', true);
 
       Transforms.select(editor, {
         anchor: Editor.start(editor, []),
@@ -240,7 +234,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
       editor.insertFragment(initialValue);
       if (!mobileOrTablet()) safeFocusEditor(editor);
-    }, [editor, getPrevBodyAndFormattedBody, isMarkdown]);
+    }, [editor, getPrevBodyAndFormattedBody]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {

@@ -20,7 +20,6 @@ import {
   Icon,
   IconButton,
   Icons,
-  Line,
   Menu,
   MenuItem,
   Overlay,
@@ -38,7 +37,6 @@ import {
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import {
   CustomEditor,
-  Toolbar,
   toMatrixCustomHTML,
   toPlainText,
   AUTOCOMPLETE_PREFIXES,
@@ -175,8 +173,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
   ({ editor, fileDropContainerRef, roomId, room }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
-    const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
     const direct = useIsDirectRoom();
@@ -223,7 +219,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const imagePackRooms: Room[] = useImagePackRooms(roomId, roomToParents);
     const emojiShortcodeMap = useEmojiShortcodeMap(imagePackRooms);
 
-    const [toolbar, setToolbar] = useSetting(settingsAtom, 'editorToolbar');
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();
 
@@ -373,12 +368,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       uploadBoardHandlers.current?.handleSend();
 
       const commandName = getBeginCommand(editor);
-      let plainText = toPlainText(editor.children, isMarkdown).trim();
+      let plainText = toPlainText(editor.children, true).trim();
       let customHtml = trimCustomHtml(
         toMatrixCustomHTML(editor.children, {
           allowTextFormatting: true,
-          allowBlockMarkdown: isMarkdown,
-          allowInlineMarkdown: isMarkdown,
+          allowBlockMarkdown: true,
+          allowInlineMarkdown: true,
         })
       );
       let msgType = MsgType.Text;
@@ -442,26 +437,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       setReplyDraft(undefined);
       sendTypingStatus(false);
       if (isMobile) safeFocusEditor(editor);
-    }, [
-      mx,
-      roomId,
-      editor,
-      replyDraft,
-      sendTypingStatus,
-      setReplyDraft,
-      isMarkdown,
-      commands,
-      isMobile,
-    ]);
+    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, commands, isMobile]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
         if (
           (isKeyHotkey('mod+enter', evt) ||
-            (!enterForNewline &&
-              isKeyHotkey('enter', evt) &&
+            (isKeyHotkey('enter', evt) &&
               // Like Discord: Enter inside an unclosed ``` block adds a new line.
-              !(isMarkdown && isInOpenCodeBlock(editor)))) &&
+              !isInOpenCodeBlock(editor))) &&
           !isComposing(evt)
         ) {
           evt.preventDefault();
@@ -476,7 +460,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           setReplyDraft(undefined);
         }
       },
-      [submit, setReplyDraft, enterForNewline, autocompleteQuery, isComposing, isMarkdown, editor]
+      [submit, setReplyDraft, autocompleteQuery, isComposing, editor]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -825,14 +809,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
           after={
             <>
-              <IconButton
-                variant="SurfaceVariant"
-                size="300"
-                radii="300"
-                onClick={() => setToolbar(!toolbar)}
-              >
-                <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-              </IconButton>
               <UseStateProvider initial={undefined}>
                 {(emojiBoardTab: EmojiBoardTab | undefined, setEmojiBoardTab) => (
                   <PopOut
@@ -938,7 +914,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             </>
           }
           bottom={
-            toolbar || sendError ? (
+            sendError ? (
               <Box direction="Column">
                 {sendError && (
                   <Text
@@ -948,12 +924,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   >
                     {sendError}
                   </Text>
-                )}
-                {toolbar && (
-                  <div>
-                    <Line variant="SurfaceVariant" size="300" />
-                    <Toolbar />
-                  </div>
                 )}
               </Box>
             ) : undefined

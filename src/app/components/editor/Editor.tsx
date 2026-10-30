@@ -25,8 +25,6 @@ import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { continueMarkdownList, decorateMarkdown, pasteMarkdownLink } from './markdown';
-import { useSetting } from '../../state/hooks/settings';
-import { settingsAtom } from '../../state/settings';
 
 const initialValue: CustomElement[] = [
   {
@@ -94,48 +92,41 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     },
     ref
   ) => {
-    const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
-    const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
-
     const renderElement = useCallback(
-      (props: RenderElementProps) => <RenderElement {...props} markdown={isMarkdown} />,
-      [isMarkdown]
+      (props: RenderElementProps) => <RenderElement {...props} markdown />,
+      []
     );
 
     const renderLeaf = useCallback((props: RenderLeafProps) => <RenderLeaf {...props} />, []);
 
-    const decorate = useMemo(
-      () => (isMarkdown ? (entry: NodeEntry) => decorateMarkdown(editor, entry) : undefined),
-      [editor, isMarkdown]
-    );
+    const decorate = useMemo(() => (entry: NodeEntry) => decorateMarkdown(editor, entry), [editor]);
 
     const handleKeydown: KeyboardEventHandler = useCallback(
       (evt) => {
         onKeyDown?.(evt);
         if (
-          isMarkdown &&
           !evt.defaultPrevented &&
-          (isKeyHotkey('shift+enter', evt) || (enterForNewline && isKeyHotkey('enter', evt))) &&
+          isKeyHotkey('shift+enter', evt) &&
           continueMarkdownList(editor)
         ) {
           evt.preventDefault();
           return;
         }
-        const shortcutToggled = toggleKeyboardShortcut(editor, evt, isMarkdown);
+        const shortcutToggled = toggleKeyboardShortcut(editor, evt, true);
         if (shortcutToggled) evt.preventDefault();
       },
-      [editor, onKeyDown, isMarkdown, enterForNewline]
+      [editor, onKeyDown]
     );
 
     const handlePaste: ClipboardEventHandler = useCallback(
       (evt) => {
         onPaste?.(evt);
-        if (evt.defaultPrevented || !isMarkdown) return;
+        if (evt.defaultPrevented) return;
         if (pasteMarkdownLink(editor, evt.clipboardData.getData('text/plain'))) {
           evt.preventDefault();
         }
       },
-      [editor, onPaste, isMarkdown]
+      [editor, onPaste]
     );
 
     const renderPlaceholder = useCallback(
