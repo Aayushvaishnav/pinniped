@@ -207,9 +207,12 @@ export enum MatrixRTCMode {
   Matrix_2_0 = "matrix_2_0",
 }
 
+// Pinniped: Compatibility (multi-SFU) so each member publishes through their own
+// homeserver's focus. Legacy publishes on the oldest member's focus, whose JWT
+// service hands members of other homeservers a receive-only token.
 export const matrixRTCMode = new Setting<MatrixRTCMode>(
   "matrix-rtc-mode",
-  MatrixRTCMode.Legacy,
+  MatrixRTCMode.Compatibility,
 );
 
 export const customLivekitUrl = new Setting<string | null>(

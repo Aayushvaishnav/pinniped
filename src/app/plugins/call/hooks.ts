@@ -4,6 +4,7 @@ import { CallControl, CallControlEvent } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { CallEmbed } from './CallEmbed';
 import { CallActivity, emptyCallActivity } from './activity';
+import { CallError } from './error';
 import { CallStatsSample } from './stats';
 
 export const useClientWidgetApiEvent = <T>(
@@ -57,4 +58,16 @@ export const useCallActivity = (embed: CallEmbed | undefined): CallActivity => {
   }, [embed]);
 
   return activity;
+};
+
+/** The problem the widget reports for the call, if any; re-renders when it changes. */
+export const useCallError = (embed: CallEmbed | undefined): CallError | undefined => {
+  const [error, setError] = useState<CallError | undefined>(embed?.error);
+
+  useEffect(() => {
+    setError(embed?.error);
+    return embed?.onError(() => setError(embed.error));
+  }, [embed]);
+
+  return error;
 };

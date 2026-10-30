@@ -294,6 +294,11 @@ export interface CallViewModel {
    * Should render a blocking error screen.
    */
   fatalError$: Behavior<ElementCallError | null>;
+  /**
+   * Why we cannot send audio or video, if we cannot. Not fatal: we stay in the
+   * call and can hear it, so this should be shown without blocking the call.
+   */
+  publishError$: Behavior<ElementCallError | null>;
 
   // participants and counts
   /**
@@ -1780,6 +1785,7 @@ export function createCallViewModel$(
       ),
       null,
     ),
+    publishError$: localMembership.publishError$,
     allConnections$,
     participantCount$: participantCount$,
     handsRaised$: handsRaised$,

@@ -76,6 +76,8 @@ import { EarpieceOverlay } from "./EarpieceOverlay.tsx";
 import { useAppBarHidden, useAppBarSecondaryButton } from "../AppBar.tsx";
 import { useBehavior } from "../useBehavior.ts";
 import { Toast } from "../Toast.tsx";
+import { type ElementCallError } from "../utils/errors.ts";
+import { ErrorSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import overlayStyles from "../Overlay.module.css";
 import { prefetchSounds } from "../soundUtils";
 import { useAudioContext } from "../useAudioContext";
@@ -279,6 +281,9 @@ export const InCallView: FC<InCallViewProps> = ({
   const audioParticipants = useBehavior(vm.livekitRoomItems$);
   const participantCount = useBehavior(vm.participantCount$);
   const reconnecting = useBehavior(vm.reconnecting$);
+  const publishError = useBehavior(vm.publishError$);
+  const [dismissedPublishError, setDismissedPublishError] =
+    useState<ElementCallError | null>(null);
   const layout = useBehavior(vm.layout$);
   const edgeToEdge = useBehavior(vm.edgeToEdge$);
   const showNameTags = useBehavior(vm.showNameTags$);
@@ -440,6 +445,38 @@ export const InCallView: FC<InCallViewProps> = ({
       </Toast>
     </>
   );
+
+  const onDismissPublishError = useCallback(
+    () => setDismissedPublishError(publishError),
+    [publishError],
+  );
+  const publishErrorToast = publishError && (
+    <Toast
+      onDismiss={onDismissPublishError}
+      open={publishError !== dismissedPublishError}
+      modal={false}
+      Icon={ErrorSolidIcon}
+    >
+      {publishError.localisedMessage
+        ? `${publishError.localisedTitle}. ${publishError.localisedMessage}`
+        : publishError.localisedTitle}
+    </Toast>
+  );
+
+  // Embedded clients (Cinny) show the problem next to the call controls, where
+  // it stays visible while the call view is hidden.
+  useEffect(() => {
+    if (widget === null) return;
+    widget.api.transport
+      .send(ElementWidgetActions.CallError, {
+        error: publishError && {
+          code: publishError.code,
+          title: publishError.localisedTitle,
+          message: publishError.localisedMessage ?? null,
+        },
+      })
+      .catch(() => {});
+  }, [publishError]);
 
   const earpieceOverlay = (
     <EarpieceOverlay
@@ -706,6 +743,7 @@ export const InCallView: FC<InCallViewProps> = ({
       <CallEventAudioRenderer vm={vm} muted={muteAllAudio} />
       <ReactionsAudioRenderer vm={vm} muted={muteAllAudio} />
       {reconnectingToast}
+      {publishErrorToast}
       {earpieceOverlay}
       <ReactionsOverlay vm={vm} />
       {footer}

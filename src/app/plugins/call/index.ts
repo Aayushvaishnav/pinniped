@@ -3,3 +3,4 @@ export * from './hooks';
 export * from './types';
 export * from './stats';
 export * from './activity';
+export * from './error';

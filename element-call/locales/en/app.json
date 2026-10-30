@@ -114,6 +114,8 @@
     "no_matrix_2_authorization_service": "The authorization service for your media server (SFU) is out of date.",
     "open_elsewhere": "Opened in another tab",
     "open_elsewhere_description": "{{brand}} has been opened in another tab. If that doesn't sound right, try reloading the page.",
+    "publish_not_allowed": "You can listen but not speak",
+    "publish_not_allowed_description": "The media server {{server}} does not let users of your homeserver send audio or video. Its admin has to add your homeserver to its trusted list.",
     "room_creation_restricted": "Failed to create call",
     "room_creation_restricted_description": "Call creation might be restricted to authorized users only. Try again later, or contact your server admin if the problem persists.",
     "unexpected_ec_error": "An unexpected error occurred (<0>Error Code:</0> <1>{{ errorCode }}</1>). Please contact your server admin."

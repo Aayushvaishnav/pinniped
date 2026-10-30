@@ -21,6 +21,8 @@ export enum ErrorCode {
   OPEN_ID_ERROR = "OPEN_ID_ERROR",
   NO_MATRIX_2_AUTHORIZATION_SERVICE = "NO_MATRIX_2_0_AUTHORIZATION_SERVICE",
   SFU_ERROR = "SFU_ERROR",
+  /** The JWT service gave us a token without the canPublish grant. */
+  PUBLISH_NOT_ALLOWED = "PUBLISH_NOT_ALLOWED",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
@@ -233,5 +235,24 @@ export class SFURoomCreationRestrictedError extends ElementCallError {
       ErrorCategory.CONFIGURATION_ISSUE,
       t("error.room_creation_restricted_description"),
     );
+  }
+}
+
+/**
+ * The media server's JWT service let us join without permission to publish,
+ * typically because it only serves users of homeservers it trusts. We can hear
+ * the call but nobody hears or sees us.
+ */
+export class PublishNotAllowedError extends ElementCallError {
+  public readonly server: string;
+
+  public constructor(server: string) {
+    super(
+      t("error.publish_not_allowed"),
+      ErrorCode.PUBLISH_NOT_ALLOWED,
+      ErrorCategory.CONFIGURATION_ISSUE,
+      t("error.publish_not_allowed_description", { server }),
+    );
+    this.server = server;
   }
 }

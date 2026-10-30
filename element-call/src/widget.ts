@@ -79,6 +79,9 @@ export enum ElementWidgetActions {
   // fromWidget (fork): who is speaking, muted or sharing their screen, whenever that
   // changes; data `{ speaking: string[], muted: string[], screenSharing: string[] }`
   CallActivity = "io.cinny.call_activity",
+  // fromWidget (fork): a non-fatal problem with the call, whenever it changes;
+  // data `{ error: { code, title, message } | null }`
+  CallError = "io.cinny.call_error",
   // This can be sent as from or to widget
   // fromWidget: updates the client about the current device mute state
   // toWidget: the client requests a specific device mute configuration

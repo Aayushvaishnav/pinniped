@@ -34,6 +34,8 @@ export enum ElementWidgetActions {
   CallStats = 'io.cinny.call_stats',
   /** Fork, from the widget: who is speaking, muted or sharing, whenever that changes. */
   CallActivity = 'io.cinny.call_activity',
+  /** Fork, from the widget: a non-fatal call problem (or none), whenever that changes. */
+  CallError = 'io.cinny.call_error',
 }
 
 export const screenShareResolutions = [

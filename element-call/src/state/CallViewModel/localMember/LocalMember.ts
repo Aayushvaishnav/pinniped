@@ -33,6 +33,7 @@ import {
   from,
   fromEvent,
   map,
+  merge,
   type Observable,
   of,
   pairwise,
@@ -53,6 +54,7 @@ import {
   ElementCallError,
   FailToStartLivekitConnection,
   MembershipManagerError,
+  PublishNotAllowedError,
   UnknownCallError,
 } from "../../../utils/errors.ts";
 import { ElementWidgetActions, widget } from "../../../widget.ts";
@@ -203,6 +205,11 @@ export const createLocalMembership$ = ({
   requestJoinAndPublish: () => void;
   requestDisconnect: () => void;
   localMemberState$: Behavior<LocalMemberState>;
+  /**
+   * Why we cannot send audio or video, if we cannot. Not fatal: we can still
+   * hear the call.
+   */
+  publishError$: Behavior<ElementCallError | null>;
   sharingScreen$: Behavior<boolean>;
   /**
    * Callback to toggle screen sharing. If null, screen sharing is not possible.
@@ -422,6 +429,41 @@ export const createLocalMembership$ = ({
     }
   };
 
+  // Pinniped: the JWT service decides whether we may publish (LiveKit's
+  // canPublish grant), and usually only grants it to users of homeservers it
+  // trusts. Without it LiveKit rejects every track, so tell the user instead of
+  // leaving them in a call where nobody hears them.
+  localConnection$
+    .pipe(
+      switchMap((connection) => {
+        if (!connection) return of(null);
+        const room = connection.livekitRoom;
+        // The room re-emits the local participant's permission changes.
+        return merge(
+          fromEvent(room, RoomEvent.Connected),
+          fromEvent(room, RoomEvent.ParticipantPermissionsChanged),
+        ).pipe(
+          startWith(undefined),
+          map(() =>
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- absent in test mocks
+            room.localParticipant?.permissions?.canPublish === false
+              ? new URL(connection.transport.livekit_service_url).host
+              : null,
+          ),
+        );
+      }),
+      distinctUntilChanged(),
+      scope.bind(),
+    )
+    .subscribe((deniedBy) => {
+      if (deniedBy !== null) {
+        logger.error(`Media server ${deniedBy} does not allow us to publish`);
+        setPublishError(new PublishNotAllowedError(deniedBy));
+      } else if (publishError$.value instanceof PublishNotAllowedError) {
+        publishError$.next(null);
+      }
+    });
+
   const fatalTransportError$ = new BehaviorSubject<ElementCallError | null>(
     null,
   );
@@ -491,7 +533,6 @@ export const createLocalMembership$ = ({
       homeserverConnected.rtsSession$,
       fatalMatrixError$,
       fatalTransportError$,
-      publishError$,
     ]).pipe(
       map(
         ([
@@ -499,14 +540,13 @@ export const createLocalMembership$ = ({
           rtcSessionStatus,
           fatalMatrixError,
           fatalTransportError,
-          publishError,
         ]) => {
           if (fatalTransportError !== null) return fatalTransportError;
           // `mediaState` will be 'null' until the transport/connection appears.
           if (mediaState && rtcSessionStatus)
             return {
               matrix: fatalMatrixError ?? rtcSessionStatus,
-              media: publishError ?? mediaState,
+              media: mediaState,
             };
           return TransportState.Waiting;
         },
@@ -910,6 +950,7 @@ export const createLocalMembership$ = ({
     requestJoinAndPublish,
     requestDisconnect,
     localMemberState$,
+    publishError$,
     participant$,
     reconnecting$,
     connected$: matrixAndLivekitConnected$,

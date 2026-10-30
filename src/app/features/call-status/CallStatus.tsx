@@ -8,6 +8,7 @@ import { ContainerColor } from '../../styles/ContainerColor.css';
 import { CallEmbed } from '../../plugins/call/CallEmbed';
 import { CallStatsPopout } from './stats/CallStatsPopout';
 import { useCallConnectionStatus, useCallJoined } from '../../hooks/useCallEmbed';
+import { useCallError } from '../../plugins/call/hooks';
 
 type CallStatusProps = {
   callEmbed: CallEmbed;
@@ -18,6 +19,7 @@ export function CallStatus({ callEmbed }: CallStatusProps) {
 
   const callJoined = useCallJoined(callEmbed);
   const connectionStatus = useCallConnectionStatus(callEmbed);
+  const callError = useCallError(callEmbed);
   const [statsCords, setStatsCords] = useState<RectCords>();
 
   return (
@@ -71,6 +73,17 @@ export function CallStatus({ callEmbed }: CallStatusProps) {
           <CallHangupButton callEmbed={callEmbed} callJoined={callJoined} />
         </Box>
       </Box>
+      {callError && (
+        <Box role="alert" alignItems="Start" gap="200" style={{ color: color.Critical.Main }}>
+          <Icon size="200" src={Icons.Warning} filled />
+          <Box grow="Yes" direction="Column" style={{ minWidth: 0 }}>
+            <Text size="T300">
+              <b>{callError.title}</b>
+            </Text>
+            {callError.message && <Text size="T200">{callError.message}</Text>}
+          </Box>
+        </Box>
+      )}
       <CallControl callJoined={callJoined} callEmbed={callEmbed} />
     </Box>
   );

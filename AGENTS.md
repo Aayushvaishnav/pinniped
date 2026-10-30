@@ -96,6 +96,12 @@ Fork changes on top of upstream + old patches:
   keeps the latest and `useCallParticipantActivity` reads it. It does not depend on
   which tiles are mounted. (It used to scrape `data-cinny-*` attributes off tiles,
   which only the grid tile set; those attributes remain only as styling hooks.)
+- **Publish errors**: when the media server's JWT service lets us join without
+  the `canPublish` grant (it only trusts certain homeservers), `LocalMember`
+  raises `PublishNotAllowedError` on `publishError$`. The widget shows it as a
+  toast and sends it to Cinny as `io.cinny.call_error`; `CallStatus` shows it
+  under "Voice Connected". The widget defaults to `MatrixRTCMode.Compatibility`
+  (multi-SFU), so each member publishes through their own homeserver's server.
 - **Soundboard**: sounds live in Matrix data (`club.stablecat.pinniped.user_sounds`
   account data for the user, `club.stablecat.pinniped.room_sounds` state for a
   room or space, `club.stablecat.pinniped.sound_favorites` for favourites;

@@ -33,6 +33,7 @@ import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
 import { protectFrameFromParentDrag } from './protectFrameFromParentDrag';
 import { CallActivity, emptyCallActivity, parseCallActivity } from './activity';
+import { CallError, parseCallError } from './error';
 import { CallStatsSample, trimStats } from './stats';
 import { withDefaultTuning } from './voiceTuning';
 
@@ -56,6 +57,11 @@ export class CallEmbed {
   public activity: CallActivity = emptyCallActivity;
 
   private readonly activityListeners = new Set<() => void>();
+
+  /** A problem the widget reported without leaving the call, such as not being allowed to speak. */
+  public error: CallError | undefined;
+
+  private readonly errorListeners = new Set<() => void>();
 
   /** An outgoing call that rings the other side; the call itself plays the start sound. */
   public readonly ringing: boolean;
@@ -264,6 +270,15 @@ export class CallEmbed {
       })
     );
 
+    this.disposables.push(
+      this.listenAction<IWidgetApiRequest>(ElementWidgetActions.CallError, (evt) => {
+        evt.preventDefault();
+        this.call.transport.reply(evt.detail, {});
+        this.error = parseCallError(evt.detail.data);
+        this.errorListeners.forEach((listener) => listener());
+      })
+    );
+
     this.start();
   }
 
@@ -293,6 +308,13 @@ export class CallEmbed {
     this.activityListeners.add(callback);
     return () => {
       this.activityListeners.delete(callback);
+    };
+  }
+
+  public onError(callback: () => void) {
+    this.errorListeners.add(callback);
+    return () => {
+      this.errorListeners.delete(callback);
     };
   }
 
